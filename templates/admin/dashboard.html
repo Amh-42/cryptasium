@@ -1,0 +1,71 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Admin Dashboard | Cryptasium{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 100px 24px;">
+    <div class="reveal">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 48px;">
+            <h1 style="font-size: 48px;">Admin Dashboard</h1>
+            <a href="{{ url_for('admin_logout') }}" class="btn btn-outline">Logout</a>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div style="padding: 12px; background: {% if category == 'error' %}rgba(255, 34, 34, 0.1){% else %}rgba(34, 255, 34, 0.1){% endif %}; border: 1px solid {% if category == 'error' %}rgba(255, 34, 34, 0.3){% else %}rgba(34, 255, 34, 0.3){% endif %}; border-radius: 8px; margin-bottom: 24px; color: {% if category == 'error' %}var(--accent){% else %}var(--text-main){% endif %};">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- STATS GRID -->
+        <div class="content-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); margin-bottom: 60px;">
+            <div class="content-card reveal">
+                <h3 style="margin-bottom: 12px;">Blog Posts</h3>
+                <p style="font-size: 32px; font-weight: 700; color: var(--accent); margin-bottom: 8px;">{{ stats.published_blog }} / {{ stats.blog_posts }}</p>
+                <p style="color: var(--text-muted); font-size: 14px;">Published / Total</p>
+                <a href="{{ url_for('admin_blog_list') }}" class="btn btn-primary" style="width: 100%; margin-top: 16px;">Manage</a>
+            </div>
+            <div class="content-card reveal">
+                <h3 style="margin-bottom: 12px;">YouTube Videos</h3>
+                <p style="font-size: 32px; font-weight: 700; color: var(--accent); margin-bottom: 8px;">{{ stats.published_videos }} / {{ stats.youtube_videos }}</p>
+                <p style="color: var(--text-muted); font-size: 14px;">Published / Total</p>
+                <a href="{{ url_for('admin_youtube_list') }}" class="btn btn-primary" style="width: 100%; margin-top: 16px;">Manage</a>
+            </div>
+            <div class="content-card reveal">
+                <h3 style="margin-bottom: 12px;">Podcasts</h3>
+                <p style="font-size: 32px; font-weight: 700; color: var(--accent); margin-bottom: 8px;">{{ stats.published_podcasts }} / {{ stats.podcasts }}</p>
+                <p style="color: var(--text-muted); font-size: 14px;">Published / Total</p>
+                <a href="{{ url_for('admin_podcast_list') }}" class="btn btn-primary" style="width: 100%; margin-top: 16px;">Manage</a>
+            </div>
+            <div class="content-card reveal">
+                <h3 style="margin-bottom: 12px;">Shorts</h3>
+                <p style="font-size: 32px; font-weight: 700; color: var(--accent); margin-bottom: 8px;">{{ stats.published_shorts }} / {{ stats.shorts }}</p>
+                <p style="color: var(--text-muted); font-size: 14px;">Published / Total</p>
+                <a href="{{ url_for('admin_shorts_list') }}" class="btn btn-primary" style="width: 100%; margin-top: 16px;">Manage</a>
+            </div>
+            <div class="content-card reveal">
+                <h3 style="margin-bottom: 12px;">Community Posts</h3>
+                <p style="font-size: 32px; font-weight: 700; color: var(--accent); margin-bottom: 8px;">{{ stats.published_community }} / {{ stats.community_posts }}</p>
+                <p style="color: var(--text-muted); font-size: 14px;">Published / Total</p>
+                <a href="{{ url_for('admin_community_list') }}" class="btn btn-primary" style="width: 100%; margin-top: 16px;">Manage</a>
+            </div>
+        </div>
+
+        <!-- QUICK ACTIONS -->
+        <div class="reveal">
+            <h2 style="font-size: 32px; margin-bottom: 32px;">Quick Actions</h2>
+            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                <a href="{{ url_for('admin_blog_new') }}" class="btn btn-primary">New Blog Post</a>
+                <a href="{{ url_for('admin_youtube_new') }}" class="btn btn-primary">New YouTube Video</a>
+                <a href="{{ url_for('admin_podcast_new') }}" class="btn btn-primary">New Podcast</a>
+                <a href="{{ url_for('admin_shorts_new') }}" class="btn btn-primary">New Short</a>
+                <a href="{{ url_for('admin_community_new') }}" class="btn btn-primary">New Community Post</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

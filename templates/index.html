@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Cryptasium | Tech. Curiosity. Visualized.{% endblock %}
+
+{% block content %}
+<!-- HERO SECTION -->
+<header>
+    <div class="container">
+        <div class="hero-visual reveal">
+            <div class="keypad">
+                <div class="keypad__base">
+                    <img src="https://assets.codepen.io/605876/keypad-base.png?format=auto&quality=86" alt="" />
+                </div>
+                <button id="key-one" class="key keypad__single keypad__single--left">
+                    <span class="key__mask">
+                        <span class="key__content">
+                            <span class="key__text">ok</span>
+                            <img src="https://assets.codepen.io/605876/keypad-single.png?format=auto&quality=86" alt="" />
+                        </span>
+                    </span>
+                </button>
+                <button id="key-two" class="key keypad__single">
+                    <span class="key__mask">
+                        <span class="key__content">
+                            <span class="key__text">go</span>
+                            <img src="https://assets.codepen.io/605876/keypad-single.png?format=auto&quality=86" alt="" />
+                        </span>
+                    </span>
+                </button>
+                <button id="key-three" class="key keypad__double">
+                    <span class="key__mask">
+                        <span class="key__content">
+                            <span class="key__text">create.</span>
+                            <img src="https://assets.codepen.io/605876/keypad-double.png?format=auto&quality=86" alt="" />
+                        </span>
+                    </span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="reveal">
+            <div class="tag">● DIGITAL MEDIA</div>
+            <h1>CRYPTASIUM</h1>
+            <p class="hero-desc">An element of mystery.</p>
+            <div style="display: flex; gap: 16px; justify-content: center;">
+                <a href="{{ url_for('youtube_list') }}" class="btn btn-primary">Watch Latest</a>
+                <a href="{{ url_for('blog_list') }}" class="btn btn-outline">Explore Topics</a>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- FEATURE SPLIT -->
+<section class="feature-split container" style="padding: 100px 0;">
+    <div class="split-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center;">
+        <div class="reveal">
+            <div class="video-placeholder" style="height: 400px;">
+                <i class="ph ph-cube placeholder-icon"></i>
+                <span class="placeholder-text">3D Animation Process Reel</span>
+            </div>
+        </div>
+        <div class="reveal">
+            <h2 style="font-size: 48px; font-weight: 700; line-height: 1.1; margin-bottom: 24px;">Deep dives for the armchair engineer.</h2>
+            <p style="color: var(--text-muted); font-size: 18px; margin-bottom: 32px;">Gone are the days of dry tutorials. We break down the world's most complex algorithms and systems using high-end 3D visuals and narrative storytelling.</p>
+            <div style="display: flex; gap: 16px; margin-top: 32px;">
+                <div style="display: flex; align-items: center; gap: 12px; padding: 16px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: var(--text-muted); font-size: 14px;">
+                    <i class="ph ph-youtube-logo" style="color: var(--accent); font-size: 20px;"></i> Long Form
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px; padding: 16px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: var(--text-muted); font-size: 14px;">
+                    <i class="ph ph-tiktok-logo" style="color: var(--accent); font-size: 20px;"></i> Shorts & Reels
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CONTENT ECOSYSTEM -->
+<section class="global-network container" style="padding: 100px 0; text-align: center;">
+    <div class="reveal">
+        <span style="color: var(--accent); font-family: var(--font-mono); font-size: 14px; letter-spacing: 1px;">ECOSYSTEM</span>
+        <h2 style="font-size: 56px; margin: 16px 0 40px;">A universe of knowledge<br>across every platform.</h2>
+    </div>
+
+    <div class="globe-container reveal" style="width: 100%; max-width: 1000px; aspect-ratio: 16 / 9; margin: 60px auto;">
+        <div class="video-placeholder" style="border-radius: 24px;">
+            <i class="ph ph-share-network placeholder-icon"></i>
+            <span class="placeholder-text">Content Network Visualization</span>
+        </div>
+    </div>
+
+    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; text-align: left;">
+        <div class="stat-card reveal" style="background: rgba(20,20,20,0.5); border: 1px solid var(--border); padding: 32px; border-radius: 16px;">
+            <h3 style="font-size: 18px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <i class="ph ph-youtube-logo" style="color: var(--accent);"></i> Video Essays
+            </h3>
+            <p style="font-size: 14px; color: var(--text-muted); line-height: 1.5;">Cinematic deep dives into software history, system architecture, and AI breakthroughs available in 4K.</p>
+        </div>
+        <div class="stat-card reveal" style="background: rgba(20,20,20,0.5); border: 1px solid var(--border); padding: 32px; border-radius: 16px;">
+            <h3 style="font-size: 18px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <i class="ph ph-microphone" style="color: var(--accent);"></i> The Podcast
+            </h3>
+            <p style="font-size: 14px; color: var(--text-muted); line-height: 1.5;">Conversations with engineers, futurists, and creators about the ethics and philosophy of technology.</p>
+        </div>
+        <div class="stat-card reveal" style="background: rgba(20,20,20,0.5); border: 1px solid var(--border); padding: 32px; border-radius: 16px;">
+            <h3 style="font-size: 18px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <i class="ph ph-read-cv-logo" style="color: var(--accent);"></i> Technical Blog
+            </h3>
+            <p style="font-size: 14px; color: var(--text-muted); line-height: 1.5;">Written companions to our videos, providing code snippets, references, and further reading materials.</p>
+        </div>
+    </div>
+</section>
+
+<!-- LATEST CONTENT PREVIEW -->
+{% if latest_blog or latest_videos or latest_shorts %}
+<section class="container" style="padding: 100px 24px;">
+    <div class="reveal">
+        <h2 style="font-size: 48px; text-align: center; margin-bottom: 60px;">Latest Content</h2>
+    </div>
+    <div class="content-grid">
+        {% if latest_blog %}
+        <div class="content-card reveal">
+            <div class="video-placeholder" style="height: 200px; margin-bottom: 20px;">
+                <i class="ph ph-article placeholder-icon"></i>
+                <span class="placeholder-text">Latest Article</span>
+            </div>
+            <h3 style="margin-bottom: 12px;"><a href="{{ url_for('blog_detail', slug=latest_blog.slug) }}">{{ latest_blog.title }}</a></h3>
+            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">{{ latest_blog.excerpt or 'Read the full article...' }}</p>
+            <span style="color: var(--text-muted); font-size: 12px; font-family: var(--font-mono);">{{ latest_blog.created_at.strftime('%b %d, %Y') if latest_blog.created_at else '' }}</span>
+        </div>
+        {% endif %}
+        
+        {% if latest_videos %}
+        {% for video in latest_videos[:3] %}
+        <div class="content-card reveal">
+            <div class="video-placeholder" style="height: 200px; margin-bottom: 20px;">
+                <i class="ph ph-play-circle placeholder-icon"></i>
+                <span class="placeholder-text">{{ video.title }}</span>
+            </div>
+            <h3 style="margin-bottom: 12px;">{{ video.title }}</h3>
+            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">{{ video.description[:100] if video.description else '' }}...</p>
+            <span style="color: var(--text-muted); font-size: 12px; font-family: var(--font-mono);">{{ video.duration or '' }} • {{ video.created_at.strftime('%b %d') if video.created_at else '' }}</span>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+{% endblock %}
+

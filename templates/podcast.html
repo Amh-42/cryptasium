@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Podcast | Cryptasium{% endblock %}
+
+{% block content %}
+<!-- HERO SECTION -->
+<header>
+    <div class="container">
+        <div class="reveal">
+            <div class="tag">● PODCAST</div>
+            <h1>Tech philosophy<br>and ethics.</h1>
+            <p class="hero-desc">Conversations with engineers, futurists, and creators about the ethics and philosophy of technology. Deep discussions on the implications of our digital future.</p>
+            <div style="display: flex; gap: 16px; justify-content: center;">
+                <a href="#episodes" class="btn btn-primary">Latest Episode</a>
+                <a href="{{ url_for('index') }}" class="btn btn-outline">Back to Home</a>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- PODCAST EPISODES -->
+<section id="episodes" class="container" style="padding: 100px 24px;">
+    <div class="reveal">
+        <h2 style="font-size: 48px; text-align: center; margin-bottom: 60px;">All Episodes</h2>
+    </div>
+    <div class="content-grid">
+        {% if podcasts.items %}
+            {% for podcast in podcasts.items %}
+            <div class="content-card reveal">
+                {% if podcast.thumbnail_url %}
+                <div style="height: 200px; margin-bottom: 20px; background-image: url('{{ podcast.thumbnail_url }}'); background-size: cover; background-position: center; border-radius: 12px; position: relative;">
+                    <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3);">
+                        <i class="ph ph-microphone" style="font-size: 48px; color: white;"></i>
+                    </div>
+                </div>
+                {% else %}
+                <div class="video-placeholder" style="height: 200px; margin-bottom: 20px;">
+                    <i class="ph ph-microphone placeholder-icon"></i>
+                    <span class="placeholder-text">Episode {{ podcast.episode_number or '' }}</span>
+                </div>
+                {% endif %}
+                <h3 style="margin-bottom: 12px;">{{ podcast.title }}</h3>
+                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">{{ podcast.description[:150] if podcast.description else 'Listen to the full episode...' }}...</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
+                    <span style="color: var(--text-muted); font-size: 12px; font-family: var(--font-mono);">{{ podcast.duration or '' }} • {{ podcast.created_at.strftime('%b %d') if podcast.created_at else '' }}</span>
+                    <span style="color: var(--text-muted); font-size: 12px;">{{ podcast.views }} views</span>
+                </div>
+                {% if podcast.audio_url %}
+                <audio controls style="width: 100%; margin-top: 16px;">
+                    <source src="{{ podcast.audio_url }}" type="audio/mpeg">
+                    Your browser does not support the audio element.
+                </audio>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="reveal" style="grid-column: 1 / -1; text-align: center; padding: 60px 0;">
+            <p style="color: var(--text-muted); font-size: 18px;">No podcast episodes yet. Check back soon!</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- PAGINATION -->
+    {% if podcasts.pages > 1 %}
+    <div class="pagination">
+        {% if podcasts.has_prev %}
+        <a href="{{ url_for('podcast_list', page=podcasts.prev_num) }}">Previous</a>
+        {% endif %}
+        
+        {% for page_num in podcasts.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if page_num %}
+                {% if page_num == podcasts.page %}
+                <span class="current">{{ page_num }}</span>
+                {% else %}
+                <a href="{{ url_for('podcast_list', page=page_num) }}">{{ page_num }}</a>
+                {% endif %}
+            {% else %}
+            <span>...</span>
+            {% endif %}
+        {% endfor %}
+        
+        {% if podcasts.has_next %}
+        <a href="{{ url_for('podcast_list', page=podcasts.next_num) }}">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
+

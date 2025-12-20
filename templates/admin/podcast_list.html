@@ -1,0 +1,53 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Manage Podcasts | Admin{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 120px 24px 100px;">
+    <div class="reveal">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 48px;">
+            <h1 style="font-size: 48px;">Podcast Episodes</h1>
+            <div style="display: flex; gap: 16px;">
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline">← Dashboard</a>
+                <a href="{{ url_for('admin_podcast_new') }}" class="btn btn-primary">New Episode</a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div style="padding: 12px; background: {% if category == 'error' %}rgba(255, 34, 34, 0.1){% else %}rgba(34, 255, 34, 0.1){% endif %}; border: 1px solid {% if category == 'error' %}rgba(255, 34, 34, 0.3){% else %}rgba(34, 255, 34, 0.3){% endif %}; border-radius: 8px; margin-bottom: 24px; color: {% if category == 'error' %}var(--accent){% else %}var(--text-main){% endif %};">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="content-grid">
+            {% for podcast in podcasts %}
+            <div class="content-card reveal">
+                <h3 style="margin-bottom: 8px;">{{ podcast.title }}</h3>
+                <p style="color: var(--text-muted); font-size: 12px; margin-bottom: 16px;">
+                    {% if podcast.published %}<span style="color: var(--accent);">● Published</span>{% else %}<span style="color: #666;">○ Draft</span>{% endif %}
+                    {% if podcast.episode_number %} • Episode #{{ podcast.episode_number }}{% endif %}
+                    • {{ podcast.created_at.strftime('%b %d, %Y') if podcast.created_at else '' }}
+                </p>
+                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">{{ podcast.description[:100] if podcast.description else 'No description' }}...</p>
+                <div style="display: flex; gap: 12px; margin-top: 16px;">
+                    <a href="{{ url_for('admin_podcast_edit', id=podcast.id) }}" class="btn btn-outline" style="flex: 1; text-align: center; padding: 8px 16px; font-size: 12px;">Edit</a>
+                    <form method="POST" action="{{ url_for('admin_podcast_delete', id=podcast.id) }}" style="flex: 1;" onsubmit="return confirm('Are you sure?');">
+                        <button type="submit" class="btn" style="width: 100%; background: rgba(255, 34, 34, 0.1); border: 1px solid rgba(255, 34, 34, 0.3); color: var(--accent); padding: 8px 16px; font-size: 12px;">Delete</button>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <div class="reveal" style="grid-column: 1 / -1; text-align: center; padding: 60px 0;">
+                <p style="color: var(--text-muted); font-size: 18px; margin-bottom: 24px;">No podcast episodes yet.</p>
+                <a href="{{ url_for('admin_podcast_new') }}" class="btn btn-primary">Add First Episode</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

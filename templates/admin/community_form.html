@@ -1,0 +1,55 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{% if post %}Edit{% else %}New{% endif %} Community Post | Admin{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 120px 24px 100px; max-width: 900px;">
+    <div class="reveal">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 48px;">
+            <h1 style="font-size: 48px;">{% if post %}Edit{% else %}New{% endif %} Community Post</h1>
+            <a href="{{ url_for('admin_community_list') }}" class="btn btn-outline">← Back</a>
+        </div>
+
+        <form method="POST" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px; padding: 48px;">
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Title *</label>
+                <input type="text" name="title" value="{{ post.title if post else '' }}" required style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Content *</label>
+                <textarea name="content" rows="10" required style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">{{ post.content if post else '' }}</textarea>
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Author</label>
+                <input type="text" name="author" value="{{ post.author if post else 'Community Member' }}" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Category</label>
+                <select name="category" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
+                    <option value="">Select category...</option>
+                    <option value="Discussion" {% if post and post.category == 'Discussion' %}selected{% endif %}>Discussion</option>
+                    <option value="Question" {% if post and post.category == 'Question' %}selected{% endif %}>Question</option>
+                    <option value="Announcement" {% if post and post.category == 'Announcement' %}selected{% endif %}>Announcement</option>
+                    <option value="Project" {% if post and post.category == 'Project' %}selected{% endif %}>Project</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 32px;">
+                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                    <input type="checkbox" name="published" {% if post and post.published %}checked{% endif %} style="width: 20px; height: 20px;">
+                    <span style="color: var(--text-muted); font-size: 14px;">Publish immediately</span>
+                </label>
+            </div>
+
+            <div style="display: flex; gap: 16px;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">{% if post %}Update{% else %}Create{% endif %} Post</button>
+                <a href="{{ url_for('admin_community_list') }}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

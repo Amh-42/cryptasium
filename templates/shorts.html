@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Shorts | Cryptasium{% endblock %}
+
+{% block content %}
+<!-- HERO SECTION -->
+<header>
+    <div class="container">
+        <div class="reveal">
+            <div class="tag">● SHORT VIDEOS</div>
+            <h1>Quick insights<br>in 60 seconds.</h1>
+            <p class="hero-desc">Bite-sized explanations of complex tech concepts. Perfect for quick learning and sharing.</p>
+            <div style="display: flex; gap: 16px; justify-content: center;">
+                <a href="#shorts" class="btn btn-primary">Latest Short</a>
+                <a href="{{ url_for('index') }}" class="btn btn-outline">Back to Home</a>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- SHORTS GRID -->
+<section id="shorts" class="container" style="padding: 100px 24px;">
+    <div class="reveal">
+        <h2 style="font-size: 48px; text-align: center; margin-bottom: 60px;">All Shorts</h2>
+    </div>
+    <div class="content-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+        {% if shorts.items %}
+            {% for short in shorts.items %}
+            <div class="content-card reveal" style="aspect-ratio: 9/16;">
+                {% if short.thumbnail_url %}
+                <div style="height: 100%; margin-bottom: 20px; background-image: url('{{ short.thumbnail_url }}'); background-size: cover; background-position: center; border-radius: 12px; position: relative;">
+                    <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2);">
+                        <i class="ph ph-play-circle" style="font-size: 48px; color: white;"></i>
+                    </div>
+                </div>
+                {% else %}
+                <div class="video-placeholder" style="height: 100%; margin-bottom: 20px;">
+                    <i class="ph ph-play-circle placeholder-icon"></i>
+                    <span class="placeholder-text">Short</span>
+                </div>
+                {% endif %}
+                <h3 style="margin-bottom: 12px; font-size: 16px;">{{ short.title }}</h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+                    <span style="color: var(--text-muted); font-size: 12px; font-family: var(--font-mono);">{{ short.duration or '60s' }}</span>
+                    <span style="color: var(--text-muted); font-size: 12px;">{{ short.views }} views</span>
+                </div>
+                {% if short.video_id %}
+                <a href="https://www.youtube.com/shorts/{{ short.video_id }}" target="_blank" class="btn btn-primary" style="width: 100%; margin-top: 16px; text-align: center; display: block; font-size: 12px; padding: 8px 16px;">Watch</a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="reveal" style="grid-column: 1 / -1; text-align: center; padding: 60px 0;">
+            <p style="color: var(--text-muted); font-size: 18px;">No shorts yet. Check back soon!</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- PAGINATION -->
+    {% if shorts.pages > 1 %}
+    <div class="pagination">
+        {% if shorts.has_prev %}
+        <a href="{{ url_for('shorts_list', page=shorts.prev_num) }}">Previous</a>
+        {% endif %}
+        
+        {% for page_num in shorts.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if page_num %}
+                {% if page_num == shorts.page %}
+                <span class="current">{{ page_num }}</span>
+                {% else %}
+                <a href="{{ url_for('shorts_list', page=page_num) }}">{{ page_num }}</a>
+                {% endif %}
+            {% else %}
+            <span>...</span>
+            {% endif %}
+        {% endfor %}
+        
+        {% if shorts.has_next %}
+        <a href="{{ url_for('shorts_list', page=shorts.next_num) }}">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
+

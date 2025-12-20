@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Community | Cryptasium{% endblock %}
+
+{% block content %}
+<!-- HERO SECTION -->
+<header>
+    <div class="container">
+        <div class="reveal">
+            <div class="tag">● COMMUNITY</div>
+            <h1>Join the curious<br>community.</h1>
+            <p class="hero-desc">Connect with fellow engineers, share ideas, and explore the frontiers of technology together.</p>
+            <div style="display: flex; gap: 16px; justify-content: center;">
+                <a href="#posts" class="btn btn-primary">View Posts</a>
+                <a href="{{ url_for('index') }}" class="btn btn-outline">Back to Home</a>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- COMMUNITY FEATURES -->
+<section class="container" style="padding: 100px 24px;">
+    <div class="reveal">
+        <h2 style="font-size: 48px; text-align: center; margin-bottom: 60px;">Community Features</h2>
+    </div>
+    <div class="content-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 100px;">
+        <div class="content-card reveal" style="text-align: center;">
+            <i class="ph ph-discord-logo" style="font-size: 48px; color: var(--accent); margin-bottom: 20px;"></i>
+            <h3 style="margin-bottom: 12px;">Discord Server</h3>
+            <p style="color: var(--text-muted); font-size: 14px;">Join our active Discord community for real-time discussions and Q&A sessions.</p>
+            <a href="#" class="btn btn-outline" style="margin-top: 20px; display: inline-block;">Join Discord</a>
+        </div>
+        <div class="content-card reveal" style="text-align: center;">
+            <i class="ph ph-reddit-logo" style="font-size: 48px; color: var(--accent); margin-bottom: 20px;"></i>
+            <h3 style="margin-bottom: 12px;">Reddit Community</h3>
+            <p style="color: var(--text-muted); font-size: 14px;">Participate in deep technical discussions and share your projects.</p>
+            <a href="#" class="btn btn-outline" style="margin-top: 20px; display: inline-block;">Visit Reddit</a>
+        </div>
+        <div class="content-card reveal" style="text-align: center;">
+            <i class="ph ph-users" style="font-size: 48px; color: var(--accent); margin-bottom: 20px;"></i>
+            <h3 style="margin-bottom: 12px;">Community Posts</h3>
+            <p style="color: var(--text-muted); font-size: 14px;">Browse and contribute to community-driven content and discussions.</p>
+            <a href="#posts" class="btn btn-outline" style="margin-top: 20px; display: inline-block;">View Posts</a>
+        </div>
+    </div>
+</section>
+
+<!-- COMMUNITY POSTS -->
+<section id="posts" class="container" style="padding: 100px 24px;">
+    <div class="reveal">
+        <h2 style="font-size: 48px; text-align: center; margin-bottom: 60px;">Community Posts</h2>
+    </div>
+    <div class="content-grid">
+        {% if posts.items %}
+            {% for post in posts.items %}
+            <div class="content-card reveal">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+                    <div>
+                        <h3 style="margin-bottom: 8px;">{{ post.title }}</h3>
+                        <span style="color: var(--text-muted); font-size: 12px; font-family: var(--font-mono);">{{ post.category or 'General' }}</span>
+                    </div>
+                </div>
+                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px; line-height: 1.6;">{{ post.content[:200] if post.content else 'Read more...' }}...</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
+                    <span style="color: var(--text-muted); font-size: 12px;">By {{ post.author }} • {{ post.created_at.strftime('%b %d') if post.created_at else '' }}</span>
+                    <div style="display: flex; gap: 16px; align-items: center;">
+                        <span style="color: var(--text-muted); font-size: 12px;"><i class="ph ph-eye"></i> {{ post.views }}</span>
+                        <span style="color: var(--text-muted); font-size: 12px;"><i class="ph ph-heart"></i> {{ post.likes }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="reveal" style="grid-column: 1 / -1; text-align: center; padding: 60px 0;">
+            <p style="color: var(--text-muted); font-size: 18px;">No community posts yet. Be the first to post!</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- PAGINATION -->
+    {% if posts.pages > 1 %}
+    <div class="pagination">
+        {% if posts.has_prev %}
+        <a href="{{ url_for('community_list', page=posts.prev_num) }}">Previous</a>
+        {% endif %}
+        
+        {% for page_num in posts.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if page_num %}
+                {% if page_num == posts.page %}
+                <span class="current">{{ page_num }}</span>
+                {% else %}
+                <a href="{{ url_for('community_list', page=page_num) }}">{{ page_num }}</a>
+                {% endif %}
+            {% else %}
+            <span>...</span>
+            {% endif %}
+        {% endfor %}
+        
+        {% if posts.has_next %}
+        <a href="{{ url_for('community_list', page=posts.next_num) }}">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
+

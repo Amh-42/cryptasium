@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block title %}{{ post.title if post else 'Post Not Found' }} | Cryptasium Blog{% endblock %}
+
+{% block extra_css %}
+<style>
+    .post-detail-container {
+        padding: 140px 24px 100px;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .post-header {
+        margin-bottom: 48px;
+    }
+
+    .post-back-link {
+        color: var(--accent);
+        font-size: 14px;
+        margin-bottom: 20px;
+        display: inline-block;
+        text-decoration: none;
+        transition: color 0.3s;
+    }
+
+    .post-back-link:hover {
+        color: var(--accent-hover);
+    }
+
+    .post-tag {
+        display: inline-block;
+        padding: 6px 12px;
+        background: rgba(255, 87, 34, 0.1);
+        border: 1px solid rgba(255, 87, 34, 0.2);
+        color: var(--accent);
+        font-family: var(--font-mono);
+        font-size: 12px;
+        border-radius: 20px;
+        margin-bottom: 20px;
+    }
+
+    .post-title {
+        font-size: 56px;
+        line-height: 1.2;
+        margin-bottom: 24px;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+
+    .post-meta {
+        display: flex;
+        gap: 24px;
+        margin-bottom: 40px;
+        color: var(--text-muted);
+        font-size: 14px;
+        flex-wrap: wrap;
+    }
+
+    .post-meta span {
+        display: inline-block;
+    }
+
+    .post-featured-image {
+        width: 100%;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        margin-bottom: 40px;
+        display: block;
+    }
+
+    .post-excerpt {
+        padding: 24px;
+        background: rgba(255,255,255,0.02);
+        border-left: 3px solid var(--accent);
+        border-radius: 8px;
+        margin-bottom: 40px;
+        color: var(--text-muted);
+        font-style: italic;
+        font-size: 18px;
+        line-height: 1.6;
+    }
+
+    .post-content-wrapper {
+        margin-top: 40px;
+    }
+
+    .post-content {
+        line-height: 1.8;
+        font-size: 18px;
+        color: var(--text-main);
+    }
+    
+    .post-content p {
+        margin-bottom: 1.5em;
+    }
+    
+    .post-content h1, 
+    .post-content h2, 
+    .post-content h3, 
+    .post-content h4, 
+    .post-content h5, 
+    .post-content h6 {
+        margin-top: 1.5em;
+        margin-bottom: 0.75em;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+    
+    .post-content h1 { font-size: 2.5em; }
+    .post-content h2 { font-size: 2em; }
+    .post-content h3 { font-size: 1.75em; }
+    .post-content h4 { font-size: 1.5em; }
+    .post-content h5 { font-size: 1.25em; }
+    .post-content h6 { font-size: 1.1em; }
+    
+    .post-content ul, 
+    .post-content ol {
+        margin: 1.5em 0;
+        padding-left: 2em;
+    }
+    
+    .post-content li {
+        margin-bottom: 0.5em;
+    }
+    
+    .post-content code {
+        background: rgba(255,255,255,0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: var(--font-mono);
+        font-size: 0.9em;
+        color: var(--accent);
+    }
+    
+    .post-content pre {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1.5em;
+        overflow-x: auto;
+        margin: 1.5em 0;
+    }
+    
+    .post-content pre code {
+        background: none;
+        padding: 0;
+        display: block;
+        color: var(--text-main);
+    }
+    
+    .post-content blockquote {
+        border-left: 3px solid var(--accent);
+        padding-left: 1.5em;
+        margin: 1.5em 0;
+        color: var(--text-muted);
+        font-style: italic;
+    }
+    
+    .post-content a {
+        color: var(--accent);
+        text-decoration: underline;
+    }
+    
+    .post-content a:hover {
+        color: var(--accent-hover);
+    }
+    
+    .post-content img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        margin: 1.5em 0;
+    }
+    
+    .post-content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1.5em 0;
+    }
+    
+    .post-content table th,
+    .post-content table td {
+        border: 1px solid var(--border);
+        padding: 12px;
+        text-align: left;
+    }
+    
+    .post-content table th {
+        background: rgba(255,255,255,0.05);
+        font-weight: 600;
+    }
+    
+    .post-content hr {
+        border: none;
+        border-top: 1px solid var(--border);
+        margin: 2em 0;
+    }
+    
+    .post-content strong {
+        font-weight: 700;
+    }
+    
+    .post-content em {
+        font-style: italic;
+    }
+    
+    .post-content mark {
+        background: rgba(255, 34, 34, 0.3);
+        color: var(--text-main);
+        padding: 2px 4px;
+        border-radius: 4px;
+    }
+
+    .post-not-found {
+        text-align: center;
+        padding: 100px 24px;
+    }
+
+    .post-not-found h1 {
+        font-size: 48px;
+        margin-bottom: 24px;
+        color: var(--text-main);
+    }
+
+    .post-not-found p {
+        color: var(--text-muted);
+        margin-bottom: 32px;
+        font-size: 18px;
+    }
+
+    .post-empty-content {
+        line-height: 1.8;
+        font-size: 18px;
+        color: var(--text-muted);
+        padding: 40px;
+        text-align: center;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        margin-top: 40px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="post-detail-container">
+    {% if post %}
+        <div class="post-header">
+            <a href="{{ url_for('blog_list') }}" class="post-back-link">← Back to Blog</a>
+            <div class="post-tag">● ARTICLE</div>
+            <h1 class="post-title">{{ post.title }}</h1>
+            <div class="post-meta">
+                <span>By {{ post.author or 'Cryptasium Team' }}</span>
+                <span>•</span>
+                <span>{{ post.created_at.strftime('%B %d, %Y') if post.created_at else 'Unknown date' }}</span>
+                <span>•</span>
+                <span>{{ post.views or 0 }} views</span>
+            </div>
+        </div>
+
+        {% if post.featured_image %}
+        <img src="{{ post.featured_image }}" alt="{{ post.title }}" class="post-featured-image">
+        {% endif %}
+
+        {% if post.excerpt %}
+        <div class="post-excerpt">
+            {{ post.excerpt }}
+        </div>
+        {% endif %}
+
+        {% if post.content %}
+        <div class="post-content-wrapper">
+            <div class="post-content">
+                {{ post.content | markdown | safe }}
+            </div>
+        </div>
+        {% else %}
+        <div class="post-empty-content">
+            <p>No content available for this post.</p>
+        </div>
+        {% endif %}
+    {% else %}
+        <div class="post-not-found">
+            <h1>Post Not Found</h1>
+            <p>The blog post you're looking for doesn't exist or has been removed.</p>
+            <a href="{{ url_for('blog_list') }}" class="btn btn-primary">Back to Blog</a>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}
+

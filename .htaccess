@@ -1,0 +1,22 @@
+# Flask application for cPanel
+RewriteEngine On
+RewriteBase /
+
+# Handle Flask application
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ /app.py/$1 [L]
+
+# Security headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# Prevent access to sensitive files
+<FilesMatch "^(\.htaccess|\.env|config\.py|app\.py|models\.py|requirements\.txt)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+

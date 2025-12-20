@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Cryptasium | Tech. Curiosity. Visualized.{% endblock %}</title>
+    <!-- Importing Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        /* --- RESET & VARIABLES --- */
+        :root {
+            --bg-body: #050505;
+            --bg-card: #0f0f0f;
+            --bg-card-hover: #141414;
+            --border: #262626;
+            --accent: #ff2222;
+            --accent-hover: #e61919;
+            --text-main: #ffffff;
+            --text-muted: #a3a3a3;
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            touch-action: none;
+            margin: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        html {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        a { text-decoration: none; color: inherit; transition: 0.3s; }
+        ul { list-style: none; }
+        button { border: none; background: none; cursor: pointer; font-family: inherit; }
+
+        /* --- UTILITY CLASSES --- */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: white;
+        }
+        .btn-primary:hover { background-color: var(--accent-hover); }
+
+        .btn-outline {
+            border: 1px solid #333;
+            color: white;
+        }
+        .btn-outline:hover { border-color: white; }
+
+        .tag {
+            display: inline-block;
+            padding: 6px 12px;
+            background: rgba(255, 87, 34, 0.1);
+            border: 1px solid rgba(255, 87, 34, 0.2);
+            color: var(--accent);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* --- SCROLL ANIMATIONS --- */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s var(--ease-out);
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* --- PRELOADER --- */
+        #preloader {
+            position: fixed;
+            inset: 0;
+            background: black;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease;
+        }
+        .loader-logo {
+            width: 80px;
+            height: 80px;
+            border: 4px solid white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.7; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.7; }
+        }
+
+        /* --- NAVBAR --- */
+        nav {
+            position: relative;
+            top: auto;
+            left: 0;
+            right: 0;
+            width: 100%;
+            height: 80px;
+            margin: 0;
+            background: rgba(5, 5, 5, 0.8);
+            backdrop-filter: blur(12px);
+            z-index: 9998;
+            border: none;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-radius: 0;
+            transform: none;
+            display: flex;
+            align-items: center;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                        margin 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                        border-radius 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                        background 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                        backdrop-filter 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                        border 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                        box-shadow 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                        transform 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                        left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        nav.scrolled {
+            width: calc(100% - 48px) !important;
+            max-width: 1400px !important;
+            margin-top: 12px !important;
+            margin-bottom: 0 !important;
+            border-radius: 20px !important;
+            background: rgba(10, 10, 10, 0.85) !important;
+            backdrop-filter: blur(20px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 
+                        0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+        }
+
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            border-radius: inherit;
+            overflow: hidden;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 20px;
+            letter-spacing: 1px;
+        }
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: white;
+            border-radius: 50%;
+            color: black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+        }
+        .nav-links a {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+        .nav-links a:hover { color: var(--text-main); }
+
+        /* --- HERO SECTION --- */
+        header {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding-top: 100px;
+            position: relative;
+            background: radial-gradient(circle at top, #1a1a1a 0%, #050505 50%);
+        }
+
+        h1 {
+            font-size: 84px;
+            line-height: 1.1;
+            font-weight: 700;
+            letter-spacing: -2px;
+            margin-bottom: 24px;
+            background: linear-gradient(180deg, #fff 0%, #888 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-desc {
+            font-size: 20px;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto 40px;
+            line-height: 1.6;
+        }
+
+        .hero-visual {
+            width: 100%;
+            max-width: 900px;
+            margin-bottom: 60px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 300px;
+        }
+
+        /* --- VIDEO PLACEHOLDER COMPONENT --- */
+        .video-placeholder {
+            width: 100%;
+            height: 100%;
+            background: #0f0f0f;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .video-placeholder::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,87,34,0.1), transparent);
+        }
+        .placeholder-icon {
+            font-size: 48px;
+            color: var(--border);
+            margin-bottom: 10px;
+            z-index: 2;
+        }
+        .placeholder-text {
+            color: #444;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            z-index: 2;
+        }
+
+        /* --- CONTENT GRID --- */
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 32px;
+        }
+
+        .content-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border);
+            padding: 32px;
+            border-radius: 16px;
+            transition: 0.3s;
+        }
+        .content-card:hover {
+            border-color: var(--accent);
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* --- FOOTER --- */
+        footer { border-top: 1px solid var(--border); padding-top: 80px; margin-top: 80px; }
+        .cta-box {
+            background: linear-gradient(to top, rgba(255,87,34,0.1), var(--bg-card));
+            border: 1px solid var(--border);
+            border-radius: 32px;
+            padding: 80px 20px;
+            text-align: center;
+            margin-bottom: 80px;
+        }
+        .footer-links {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 40px;
+            font-size: 14px;
+            margin-bottom: 60px;
+        }
+        .footer-col h4 { margin-bottom: 20px; color: white; }
+        .footer-col li { margin-bottom: 12px; color: var(--text-muted); cursor: pointer; }
+        .footer-col li:hover { color: white; }
+        .copyright {
+            border-top: 1px solid var(--border);
+            padding: 30px 0;
+            color: #666;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* --- TUBES CURSOR CANVAS --- */
+        #canvas {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            overflow: hidden;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        nav, header, section, footer {
+            position: relative;
+            z-index: 2;
+        }
+
+        #preloader {
+            z-index: 9999;
+        }
+
+        /* --- KEYPAD STYLES --- */
+        .keypad {
+            position: relative;
+            aspect-ratio: 400 / 310;
+            display: flex;
+            place-items: center;
+            width: clamp(280px, 35vw, 400px);
+            -webkit-tap-highlight-color: transparent;
+            transition-property: translate, transform;
+            transition-duration: 0.26s;
+            transition-timing-function: ease-out;
+            transform-style: preserve-3d;
+            opacity: 0;
+            margin: 40px auto 0;
+            animation: keypadFloat 4s ease-in-out infinite;
+        }
+
+        .keypad.visible {
+            opacity: 1;
+        }
+
+        @keyframes keypadFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .key {
+            transform-style: preserve-3d;
+            border: 0;
+            background: transparent;
+            padding: 0;
+            cursor: pointer;
+            outline: none;
+            position: relative;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .key::before {
+            content: '';
+            position: absolute;
+            inset: -8px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            pointer-events: none;
+            z-index: -1;
+            animation: keyPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes keyPulse {
+            0%, 100% { opacity: 0; transform: scale(0.95); }
+            50% { opacity: 0.4; transform: scale(1.05); }
+        }
+
+        .key:hover {
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        .key:hover::before {
+            opacity: 0.6;
+            animation-duration: 1.5s;
+        }
+
+        .key[data-pressed='true'] .key__content,
+        .key:active .key__content {
+            translate: 0 calc(var(--travel, 20) * 1%);
+        }
+
+        .key__content {
+            width: 100%;
+            display: inline-block;
+            height: 100%;
+            transition: translate 0.12s ease-out;
+            container-type: inline-size;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .key__content::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            animation: shimmer 4s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            50%, 100% { left: 100%; }
+        }
+
+        .key__text {
+            height: 46%;
+            width: 86%;
+            position: absolute;
+            font-size: 12cqi;
+            z-index: 21;
+            top: 5%;
+            left: 0;
+            mix-blend-mode: normal;
+            color: hsl(0 0% 94%);
+            translate: 8% 10%;
+            transform: rotateX(36deg) rotateY(45deg) rotateX(-90deg) rotate(0deg);
+            text-align: left;
+            padding: 1ch;
+            font-family: var(--font-sans);
+        }
+
+        .keypad__single {
+            position: absolute;
+            width: 40.5%;
+            left: 54%;
+            bottom: 36%;
+            height: 46%;
+            clip-path: polygon(0 0, 54% 0, 89% 24%, 100% 70%, 54% 100%, 46% 100%, 0 69%, 12% 23%, 47% 0%);
+            mask: url(https://assets.codepen.io/605876/keypad-single.png?format=auto&quality=86) 50% 50% / 100% 100%;
+        }
+
+        .keypad__single--left {
+            left: 29.3%;
+            bottom: 54.2%;
+        }
+
+        .keypad__single .key__text {
+            width: 52%;
+            height: 62%;
+            translate: 45% -16%;
+            font-size: 18cqi;
+        }
+
+        .key__mask {
+            width: 100%;
+            height: 100%;
+            display: inline-block;
+        }
+
+        .keypad__double {
+            position: absolute;
+            background: transparent;
+            width: 64%;
+            height: 65%;
+            left: 6%;
+            bottom: 17.85%;
+            clip-path: polygon(34% 0, 93% 44%, 101% 78%, 71% 100%, 66% 100%, 0 52%, 0 44%, 7% 17%, 30% 0);
+            mask: url(https://assets.codepen.io/605876/keypad-double.png?format=auto&quality=86) 50% 50% / 100% 100%;
+        }
+
+        .key img {
+            filter: hue-rotate(calc(var(--hue, 0) * 1deg)) saturate(var(--saturate, 1)) brightness(var(--brightness, 1));
+            top: 0;
+            opacity: 1;
+            width: 96%;
+            position: absolute;
+            left: 50%;
+            translate: -50% 1%;
+            transition: translate 0.12s ease-out, filter 0.3s ease;
+        }
+
+        .key:hover img {
+            filter: hue-rotate(calc(var(--hue, 0) * 1deg)) saturate(calc(var(--saturate, 1) * 1.2)) brightness(calc(var(--brightness, 1) * 1.15));
+        }
+
+        .keypad__double img {
+            width: 99%;
+        }
+
+        .keypad__base {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .keypad__base img {
+            width: 100%;
+            transition: translate 0.12s ease-out;
+        }
+
+        /* --- PAGINATION --- */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 60px;
+            padding: 40px 0;
+        }
+
+        .pagination a, .pagination span {
+            padding: 12px 20px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-muted);
+            transition: 0.3s;
+        }
+
+        .pagination a:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .pagination .current {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 768px) {
+            h1 { font-size: 48px; }
+            .content-grid, .footer-links {
+                grid-template-columns: 1fr;
+            }
+            .nav-links { display: none; }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- TUBES CURSOR CANVAS -->
+    <canvas id="canvas"></canvas>
+
+    <!-- PRELOADER -->
+    <div id="preloader">
+        <div class="loader-logo">C</div>
+    </div>
+
+    <!-- NAVBAR -->
+    <nav class="scrolled">
+        <div class="container">
+            <a href="{{ url_for('index') }}" class="logo" style="text-decoration: none; color: inherit;">
+                <div class="logo-icon">C</div>
+                CRYPTASIUM
+            </a>
+            <div class="nav-links">
+                <a href="{{ url_for('youtube_list') }}">YouTube</a>
+                <a href="{{ url_for('podcast_list') }}">Podcast</a>
+                <a href="{{ url_for('blog_list') }}">Blog</a>
+                <a href="{{ url_for('shorts_list') }}">Shorts</a>
+                <a href="{{ url_for('community_list') }}">Community</a>
+            </div>
+            <div style="display: flex; gap: 16px; align-items: center;">
+                <a href="{{ url_for('admin_login') }}" style="font-size: 14px; font-weight: 500;">Login</a>
+                <button class="btn btn-primary">Subscribe</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    {% block content %}{% endblock %}
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container">
+            <div class="cta-box reveal">
+                <h2 style="font-size: 48px; margin-bottom: 24px;">Have a topic suggestion?</h2>
+                <p style="color: var(--text-muted); margin-bottom: 32px;">We are driven by community curiosity. Tell us what complex system you want visualized next.</p>
+                <button class="btn" style="background: white; color: black; padding: 16px 32px;">Submit Idea</button>
+            </div>
+
+            <div class="footer-links">
+                <div class="footer-col">
+                    <h4>Channels</h4>
+                    <ul>
+                        <li>YouTube</li>
+                        <li>Spotify</li>
+                        <li>TikTok</li>
+                        <li>Instagram</li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>About</h4>
+                    <ul>
+                        <li>Mission</li>
+                        <li>The Team</li>
+                        <li>Media Kit</li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Community</h4>
+                    <ul>
+                        <li>Discord</li>
+                        <li>Reddit</li>
+                        <li>Patreon</li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Contact</h4>
+                    <ul>
+                        <li>hello@cryptasium.com</li>
+                        <li>Sponsorships</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="copyright">
+                <div>© 2025 Cryptasium Media. All rights reserved.</div>
+                <div style="display: flex; gap: 24px;">
+                    <span>Privacy Policy</span>
+                    <span>Terms of Service</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // 1. PRELOADER
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const preloader = document.getElementById('preloader');
+                preloader.style.opacity = '0';
+                setTimeout(() => {
+                    preloader.style.display = 'none';
+                }, 500);
+            }, 2000);
+        });
+
+        // 2. NAVBAR - Always floating and fixed
+        (function() {
+            const nav = document.querySelector('nav');
+            if (nav) {
+                nav.style.position = 'fixed';
+                nav.style.top = '0';
+                nav.style.left = '50%';
+                nav.style.transform = 'translateX(-50%)';
+                nav.style.zIndex = '9998';
+            }
+        })();
+
+        // 3. SCROLL ANIMATION (OBSERVER)
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: "0px 0px -50px 0px"
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        // Wait for DOM to be ready, then observe all reveal elements
+        function initRevealObserver() {
+            const reveals = document.querySelectorAll('.reveal');
+            reveals.forEach(el => {
+                // Check if element is already visible in viewport
+                const rect = el.getBoundingClientRect();
+                const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+                
+                if (isVisible) {
+                    // Make immediately visible if already in viewport
+                    el.classList.add('active');
+                } else {
+                    // Observe for scroll animation
+                    observer.observe(el);
+                }
+            });
+        }
+
+        // Initialize after DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initRevealObserver);
+        } else {
+            // DOM already loaded
+            setTimeout(initRevealObserver, 100);
+        }
+
+        // 4. KEYPAD INTERACTIVITY (if keypad exists)
+        const keypadConfig = {
+            one: {
+                travel: 26,
+                text: 'ok',
+                key: 'o',
+                hue: 90,
+                saturation: 1.7,
+                brightness: 1.2,
+                buttonElement: document.querySelector('#key-one'),
+            },
+            two: {
+                travel: 26,
+                text: 'go',
+                key: 'g',
+                hue: 0,
+                saturation: 0,
+                brightness: 1.4,
+                buttonElement: document.querySelector('#key-two'),
+            },
+            three: {
+                travel: 18,
+                text: 'create.',
+                key: 'Enter',
+                hue: 0,
+                saturation: 0,
+                brightness: 0.4,
+                buttonElement: document.querySelector('#key-three'),
+            },
+        };
+
+        const clickAudio = new Audio('https://cdn.freesound.org/previews/378/378085_6260145-lq.mp3');
+        clickAudio.muted = false;
+
+        const ids = ['one', 'two', 'three'];
+        ids.forEach(id => {
+            const config = keypadConfig[id];
+            if (config && config.buttonElement) {
+                config.buttonElement.style.setProperty('--travel', config.travel);
+                config.buttonElement.style.setProperty('--saturate', config.saturation);
+                config.buttonElement.style.setProperty('--hue', config.hue);
+                config.buttonElement.style.setProperty('--brightness', config.brightness);
+                
+                config.buttonElement.addEventListener('pointerdown', () => {
+                    if (!clickAudio.muted) {
+                        clickAudio.currentTime = 0;
+                        clickAudio.play().catch(() => {});
+                    }
+                });
+            }
+        });
+
+        window.addEventListener('keydown', (event) => {
+            ids.forEach(id => {
+                const config = keypadConfig[id];
+                if (config && config.buttonElement && event.key === config.key) {
+                    config.buttonElement.dataset.pressed = 'true';
+                    if (!clickAudio.muted) {
+                        clickAudio.currentTime = 0;
+                        clickAudio.play().catch(() => {});
+                    }
+                }
+            });
+        });
+
+        window.addEventListener('keyup', (event) => {
+            ids.forEach(id => {
+                const config = keypadConfig[id];
+                if (config && config.buttonElement && event.key === config.key) {
+                    config.buttonElement.dataset.pressed = 'false';
+                }
+            });
+        });
+
+        setTimeout(() => {
+            const keypad = document.querySelector('.keypad');
+            if (keypad) {
+                keypad.classList.add('visible');
+            }
+        }, 500);
+    </script>
+
+    <!-- TUBES CURSOR EFFECT -->
+    <script type="module">
+        import TubesCursor from "https://cdn.jsdelivr.net/npm/threejs-components@0.0.19/build/cursors/tubes1.min.js";
+
+        const canvas = document.getElementById('canvas');
+        if (canvas) {
+            const app = TubesCursor(canvas, {
+                tubes: {
+                    colors: ["#f967fb", "#53bc28", "#6958d5"],
+                    lights: {
+                        intensity: 200,
+                        colors: ["#83f36e", "#fe8a2e", "#ff008a", "#60aed5"]
+                    }
+                }
+            });
+
+            document.body.addEventListener('click', () => {
+                const colors = randomColors(3);
+                const lightsColors = randomColors(4);
+                app.tubes.setColors(colors);
+                app.tubes.setLightsColors(lightsColors);
+            });
+
+            function randomColors(count) {
+                return new Array(count)
+                    .fill(0)
+                    .map(() => "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0'));
+            }
+        }
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+

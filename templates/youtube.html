@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}YouTube | Cryptasium{% endblock %}
+
+{% block content %}
+<!-- HERO SECTION -->
+<header>
+    <div class="container">
+        <div class="reveal">
+            <div class="tag">● VIDEO ESSAYS</div>
+            <h1>Long-form deep dives<br>into technology.</h1>
+            <p class="hero-desc">Cinematic explorations of software engineering, AI breakthroughs, and complex systems. Each video is a visual journey through the ideas that shape our digital world.</p>
+            <div style="display: flex; gap: 16px; justify-content: center;">
+                <a href="#videos" class="btn btn-primary">Latest Episode</a>
+                <a href="{{ url_for('index') }}" class="btn btn-outline">Back to Home</a>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- LATEST VIDEOS -->
+<section id="videos" class="container" style="padding: 100px 24px;">
+    <div class="reveal">
+        <h2 style="font-size: 48px; text-align: center; margin-bottom: 60px;">Latest Episodes</h2>
+    </div>
+    <div class="content-grid">
+        {% if videos.items %}
+            {% for video in videos.items %}
+            <div class="content-card reveal">
+                {% if video.thumbnail_url %}
+                <div style="height: 200px; margin-bottom: 20px; background-image: url('{{ video.thumbnail_url }}'); background-size: cover; background-position: center; border-radius: 12px; position: relative;">
+                    <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3);">
+                        <i class="ph ph-play-circle" style="font-size: 48px; color: white;"></i>
+                    </div>
+                </div>
+                {% else %}
+                <div class="video-placeholder" style="height: 200px; margin-bottom: 20px;">
+                    <i class="ph ph-play-circle placeholder-icon"></i>
+                    <span class="placeholder-text">Episode</span>
+                </div>
+                {% endif %}
+                <h3 style="margin-bottom: 12px;">{{ video.title }}</h3>
+                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">{{ video.description[:150] if video.description else 'Watch the full episode...' }}...</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
+                    <span style="color: var(--text-muted); font-size: 12px; font-family: var(--font-mono);">{{ video.duration or '' }} • {{ video.created_at.strftime('%b %d') if video.created_at else '' }}</span>
+                    <span style="color: var(--text-muted); font-size: 12px;">{{ video.views }} views</span>
+                </div>
+                {% if video.video_id %}
+                <a href="https://www.youtube.com/watch?v={{ video.video_id }}" target="_blank" class="btn btn-primary" style="width: 100%; margin-top: 16px; text-align: center; display: block;">Watch on YouTube</a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="reveal" style="grid-column: 1 / -1; text-align: center; padding: 60px 0;">
+            <p style="color: var(--text-muted); font-size: 18px;">No videos yet. Check back soon!</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- PAGINATION -->
+    {% if videos.pages > 1 %}
+    <div class="pagination">
+        {% if videos.has_prev %}
+        <a href="{{ url_for('youtube_list', page=videos.prev_num) }}">Previous</a>
+        {% endif %}
+        
+        {% for page_num in videos.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if page_num %}
+                {% if page_num == videos.page %}
+                <span class="current">{{ page_num }}</span>
+                {% else %}
+                <a href="{{ url_for('youtube_list', page=page_num) }}">{{ page_num }}</a>
+                {% endif %}
+            {% else %}
+            <span>...</span>
+            {% endif %}
+        {% endfor %}
+        
+        {% if videos.has_next %}
+        <a href="{{ url_for('youtube_list', page=videos.next_num) }}">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
+

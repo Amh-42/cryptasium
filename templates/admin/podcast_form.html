@@ -1,0 +1,59 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{% if podcast %}Edit{% else %}New{% endif %} Podcast | Admin{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 120px 24px 100px; max-width: 900px;">
+    <div class="reveal">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 48px;">
+            <h1 style="font-size: 48px;">{% if podcast %}Edit{% else %}New{% endif %} Podcast Episode</h1>
+            <a href="{{ url_for('admin_podcast_list') }}" class="btn btn-outline">← Back</a>
+        </div>
+
+        <form method="POST" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px; padding: 48px;">
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Title *</label>
+                <input type="text" name="title" value="{{ podcast.title if podcast else '' }}" required style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Description</label>
+                <textarea name="description" rows="5" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">{{ podcast.description if podcast else '' }}</textarea>
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Episode Number</label>
+                <input type="number" name="episode_number" value="{{ podcast.episode_number if podcast else '' }}" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Audio URL</label>
+                <input type="url" name="audio_url" value="{{ podcast.audio_url if podcast else '' }}" placeholder="https://..." style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Thumbnail URL</label>
+                <input type="url" name="thumbnail_url" value="{{ podcast.thumbnail_url if podcast else '' }}" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Duration</label>
+                <input type="text" name="duration" value="{{ podcast.duration if podcast else '' }}" placeholder="e.g., 45:30" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
+            </div>
+
+            <div style="margin-bottom: 32px;">
+                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                    <input type="checkbox" name="published" {% if podcast and podcast.published %}checked{% endif %} style="width: 20px; height: 20px;">
+                    <span style="color: var(--text-muted); font-size: 14px;">Publish immediately</span>
+                </label>
+            </div>
+
+            <div style="display: flex; gap: 16px;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">{% if podcast %}Update{% else %}Create{% endif %} Episode</button>
+                <a href="{{ url_for('admin_podcast_list') }}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
