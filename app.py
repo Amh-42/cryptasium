@@ -160,6 +160,11 @@ def create_app(config_name=None):
     
     # ========== PUBLIC ROUTES ==========
     
+    @app.route('/offline')
+    def offline():
+        """Offline page for PWA"""
+        return render_template('offline.html')
+    
     @app.route('/')
     def index():
         """Homepage"""
@@ -828,5 +833,5 @@ def create_app(config_name=None):
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')
 

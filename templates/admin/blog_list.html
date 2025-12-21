@@ -15,15 +15,15 @@
             <i class="ph ph-plus"></i>
             New Post
         </a>
-    </div>
-</div>
+            </div>
+        </div>
 
 <div class="filament-table-container">
     <div class="table-header">
         <div class="table-search">
             <i class="ph ph-magnifying-glass"></i>
             <input type="text" id="searchInput" placeholder="Search posts..." onkeyup="filterTable()">
-        </div>
+                </div>
         <div class="table-filters">
             <button class="filter-btn active" data-filter="all" onclick="filterByStatus('all')">
                 <i class="ph ph-list"></i>
@@ -37,8 +37,8 @@
                 <i class="ph ph-circle"></i>
                 Draft
             </button>
-        </div>
-    </div>
+                    </div>
+                </div>
 
     <div class="table-wrapper">
         <table class="filament-table">
@@ -97,22 +97,22 @@
                                 <button type="submit" class="action-btn delete" title="Delete">
                                     <i class="ph ph-trash"></i>
                                 </button>
-                            </form>
-                        </div>
+                    </form>
+                </div>
                     </td>
                 </tr>
-                {% else %}
+            {% else %}
                 <tr>
                     <td colspan="6">
                         <div class="empty-state">
                             <i class="ph ph-article"></i>
                             <h3>No blog posts found</h3>
                             <p style="margin-bottom: 24px;">Get started by creating your first blog post.</p>
-                            <a href="{{ url_for('admin_blog_new') }}" class="btn btn-primary">Create First Post</a>
-                        </div>
+                <a href="{{ url_for('admin_blog_new') }}" class="btn btn-primary">Create First Post</a>
+            </div>
                     </td>
                 </tr>
-                {% endfor %}
+            {% endfor %}
             </tbody>
         </table>
     </div>

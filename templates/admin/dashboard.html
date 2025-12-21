@@ -266,7 +266,7 @@
         <div class="stat-actions">
             <a href="{{ url_for('admin_podcast_list') }}" class="btn btn-primary" style="width: 100%; font-size: 13px; padding: 8px;">Manage</a>
         </div>
-    </div>
+        </div>
 
     <div class="stat-card">
         <div class="stat-header">
@@ -280,7 +280,7 @@
         <div class="stat-actions">
             <a href="{{ url_for('admin_shorts_list') }}" class="btn btn-primary" style="width: 100%; font-size: 13px; padding: 8px;">Manage</a>
         </div>
-    </div>
+                </div>
 
     <div class="stat-card">
         <div class="stat-header">
@@ -294,8 +294,8 @@
         <div class="stat-actions">
             <a href="{{ url_for('admin_community_list') }}" class="btn btn-primary" style="width: 100%; font-size: 13px; padding: 8px;">Manage</a>
         </div>
-    </div>
-</div>
+            </div>
+            </div>
 
 <!-- YouTube Analytics Section -->
 <div class="youtube-analytics" style="margin-bottom: 40px;">
@@ -309,7 +309,7 @@
                 <div class="stat-title">Total Views</div>
                 <div class="stat-icon" style="background: rgba(255, 0, 0, 0.2);">
                     <i class="ph ph-eye"></i>
-                </div>
+            </div>
             </div>
             <div class="stat-value">{{ "{:,}".format(stats.total_views) }}</div>
             <div class="stat-label">
@@ -317,7 +317,7 @@
                 <span style="color: var(--accent);">{{ "{:,}".format(stats.total_shorts_views) }}</span> shorts
             </div>
         </div>
-        
+
         <div class="stat-card" style="background: linear-gradient(135deg, rgba(255, 0, 0, 0.1), transparent); border-color: rgba(255, 0, 0, 0.3);">
             <div class="stat-header">
                 <div class="stat-title">Avg. Views per Video</div>
@@ -329,8 +329,8 @@
             {% set avg_views = (stats.total_views // total_content) if total_content > 0 else 0 %}
             <div class="stat-value">{{ "{:,}".format(avg_views) }}</div>
             <div class="stat-label">Across {{ total_content }} videos & shorts</div>
+            </div>
         </div>
-    </div>
 </div>
 
 <div class="quick-actions">
