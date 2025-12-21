@@ -2,33 +2,43 @@
 
 {% block title %}{% if post %}Edit{% else %}New{% endif %} Community Post | Admin{% endblock %}
 
+{% block page_title %}{% if post %}Edit{% else %}New{% endif %} Community Post{% endblock %}
+
 {% block content %}
-<div class="container" style="padding: 120px 24px 100px; max-width: 900px;">
-    <div class="reveal">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 48px;">
-            <h1 style="font-size: 48px;">{% if post %}Edit{% else %}New{% endif %} Community Post</h1>
-            <a href="{{ url_for('admin_community_list') }}" class="btn btn-outline">← Back</a>
-        </div>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{% if post %}Edit{% else %}New{% endif %} Community Post</h1>
+        <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">{% if post %}Update your community post{% else %}Create a new community post{% endif %}</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('admin_community_list') }}" class="btn btn-outline">
+            <i class="ph ph-arrow-left"></i>
+            Back
+        </a>
+    </div>
+</div>
 
-        <form method="POST" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px; padding: 48px;">
-            <div style="margin-bottom: 24px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Title *</label>
-                <input type="text" name="title" value="{{ post.title if post else '' }}" required style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
+<div class="filament-table-container" style="padding: 32px;">
+    <form method="POST">
+        <div style="display: grid; gap: 24px; max-width: 600px;">
+            <div>
+                <label>Title *</label>
+                <input type="text" name="title" value="{{ post.title if post else '' }}" required placeholder="Enter post title">
             </div>
 
-            <div style="margin-bottom: 24px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Content *</label>
-                <textarea name="content" rows="10" required style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">{{ post.content if post else '' }}</textarea>
+            <div>
+                <label>Content *</label>
+                <textarea name="content" rows="8" required placeholder="Write your community post content...">{{ post.content if post else '' }}</textarea>
             </div>
 
-            <div style="margin-bottom: 24px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Author</label>
-                <input type="text" name="author" value="{{ post.author if post else 'Community Member' }}" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
+            <div>
+                <label>Author</label>
+                <input type="text" name="author" value="{{ post.author if post else 'Community Member' }}">
             </div>
 
-            <div style="margin-bottom: 24px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Category</label>
-                <select name="category" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
+            <div>
+                <label>Category</label>
+                <select name="category">
                     <option value="">Select category...</option>
                     <option value="Discussion" {% if post and post.category == 'Discussion' %}selected{% endif %}>Discussion</option>
                     <option value="Question" {% if post and post.category == 'Question' %}selected{% endif %}>Question</option>
@@ -37,19 +47,21 @@
                 </select>
             </div>
 
-            <div style="margin-bottom: 32px;">
-                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
-                    <input type="checkbox" name="published" {% if post and post.published %}checked{% endif %} style="width: 20px; height: 20px;">
-                    <span style="color: var(--text-muted); font-size: 14px;">Publish immediately</span>
+            <div>
+                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; margin-bottom: 0;">
+                    <input type="checkbox" name="published" {% if post and post.published %}checked{% endif %} style="width: 18px; height: 18px; accent-color: var(--accent);">
+                    <span>Publish immediately</span>
                 </label>
             </div>
 
-            <div style="display: flex; gap: 16px;">
-                <button type="submit" class="btn btn-primary" style="flex: 1;">{% if post %}Update{% else %}Create{% endif %} Post</button>
+            <div style="display: flex; gap: 12px; padding-top: 8px;">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ph ph-{% if post %}check{% else %}plus{% endif %}"></i>
+                    {% if post %}Update{% else %}Create{% endif %} Post
+                </button>
                 <a href="{{ url_for('admin_community_list') }}" class="btn btn-outline">Cancel</a>
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
 </div>
 {% endblock %}
-

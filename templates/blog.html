@@ -8,9 +8,9 @@
     <div class="container">
         <div class="reveal">
             <div class="tag">● TECHNICAL WRITING</div>
-            <h1>Code, concepts,<br>and deep dives.</h1>
-            <p class="hero-desc">Written companions to our videos with code snippets, technical references, and extended explorations of the ideas we visualize.</p>
-            <div style="display: flex; gap: 16px; justify-content: center;">
+            <h1 class="text-6xl md:text-7xl lg:text-8xl font-bold leading-tight mb-6">Code, concepts,<br>and deep dives.</h1>
+            <p class="hero-desc text-xl text-[var(--text-muted)] max-w-2xl mx-auto mb-10 leading-relaxed">Written companions to our videos with code snippets, technical references, and extended explorations of the ideas we visualize.</p>
+            <div class="flex flex-wrap gap-4 justify-center">
                 <a href="#articles" class="btn btn-primary">Latest Article</a>
                 <a href="{{ url_for('index') }}" class="btn btn-outline">Back to Home</a>
             </div>
@@ -19,75 +19,78 @@
 </header>
 
 <!-- LATEST ARTICLES -->
-<section id="articles" class="container" style="padding: 100px 24px;">
-    <div class="reveal">
-        <h2 style="font-size: 48px; text-align: center; margin-bottom: 60px;">Recent Articles</h2>
-    </div>
-    <div class="content-grid">
-        {% if posts.items %}
-            {% for post in posts.items %}
-            <div class="content-card reveal">
-                {% if post.featured_image %}
-                <div class="video-placeholder" style="height: 200px; margin-bottom: 20px; background-image: url('{{ post.featured_image }}'); background-size: cover; background-position: center;">
+<section id="articles" class="container relative py-24 px-6">
+    <!-- Semi-transparent glassmorphism container -->
+    <div class="glass-container reveal">
+        <div class="reveal">
+            <h2 class="text-5xl font-bold text-center mb-16 text-white">Recent Articles</h2>
+        </div>
+        <div class="content-grid">
+            {% if posts.items %}
+                {% for post in posts.items %}
+                <div class="content-card reveal">
+                    {% if post.featured_image %}
+                    <div class="video-placeholder" style="height: 200px; margin-bottom: 20px; background-image: url('{{ post.featured_image }}'); background-size: cover; background-position: center;">
+                    </div>
+                    {% else %}
+                    <div class="video-placeholder" style="height: 200px; margin-bottom: 20px;">
+                        <i class="ph ph-article placeholder-icon"></i>
+                        <span class="placeholder-text">Article</span>
+                    </div>
+                    {% endif %}
+                    <h3 class="mb-3 text-xl font-semibold"><a href="{{ url_for('blog_detail', slug=post.slug) }}" class="hover:text-[var(--accent)] transition-colors">{{ post.title }}</a></h3>
+                    <p class="text-[var(--text-muted)] text-sm mb-4 leading-relaxed">{{ post.excerpt or post.content[:150] + '...' if post.content else 'Read more...' }}</p>
+                    <div class="flex justify-between items-center mt-4">
+                        <span class="text-[var(--text-muted)] text-xs font-mono">{{ post.author }} • {{ post.created_at.strftime('%b %d, %Y') if post.created_at else '' }}</span>
+                        <span class="text-[var(--text-muted)] text-xs">{{ post.views or 0 }} views</span>
+                    </div>
                 </div>
-                {% else %}
-                <div class="video-placeholder" style="height: 200px; margin-bottom: 20px;">
-                    <i class="ph ph-article placeholder-icon"></i>
-                    <span class="placeholder-text">Article</span>
-                </div>
-                {% endif %}
-                <h3 style="margin-bottom: 12px;"><a href="{{ url_for('blog_detail', slug=post.slug) }}">{{ post.title }}</a></h3>
-                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">{{ post.excerpt or post.content[:150] + '...' if post.content else 'Read more...' }}</p>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
-                    <span style="color: var(--text-muted); font-size: 12px; font-family: var(--font-mono);">{{ post.author }} • {{ post.created_at.strftime('%b %d, %Y') if post.created_at else '' }}</span>
-                    <span style="color: var(--text-muted); font-size: 12px;">{{ post.views or 0 }} views</span>
-                </div>
+                {% endfor %}
+            {% else %}
+            <div class="reveal col-span-full text-center py-16">
+                <p class="text-[var(--text-muted)] text-lg">No blog posts yet. Check back soon!</p>
             </div>
+            {% endif %}
+        </div>
+
+        <!-- PAGINATION -->
+        {% if posts.pages > 1 %}
+        <div class="pagination">
+            {% if posts.has_prev %}
+            <a href="{{ url_for('blog_list', page=posts.prev_num) }}" class="hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors">Previous</a>
+            {% endif %}
+            
+            {% for page_num in posts.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                {% if page_num %}
+                    {% if page_num == posts.page %}
+                    <span class="current">{{ page_num }}</span>
+                    {% else %}
+                    <a href="{{ url_for('blog_list', page=page_num) }}" class="hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors">{{ page_num }}</a>
+                    {% endif %}
+                {% else %}
+                <span>...</span>
+                {% endif %}
             {% endfor %}
-        {% else %}
-        <div class="reveal" style="grid-column: 1 / -1; text-align: center; padding: 60px 0;">
-            <p style="color: var(--text-muted); font-size: 18px;">No blog posts yet. Check back soon!</p>
+            
+            {% if posts.has_next %}
+            <a href="{{ url_for('blog_list', page=posts.next_num) }}" class="hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors">Next</a>
+            {% endif %}
         </div>
         {% endif %}
     </div>
-
-    <!-- PAGINATION -->
-    {% if posts.pages > 1 %}
-    <div class="pagination">
-        {% if posts.has_prev %}
-        <a href="{{ url_for('blog_list', page=posts.prev_num) }}">Previous</a>
-        {% endif %}
-        
-        {% for page_num in posts.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
-            {% if page_num %}
-                {% if page_num == posts.page %}
-                <span class="current">{{ page_num }}</span>
-                {% else %}
-                <a href="{{ url_for('blog_list', page=page_num) }}">{{ page_num }}</a>
-                {% endif %}
-            {% else %}
-            <span>...</span>
-            {% endif %}
-        {% endfor %}
-        
-        {% if posts.has_next %}
-        <a href="{{ url_for('blog_list', page=posts.next_num) }}">Next</a>
-        {% endif %}
-    </div>
-    {% endif %}
 </section>
 
 <!-- INTERACTIVE DEMO: SYSTEM COMPLEXITY -->
-<section class="container" style="padding: 120px 24px; position: relative;">
-    <div class="reveal" style="text-align: center; margin-bottom: 80px;">
-        <div class="tag" style="margin-bottom: 24px;">● INTERACTIVE DEMO</div>
-        <h2 style="font-size: 56px; font-weight: 700; line-height: 1.1; margin-bottom: 24px;">Visualizing System Complexity</h2>
-        <p style="color: var(--text-muted); font-size: 20px; max-width: 700px; margin: 0 auto; line-height: 1.6;">
+<section class="container relative py-32 px-6">
+    <div class="reveal text-center mb-20">
+        <div class="tag mb-6">● INTERACTIVE DEMO</div>
+        <h2 class="text-5xl md:text-6xl font-bold leading-tight mb-6">Visualizing System Complexity</h2>
+        <p class="text-[var(--text-muted)] text-xl max-w-3xl mx-auto leading-relaxed mb-4">
             Explore how computational systems scale from simple algorithms to complex neural networks. 
             This interactive visualization demonstrates the relationship between system complexity, 
             processing intensity, and emergent behaviors—core concepts in understanding modern technology.
         </p>
-        <p style="color: var(--text-muted); font-size: 14px; margin-top: 16px; font-family: var(--font-mono); opacity: 0.7;">
+        <p class="text-[var(--text-muted)] text-sm mt-4 font-mono opacity-70">
             Adjust the complexity level. Neural signals appear when complexity exceeds threshold.
         </p>
     </div>
@@ -148,7 +151,75 @@
 {% endblock %}
 
 {% block extra_css %}
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    'bg-body': '#050505',
+                    'bg-card': '#0f0f0f',
+                    'border': '#262626',
+                    'accent': '#ff2222',
+                }
+            }
+        }
+    }
+</script>
 <style>
+    /* --- GLASSMORPHISM CONTAINER --- */
+    .glass-container {
+        background: rgba(15, 15, 15, 0.6);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 24px;
+        padding: 64px 48px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .glass-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, 
+            transparent, 
+            rgba(255, 255, 255, 0.1) 50%, 
+            transparent
+        );
+    }
+
+    @media (max-width: 768px) {
+        .glass-container {
+            padding: 48px 24px;
+            border-radius: 16px;
+        }
+    }
+
+    /* --- ENHANCED CONTENT CARDS --- */
+    .content-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+
+    .content-card:hover {
+        border-color: rgba(255, 34, 34, 0.5);
+        background: rgba(255, 255, 255, 0.06);
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3),
+                    0 0 0 1px rgba(255, 34, 34, 0.2);
+    }
+
     /* --- THERMOSTAT DEMO STYLES --- */
     .thermostat-demo-container {
         position: relative;

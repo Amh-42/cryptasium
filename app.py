@@ -8,7 +8,8 @@ import os
 import markdown
 
 from config import config
-from models import db, BlogPost, YouTubeVideo, Podcast, Short, CommunityPost
+from models import db, BlogPost, YouTubeVideo, Podcast, Short, CommunityPost, TopicIdea
+import youtube_service
 
 def create_app(config_name=None):
     """Application factory pattern"""
@@ -61,6 +62,92 @@ def create_app(config_name=None):
     
     # ========== HELPER FUNCTIONS ==========
     
+    # Track last sync time to avoid excessive API calls
+    app.config['_last_sync_time'] = None
+    app.config['_sync_interval_hours'] = 1  # Sync at most once per hour
+    
+    def auto_sync_youtube():
+        """
+        Auto-sync YouTube videos and shorts.
+        Only syncs if more than _sync_interval_hours have passed since last sync.
+        Returns a message if new content was added, None otherwise.
+        """
+        # Check if we should sync
+        now = datetime.utcnow()
+        last_sync = app.config.get('_last_sync_time')
+        interval = app.config.get('_sync_interval_hours', 1)
+        
+        if last_sync:
+            hours_since_sync = (now - last_sync).total_seconds() / 3600
+            if hours_since_sync < interval:
+                return None  # Too soon to sync again
+        
+        try:
+            videos, shorts, error = youtube_service.fetch_channel_videos(50)
+            
+            if error:
+                return None  # Don't report errors during auto-sync
+            
+            videos_added = 0
+            shorts_added = 0
+            
+            # Add new videos and update existing ones with latest stats
+            for v in videos:
+                existing = YouTubeVideo.query.filter_by(video_id=v['video_id']).first()
+                if existing:
+                    # Update existing video stats
+                    existing.views = v.get('view_count', 0)
+                    existing.title = v['title']
+                    existing.thumbnail_url = v['thumbnail_url']
+                    existing.duration = v['duration']
+                else:
+                    video = YouTubeVideo(
+                        title=v['title'],
+                        description=v['description'][:500] if v['description'] else '',
+                        video_id=v['video_id'],
+                        thumbnail_url=v['thumbnail_url'],
+                        duration=v['duration'],
+                        views=v.get('view_count', 0),
+                        published=True,
+                        created_at=v['published_at']
+                    )
+                    db.session.add(video)
+                    videos_added += 1
+            
+            # Add new shorts and update existing ones
+            for s in shorts:
+                existing = Short.query.filter_by(video_id=s['video_id']).first()
+                if existing:
+                    # Update existing short stats
+                    existing.views = s.get('view_count', 0)
+                    existing.title = s['title']
+                    existing.thumbnail_url = s['thumbnail_url']
+                    existing.duration = s['duration']
+                else:
+                    short = Short(
+                        title=s['title'],
+                        description=s['description'][:500] if s['description'] else '',
+                        video_id=s['video_id'],
+                        thumbnail_url=s['thumbnail_url'],
+                        duration=s['duration'],
+                        views=s.get('view_count', 0),
+                        published=True,
+                        created_at=s['published_at']
+                    )
+                    db.session.add(short)
+                    shorts_added += 1
+            
+            if videos_added or shorts_added:
+                db.session.commit()
+                app.config['_last_sync_time'] = now
+                return f"Auto-synced: +{videos_added} videos, +{shorts_added} shorts"
+            
+            app.config['_last_sync_time'] = now
+            return None
+            
+        except Exception:
+            return None  # Silently fail during auto-sync
+    
     def admin_required(f):
         """Decorator to require admin authentication"""
         @wraps(f)
@@ -85,6 +172,37 @@ def create_app(config_name=None):
                              latest_blog=latest_blog,
                              latest_videos=latest_videos,
                              latest_shorts=latest_shorts)
+    
+    @app.route('/submit-idea', methods=['GET', 'POST'])
+    def submit_idea():
+        """Submit topic idea page"""
+        if request.method == 'POST':
+            topic = request.form.get('topic', '').strip()
+            description = request.form.get('description', '').strip()
+            email = request.form.get('email', '').strip()
+            name = request.form.get('name', '').strip()
+            
+            if not topic or not description:
+                flash('Please fill in both topic and description fields.', 'error')
+                return render_template('submit_idea.html')
+            
+            try:
+                idea = TopicIdea(
+                    topic=topic,
+                    description=description,
+                    email=email if email else None,
+                    name=name if name else None
+                )
+                db.session.add(idea)
+                db.session.commit()
+                flash('Thank you! Your idea has been submitted successfully. We\'ll review it soon.', 'success')
+                return redirect(url_for('submit_idea'))
+            except Exception as e:
+                db.session.rollback()
+                flash('An error occurred. Please try again.', 'error')
+                return render_template('submit_idea.html')
+        
+        return render_template('submit_idea.html')
     
     @app.route('/blog')
     def blog_list():
@@ -164,6 +282,10 @@ def create_app(config_name=None):
     @app.route('/admin/login', methods=['GET', 'POST'])
     def admin_login():
         """Admin login page"""
+        # Redirect to dashboard if already logged in
+        if session.get('admin_logged_in'):
+            return redirect(url_for('admin_dashboard'))
+        
         if request.method == 'POST':
             username = request.form.get('username')
             password = request.form.get('password')
@@ -189,6 +311,21 @@ def create_app(config_name=None):
     @admin_required
     def admin_dashboard():
         """Admin dashboard"""
+        # Auto-sync YouTube content (checks for new videos)
+        sync_message = None
+        try:
+            sync_result = auto_sync_youtube()
+            if sync_result:
+                sync_message = sync_result
+        except Exception as e:
+            sync_message = f"Auto-sync error: {str(e)}"
+        
+        # Calculate total views for YouTube content
+        total_video_views = db.session.query(db.func.sum(YouTubeVideo.views)).scalar() or 0
+        total_shorts_views = db.session.query(db.func.sum(Short.views)).scalar() or 0
+        total_video_likes = db.session.query(db.func.sum(YouTubeVideo.likes)).scalar() or 0
+        total_shorts_likes = db.session.query(db.func.sum(Short.likes)).scalar() or 0
+        
         stats = {
             'blog_posts': BlogPost.query.count(),
             'published_blog': BlogPost.query.filter_by(published=True).count(),
@@ -200,9 +337,15 @@ def create_app(config_name=None):
             'published_shorts': Short.query.filter_by(published=True).count(),
             'community_posts': CommunityPost.query.count(),
             'published_community': CommunityPost.query.filter_by(published=True).count(),
+            'total_video_views': total_video_views,
+            'total_shorts_views': total_shorts_views,
+            'total_video_likes': total_video_likes,
+            'total_shorts_likes': total_shorts_likes,
+            'total_views': total_video_views + total_shorts_views,
+            'total_likes': total_video_likes + total_shorts_likes,
         }
         
-        return render_template('admin/dashboard.html', stats=stats)
+        return render_template('admin/dashboard.html', stats=stats, sync_message=sync_message)
     
     # Blog management
     @app.route('/admin/blog')
@@ -210,7 +353,8 @@ def create_app(config_name=None):
     def admin_blog_list():
         """Admin blog posts list"""
         posts = BlogPost.query.order_by(BlogPost.created_at.desc()).all()
-        return render_template('admin/blog_list.html', posts=posts)
+        ideas_count = TopicIdea.query.filter_by(reviewed=False).count()
+        return render_template('admin/blog_list.html', posts=posts, ideas_count=ideas_count)
     
     @app.route('/admin/blog/new', methods=['GET', 'POST'])
     @admin_required
@@ -263,6 +407,16 @@ def create_app(config_name=None):
             return redirect(url_for('admin_blog_list'))
         
         return render_template('admin/blog_form.html', post=post)
+    
+    @app.route('/admin/blog/<int:id>/toggle', methods=['POST'])
+    @admin_required
+    def admin_blog_toggle(id):
+        """Toggle blog post published status"""
+        post = BlogPost.query.get_or_404(id)
+        post.published = not post.published
+        db.session.commit()
+        flash(f'Post {"published" if post.published else "unpublished"} successfully!', 'success')
+        return redirect(url_for('admin_blog_list'))
     
     @app.route('/admin/blog/<int:id>/delete', methods=['POST'])
     @admin_required
@@ -318,6 +472,17 @@ def create_app(config_name=None):
             return redirect(url_for('admin_youtube_list'))
         return render_template('admin/youtube_form.html', video=video)
     
+    @app.route('/admin/youtube/<int:id>/toggle', methods=['POST'])
+    @admin_required
+    def admin_youtube_toggle(id):
+        """Toggle YouTube video publish status"""
+        video = YouTubeVideo.query.get_or_404(id)
+        video.published = not video.published
+        db.session.commit()
+        status = 'published' if video.published else 'unpublished'
+        flash(f'Video {status} successfully!', 'success')
+        return redirect(url_for('admin_youtube_list'))
+    
     @app.route('/admin/youtube/<int:id>/delete', methods=['POST'])
     @admin_required
     def admin_youtube_delete(id):
@@ -327,6 +492,97 @@ def create_app(config_name=None):
         db.session.commit()
         flash('YouTube video deleted successfully!', 'success')
         return redirect(url_for('admin_youtube_list'))
+    
+    @app.route('/admin/youtube/sync', methods=['POST'])
+    @admin_required
+    def admin_youtube_sync():
+        """Sync videos from YouTube channel"""
+        videos, shorts, error = youtube_service.fetch_channel_videos(max_results=50)
+        
+        if error:
+            flash(f'Sync failed: {error}', 'error')
+            return redirect(url_for('admin_youtube_list'))
+        
+        videos_added = 0
+        shorts_added = 0
+        
+        # Add new videos
+        for video_data in videos:
+            existing = YouTubeVideo.query.filter_by(video_id=video_data['video_id']).first()
+            if not existing:
+                video = YouTubeVideo(
+                    title=video_data['title'],
+                    description=video_data['description'][:500] if video_data['description'] else '',
+                    video_id=video_data['video_id'],
+                    thumbnail_url=video_data['thumbnail_url'],
+                    duration=video_data['duration'],
+                    published=True,
+                    created_at=video_data['published_at']
+                )
+                db.session.add(video)
+                videos_added += 1
+        
+        # Add new shorts
+        for short_data in shorts:
+            existing = Short.query.filter_by(video_id=short_data['video_id']).first()
+            if not existing:
+                short = Short(
+                    title=short_data['title'],
+                    description=short_data['description'][:500] if short_data['description'] else '',
+                    video_id=short_data['video_id'],
+                    thumbnail_url=short_data['thumbnail_url'],
+                    duration=short_data['duration'],
+                    published=True,
+                    created_at=short_data['published_at']
+                )
+                db.session.add(short)
+                shorts_added += 1
+        
+        db.session.commit()
+        
+        if videos_added or shorts_added:
+            flash(f'Synced successfully! Added {videos_added} videos and {shorts_added} shorts.', 'success')
+        else:
+            flash('No new videos to sync. All videos are already imported.', 'success')
+        
+        return redirect(url_for('admin_youtube_list'))
+    
+    @app.route('/admin/shorts/sync', methods=['POST'])
+    @admin_required
+    def admin_shorts_sync():
+        """Sync shorts from YouTube channel (redirects to main sync)"""
+        videos, shorts, error = youtube_service.fetch_channel_videos(max_results=50)
+        
+        if error:
+            flash(f'Sync failed: {error}', 'error')
+            return redirect(url_for('admin_shorts_list'))
+        
+        shorts_added = 0
+        
+        # Add new shorts
+        for short_data in shorts:
+            existing = Short.query.filter_by(video_id=short_data['video_id']).first()
+            if not existing:
+                short = Short(
+                    title=short_data['title'],
+                    description=short_data['description'][:500] if short_data['description'] else '',
+                    video_id=short_data['video_id'],
+                    thumbnail_url=short_data['thumbnail_url'],
+                    duration=short_data['duration'],
+                    published=True,
+                    created_at=short_data['published_at']
+                )
+                db.session.add(short)
+                shorts_added += 1
+        
+        db.session.commit()
+        
+        if shorts_added:
+            flash(f'Synced successfully! Added {shorts_added} shorts.', 'success')
+        else:
+            flash('No new shorts to sync. All shorts are already imported.', 'success')
+        
+        return redirect(url_for('admin_shorts_list'))
     
     # Podcast management
     @app.route('/admin/podcast')
@@ -428,6 +684,17 @@ def create_app(config_name=None):
             return redirect(url_for('admin_shorts_list'))
         return render_template('admin/shorts_form.html', short=short)
     
+    @app.route('/admin/shorts/<int:id>/toggle', methods=['POST'])
+    @admin_required
+    def admin_shorts_toggle(id):
+        """Toggle short publish status"""
+        short = Short.query.get_or_404(id)
+        short.published = not short.published
+        db.session.commit()
+        status = 'published' if short.published else 'unpublished'
+        flash(f'Short {status} successfully!', 'success')
+        return redirect(url_for('admin_shorts_list'))
+    
     @app.route('/admin/shorts/<int:id>/delete', methods=['POST'])
     @admin_required
     def admin_shorts_delete(id):
@@ -445,6 +712,60 @@ def create_app(config_name=None):
         """Admin community posts list"""
         posts = CommunityPost.query.order_by(CommunityPost.created_at.desc()).all()
         return render_template('admin/community_list.html', posts=posts)
+    
+    @app.route('/admin/ideas')
+    @admin_required
+    def admin_ideas_list():
+        """Admin topic ideas list"""
+        ideas = TopicIdea.query.order_by(TopicIdea.created_at.desc()).all()
+        return render_template('admin/ideas_list.html', ideas=ideas)
+    
+    @app.route('/admin/ideas/<int:id>/approve', methods=['POST'])
+    @admin_required
+    def admin_ideas_approve(id):
+        """Approve a topic idea"""
+        idea = TopicIdea.query.get_or_404(id)
+        idea.status = 'approved'
+        idea.reviewed = True
+        idea.reviewed_at = datetime.utcnow()
+        db.session.commit()
+        flash(f'Topic idea "{idea.topic}" approved!', 'success')
+        return redirect(url_for('admin_ideas_list'))
+    
+    @app.route('/admin/ideas/<int:id>/reject', methods=['POST'])
+    @admin_required
+    def admin_ideas_reject(id):
+        """Reject a topic idea"""
+        idea = TopicIdea.query.get_or_404(id)
+        idea.status = 'rejected'
+        idea.reviewed = True
+        idea.reviewed_at = datetime.utcnow()
+        db.session.commit()
+        flash(f'Topic idea "{idea.topic}" rejected.', 'success')
+        return redirect(url_for('admin_ideas_list'))
+    
+    @app.route('/admin/ideas/<int:id>/pending', methods=['POST'])
+    @admin_required
+    def admin_ideas_pending(id):
+        """Set idea back to pending"""
+        idea = TopicIdea.query.get_or_404(id)
+        idea.status = 'pending'
+        idea.reviewed = False
+        idea.reviewed_at = None
+        db.session.commit()
+        flash(f'Topic idea "{idea.topic}" set back to pending.', 'success')
+        return redirect(url_for('admin_ideas_list'))
+    
+    @app.route('/admin/ideas/<int:id>/delete', methods=['POST'])
+    @admin_required
+    def admin_ideas_delete(id):
+        """Delete a topic idea"""
+        idea = TopicIdea.query.get_or_404(id)
+        topic = idea.topic
+        db.session.delete(idea)
+        db.session.commit()
+        flash(f'Topic idea "{topic}" deleted.', 'success')
+        return redirect(url_for('admin_ideas_list'))
     
     @app.route('/admin/community/new', methods=['GET', 'POST'])
     @admin_required

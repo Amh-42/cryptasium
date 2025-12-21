@@ -169,3 +169,33 @@ class CommunityPost(db.Model):
             'likes': self.likes
         }
 
+
+class TopicIdea(db.Model):
+    """Topic idea submission model"""
+    __tablename__ = 'topic_ideas'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    topic = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    email = db.Column(db.String(200))
+    name = db.Column(db.String(100))
+    status = db.Column(db.String(20), default='pending')  # pending, reviewed, approved, rejected
+    reviewed = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    reviewed_at = db.Column(db.DateTime)
+    
+    def __repr__(self):
+        return f'<TopicIdea {self.topic}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'topic': self.topic,
+            'description': self.description,
+            'email': self.email,
+            'name': self.name,
+            'status': self.status,
+            'reviewed': self.reviewed,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'reviewed_at': self.reviewed_at.isoformat() if self.reviewed_at else None
+        }

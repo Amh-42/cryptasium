@@ -9,13 +9,30 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Base directory
-BASE_DIR = Path(__file__).parent
+BASE_DIR = Path(__file__).parent.resolve()
+
+# Ensure instance directory exists
+INSTANCE_DIR = BASE_DIR / 'instance'
+INSTANCE_DIR.mkdir(exist_ok=True)
+
+# Database path (absolute)
+DB_PATH = INSTANCE_DIR / 'cryptasium.db'
 
 class Config:
     """Base configuration"""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        f'sqlite:///{BASE_DIR}/instance/cryptasium.db'
+    
+    # Use environment variable if set, otherwise use absolute path
+    # Note: For SQLite, use sqlite:/// followed by absolute path
+    _db_url = os.environ.get('DATABASE_URL')
+    if _db_url and _db_url.startswith('sqlite:///instance/'):
+        # Convert relative path to absolute
+        SQLALCHEMY_DATABASE_URI = f'sqlite:///{DB_PATH}'
+    elif _db_url:
+        SQLALCHEMY_DATABASE_URI = _db_url
+    else:
+        SQLALCHEMY_DATABASE_URI = f'sqlite:///{DB_PATH}'
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Admin credentials (change in production)

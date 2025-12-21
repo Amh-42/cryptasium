@@ -2,70 +2,423 @@
 
 {% block title %}Admin Dashboard | Cryptasium{% endblock %}
 
+{% block page_title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 24px;
+        margin-bottom: 40px;
+    }
+
+    .stat-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px;
+        transition: all 0.3s;
+    }
+
+    .stat-card:hover {
+        border-color: var(--accent);
+        background: rgba(255,255,255,0.04);
+        transform: translateY(-2px);
+    }
+
+    .stat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .stat-title {
+        font-size: 14px;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: rgba(255, 34, 34, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--accent);
+        font-size: 20px;
+    }
+
+    .stat-value {
+        font-size: 36px;
+        font-weight: 700;
+        color: var(--text-main);
+        margin-bottom: 8px;
+    }
+
+    .stat-label {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    .stat-actions {
+        margin-top: 16px;
+    }
+
+    .quick-actions {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 32px;
+        margin-bottom: 32px;
+    }
+
+    .quick-actions h2 {
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 12px;
+    }
+
+    .action-btn {
+        padding: 16px 24px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        color: var(--text-main);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        transition: all 0.2s;
+        font-size: 14px;
+        font-weight: 500;
+        min-height: 56px;
+    }
+
+    .action-btn:hover {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .action-btn i {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .action-btn span {
+        white-space: nowrap;
+    }
+
+    .settings-panel {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 32px;
+    }
+
+    .settings-panel h2 {
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .setting-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .setting-item:last-child {
+        border-bottom: none;
+    }
+
+    .setting-info {
+        flex: 1;
+    }
+
+    .setting-title {
+        font-size: 15px;
+        font-weight: 500;
+        margin-bottom: 4px;
+        color: var(--text-main);
+    }
+
+    .setting-desc {
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    .toggle-switch {
+        position: relative;
+        width: 52px;
+        height: 28px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 14px;
+        cursor: pointer;
+        transition: background 0.3s;
+        border: 1px solid var(--border);
+    }
+
+    .toggle-switch.active {
+        background: var(--accent);
+        border-color: var(--accent);
+    }
+
+    .toggle-switch::after {
+        content: '';
+        position: absolute;
+        width: 22px;
+        height: 22px;
+        background: white;
+        border-radius: 50%;
+        top: 2px;
+        left: 2px;
+        transition: transform 0.3s;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .toggle-switch.active::after {
+        transform: translateX(24px);
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .actions-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container" style="padding: 100px 24px;">
-    <div class="reveal">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 48px;">
-            <h1 style="font-size: 48px;">Admin Dashboard</h1>
-            <a href="{{ url_for('admin_logout') }}" class="btn btn-outline">Logout</a>
-        </div>
+{% if sync_message %}
+<div class="alert-message success" style="margin-bottom: 24px;">
+    <i class="ph ph-arrows-clockwise"></i>
+    {{ sync_message }}
+</div>
+{% endif %}
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                <div style="padding: 12px; background: {% if category == 'error' %}rgba(255, 34, 34, 0.1){% else %}rgba(34, 255, 34, 0.1){% endif %}; border: 1px solid {% if category == 'error' %}rgba(255, 34, 34, 0.3){% else %}rgba(34, 255, 34, 0.3){% endif %}; border-radius: 8px; margin-bottom: 24px; color: {% if category == 'error' %}var(--accent){% else %}var(--text-main){% endif %};">
-                    {{ message }}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-title">Blog Posts</div>
+            <div class="stat-icon">
+                <i class="ph ph-article"></i>
+            </div>
+        </div>
+        <div class="stat-value">{{ stats.published_blog }}</div>
+        <div class="stat-label">Published / {{ stats.blog_posts }} Total</div>
+        <div class="stat-actions">
+            <a href="{{ url_for('admin_blog_list') }}" class="btn btn-primary" style="width: 100%; font-size: 13px; padding: 8px;">Manage</a>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-title">YouTube Videos</div>
+            <div class="stat-icon">
+                <i class="ph ph-youtube-logo"></i>
+            </div>
+        </div>
+        <div class="stat-value">{{ stats.published_videos }}</div>
+        <div class="stat-label">Published / {{ stats.youtube_videos }} Total</div>
+        <div class="stat-actions">
+            <a href="{{ url_for('admin_youtube_list') }}" class="btn btn-primary" style="width: 100%; font-size: 13px; padding: 8px;">Manage</a>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-title">Podcasts</div>
+            <div class="stat-icon">
+                <i class="ph ph-microphone"></i>
+            </div>
+        </div>
+        <div class="stat-value">{{ stats.published_podcasts }}</div>
+        <div class="stat-label">Published / {{ stats.podcasts }} Total</div>
+        <div class="stat-actions">
+            <a href="{{ url_for('admin_podcast_list') }}" class="btn btn-primary" style="width: 100%; font-size: 13px; padding: 8px;">Manage</a>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-title">Shorts</div>
+            <div class="stat-icon">
+                <i class="ph ph-video"></i>
+            </div>
+        </div>
+        <div class="stat-value">{{ stats.published_shorts }}</div>
+        <div class="stat-label">Published / {{ stats.shorts }} Total</div>
+        <div class="stat-actions">
+            <a href="{{ url_for('admin_shorts_list') }}" class="btn btn-primary" style="width: 100%; font-size: 13px; padding: 8px;">Manage</a>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-title">Community</div>
+            <div class="stat-icon">
+                <i class="ph ph-users"></i>
+            </div>
+        </div>
+        <div class="stat-value">{{ stats.published_community }}</div>
+        <div class="stat-label">Published / {{ stats.community_posts }} Total</div>
+        <div class="stat-actions">
+            <a href="{{ url_for('admin_community_list') }}" class="btn btn-primary" style="width: 100%; font-size: 13px; padding: 8px;">Manage</a>
+        </div>
+    </div>
+</div>
+
+<!-- YouTube Analytics Section -->
+<div class="youtube-analytics" style="margin-bottom: 40px;">
+    <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+        <i class="ph ph-chart-line-up" style="color: var(--accent);"></i>
+        YouTube Analytics
+    </h2>
+    <div class="stats-grid" style="margin-bottom: 0;">
+        <div class="stat-card" style="background: linear-gradient(135deg, rgba(255, 0, 0, 0.1), transparent); border-color: rgba(255, 0, 0, 0.3);">
+            <div class="stat-header">
+                <div class="stat-title">Total Views</div>
+                <div class="stat-icon" style="background: rgba(255, 0, 0, 0.2);">
+                    <i class="ph ph-eye"></i>
                 </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        <!-- STATS GRID -->
-        <div class="content-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); margin-bottom: 60px;">
-            <div class="content-card reveal">
-                <h3 style="margin-bottom: 12px;">Blog Posts</h3>
-                <p style="font-size: 32px; font-weight: 700; color: var(--accent); margin-bottom: 8px;">{{ stats.published_blog }} / {{ stats.blog_posts }}</p>
-                <p style="color: var(--text-muted); font-size: 14px;">Published / Total</p>
-                <a href="{{ url_for('admin_blog_list') }}" class="btn btn-primary" style="width: 100%; margin-top: 16px;">Manage</a>
             </div>
-            <div class="content-card reveal">
-                <h3 style="margin-bottom: 12px;">YouTube Videos</h3>
-                <p style="font-size: 32px; font-weight: 700; color: var(--accent); margin-bottom: 8px;">{{ stats.published_videos }} / {{ stats.youtube_videos }}</p>
-                <p style="color: var(--text-muted); font-size: 14px;">Published / Total</p>
-                <a href="{{ url_for('admin_youtube_list') }}" class="btn btn-primary" style="width: 100%; margin-top: 16px;">Manage</a>
-            </div>
-            <div class="content-card reveal">
-                <h3 style="margin-bottom: 12px;">Podcasts</h3>
-                <p style="font-size: 32px; font-weight: 700; color: var(--accent); margin-bottom: 8px;">{{ stats.published_podcasts }} / {{ stats.podcasts }}</p>
-                <p style="color: var(--text-muted); font-size: 14px;">Published / Total</p>
-                <a href="{{ url_for('admin_podcast_list') }}" class="btn btn-primary" style="width: 100%; margin-top: 16px;">Manage</a>
-            </div>
-            <div class="content-card reveal">
-                <h3 style="margin-bottom: 12px;">Shorts</h3>
-                <p style="font-size: 32px; font-weight: 700; color: var(--accent); margin-bottom: 8px;">{{ stats.published_shorts }} / {{ stats.shorts }}</p>
-                <p style="color: var(--text-muted); font-size: 14px;">Published / Total</p>
-                <a href="{{ url_for('admin_shorts_list') }}" class="btn btn-primary" style="width: 100%; margin-top: 16px;">Manage</a>
-            </div>
-            <div class="content-card reveal">
-                <h3 style="margin-bottom: 12px;">Community Posts</h3>
-                <p style="font-size: 32px; font-weight: 700; color: var(--accent); margin-bottom: 8px;">{{ stats.published_community }} / {{ stats.community_posts }}</p>
-                <p style="color: var(--text-muted); font-size: 14px;">Published / Total</p>
-                <a href="{{ url_for('admin_community_list') }}" class="btn btn-primary" style="width: 100%; margin-top: 16px;">Manage</a>
+            <div class="stat-value">{{ "{:,}".format(stats.total_views) }}</div>
+            <div class="stat-label">
+                <span style="color: var(--accent);">{{ "{:,}".format(stats.total_video_views) }}</span> videos • 
+                <span style="color: var(--accent);">{{ "{:,}".format(stats.total_shorts_views) }}</span> shorts
             </div>
         </div>
-
-        <!-- QUICK ACTIONS -->
-        <div class="reveal">
-            <h2 style="font-size: 32px; margin-bottom: 32px;">Quick Actions</h2>
-            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-                <a href="{{ url_for('admin_blog_new') }}" class="btn btn-primary">New Blog Post</a>
-                <a href="{{ url_for('admin_youtube_new') }}" class="btn btn-primary">New YouTube Video</a>
-                <a href="{{ url_for('admin_podcast_new') }}" class="btn btn-primary">New Podcast</a>
-                <a href="{{ url_for('admin_shorts_new') }}" class="btn btn-primary">New Short</a>
-                <a href="{{ url_for('admin_community_new') }}" class="btn btn-primary">New Community Post</a>
+        
+        <div class="stat-card" style="background: linear-gradient(135deg, rgba(255, 0, 0, 0.1), transparent); border-color: rgba(255, 0, 0, 0.3);">
+            <div class="stat-header">
+                <div class="stat-title">Total Likes</div>
+                <div class="stat-icon" style="background: rgba(255, 0, 0, 0.2);">
+                    <i class="ph ph-thumbs-up"></i>
+                </div>
+            </div>
+            <div class="stat-value">{{ "{:,}".format(stats.total_likes) }}</div>
+            <div class="stat-label">
+                <span style="color: var(--accent);">{{ "{:,}".format(stats.total_video_likes) }}</span> videos • 
+                <span style="color: var(--accent);">{{ "{:,}".format(stats.total_shorts_likes) }}</span> shorts
             </div>
         </div>
+        
+        <div class="stat-card" style="background: linear-gradient(135deg, rgba(255, 0, 0, 0.1), transparent); border-color: rgba(255, 0, 0, 0.3);">
+            <div class="stat-header">
+                <div class="stat-title">Avg. Views per Video</div>
+                <div class="stat-icon" style="background: rgba(255, 0, 0, 0.2);">
+                    <i class="ph ph-trend-up"></i>
+                </div>
+            </div>
+            {% set total_content = stats.youtube_videos + stats.shorts %}
+            {% set avg_views = (stats.total_views // total_content) if total_content > 0 else 0 %}
+            <div class="stat-value">{{ "{:,}".format(avg_views) }}</div>
+            <div class="stat-label">Across {{ total_content }} videos & shorts</div>
+        </div>
+    </div>
+</div>
+
+<div class="quick-actions">
+    <h2>
+        <i class="ph ph-lightning"></i>
+        Quick Actions
+    </h2>
+    <div class="actions-grid">
+        <form method="POST" action="{{ url_for('admin_youtube_sync') }}" style="display: contents;">
+            <button type="submit" class="action-btn" style="background: rgba(255, 34, 34, 0.1); border-color: var(--accent);">
+                <i class="ph ph-arrows-clockwise"></i>
+                <span>Sync YouTube</span>
+            </button>
+        </form>
+        <a href="{{ url_for('admin_blog_new') }}" class="action-btn">
+            <i class="ph ph-plus"></i>
+            <span>New Blog</span>
+        </a>
+        <a href="{{ url_for('admin_podcast_new') }}" class="action-btn">
+            <i class="ph ph-plus"></i>
+            <span>New Podcast</span>
+        </a>
+        <a href="{{ url_for('admin_community_new') }}" class="action-btn">
+            <i class="ph ph-plus"></i>
+            <span>New Post</span>
+        </a>
+    </div>
+</div>
+
+<div class="settings-panel">
+    <h2>
+        <i class="ph ph-gear"></i>
+        Dashboard Settings
+    </h2>
+    <div class="setting-item">
+        <div class="setting-info">
+            <div class="setting-title">Auto-refresh Stats</div>
+            <div class="setting-desc">Automatically refresh dashboard statistics</div>
+        </div>
+        <div class="toggle-switch active" data-toggle="auto-refresh"></div>
+    </div>
+    <div class="setting-item">
+        <div class="setting-info">
+            <div class="setting-title">Email Notifications</div>
+            <div class="setting-desc">Receive email alerts for new submissions</div>
+        </div>
+        <div class="toggle-switch" data-toggle="email-notifications"></div>
+    </div>
+    <div class="setting-item">
+        <div class="setting-info">
+            <div class="setting-title">Compact View</div>
+            <div class="setting-desc">Use compact layout for better space usage</div>
+        </div>
+        <div class="toggle-switch" data-toggle="compact-view"></div>
     </div>
 </div>
 {% endblock %}
 
+{% block extra_js %}
+<script>
+    // Toggle switches
+    document.querySelectorAll('.toggle-switch').forEach(toggle => {
+        toggle.addEventListener('click', function() {
+            this.classList.toggle('active');
+            const setting = this.getAttribute('data-toggle');
+            localStorage.setItem(`setting-${setting}`, this.classList.contains('active'));
+        });
+
+        // Load saved settings
+        const setting = toggle.getAttribute('data-toggle');
+        const saved = localStorage.getItem(`setting-${setting}`);
+        if (saved === 'true') {
+            toggle.classList.add('active');
+        }
+    });
+</script>
+{% endblock %}

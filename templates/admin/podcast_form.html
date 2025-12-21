@@ -2,58 +2,70 @@
 
 {% block title %}{% if podcast %}Edit{% else %}New{% endif %} Podcast | Admin{% endblock %}
 
+{% block page_title %}{% if podcast %}Edit{% else %}New{% endif %} Podcast{% endblock %}
+
 {% block content %}
-<div class="container" style="padding: 120px 24px 100px; max-width: 900px;">
-    <div class="reveal">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 48px;">
-            <h1 style="font-size: 48px;">{% if podcast %}Edit{% else %}New{% endif %} Podcast Episode</h1>
-            <a href="{{ url_for('admin_podcast_list') }}" class="btn btn-outline">← Back</a>
-        </div>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{% if podcast %}Edit{% else %}New{% endif %} Podcast Episode</h1>
+        <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">{% if podcast %}Update your podcast episode{% else %}Add a new podcast episode{% endif %}</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('admin_podcast_list') }}" class="btn btn-outline">
+            <i class="ph ph-arrow-left"></i>
+            Back
+        </a>
+    </div>
+</div>
 
-        <form method="POST" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px; padding: 48px;">
-            <div style="margin-bottom: 24px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Title *</label>
-                <input type="text" name="title" value="{{ podcast.title if podcast else '' }}" required style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
+<div class="filament-table-container" style="padding: 32px;">
+    <form method="POST">
+        <div style="display: grid; gap: 24px; max-width: 600px;">
+            <div>
+                <label>Title *</label>
+                <input type="text" name="title" value="{{ podcast.title if podcast else '' }}" required placeholder="Enter episode title">
             </div>
 
-            <div style="margin-bottom: 24px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Description</label>
-                <textarea name="description" rows="5" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">{{ podcast.description if podcast else '' }}</textarea>
+            <div>
+                <label>Description</label>
+                <textarea name="description" rows="5" placeholder="Episode description">{{ podcast.description if podcast else '' }}</textarea>
             </div>
 
-            <div style="margin-bottom: 24px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Episode Number</label>
-                <input type="number" name="episode_number" value="{{ podcast.episode_number if podcast else '' }}" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
+            <div>
+                <label>Episode Number</label>
+                <input type="number" name="episode_number" value="{{ podcast.episode_number if podcast else '' }}" placeholder="e.g., 1">
             </div>
 
-            <div style="margin-bottom: 24px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Audio URL</label>
-                <input type="url" name="audio_url" value="{{ podcast.audio_url if podcast else '' }}" placeholder="https://..." style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
+            <div>
+                <label>Audio URL</label>
+                <input type="url" name="audio_url" value="{{ podcast.audio_url if podcast else '' }}" placeholder="https://...">
             </div>
 
-            <div style="margin-bottom: 24px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Thumbnail URL</label>
-                <input type="url" name="thumbnail_url" value="{{ podcast.thumbnail_url if podcast else '' }}" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
+            <div>
+                <label>Thumbnail URL</label>
+                <input type="url" name="thumbnail_url" value="{{ podcast.thumbnail_url if podcast else '' }}" placeholder="https://...">
             </div>
 
-            <div style="margin-bottom: 24px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Duration</label>
-                <input type="text" name="duration" value="{{ podcast.duration if podcast else '' }}" placeholder="e.g., 45:30" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
+            <div>
+                <label>Duration</label>
+                <input type="text" name="duration" value="{{ podcast.duration if podcast else '' }}" placeholder="e.g., 45:30">
             </div>
 
-            <div style="margin-bottom: 32px;">
-                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
-                    <input type="checkbox" name="published" {% if podcast and podcast.published %}checked{% endif %} style="width: 20px; height: 20px;">
-                    <span style="color: var(--text-muted); font-size: 14px;">Publish immediately</span>
+            <div>
+                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; margin-bottom: 0;">
+                    <input type="checkbox" name="published" {% if podcast and podcast.published %}checked{% endif %} style="width: 18px; height: 18px; accent-color: var(--accent);">
+                    <span>Publish immediately</span>
                 </label>
             </div>
 
-            <div style="display: flex; gap: 16px;">
-                <button type="submit" class="btn btn-primary" style="flex: 1;">{% if podcast %}Update{% else %}Create{% endif %} Episode</button>
+            <div style="display: flex; gap: 12px; padding-top: 8px;">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ph ph-{% if podcast %}check{% else %}plus{% endif %}"></i>
+                    {% if podcast %}Update{% else %}Create{% endif %} Episode
+                </button>
                 <a href="{{ url_for('admin_podcast_list') }}" class="btn btn-outline">Cancel</a>
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
 </div>
 {% endblock %}
-

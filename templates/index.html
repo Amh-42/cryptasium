@@ -42,7 +42,7 @@
             <div class="tag">● DIGITAL MEDIA</div>
             <h1>CRYPTASIUM</h1>
             <p class="hero-desc">An element of mystery.</p>
-            <div style="display: flex; gap: 16px; justify-content: center;">
+            <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
                 <a href="{{ url_for('youtube_list') }}" class="btn btn-primary">Watch Latest</a>
                 <a href="{{ url_for('blog_list') }}" class="btn btn-outline">Explore Topics</a>
             </div>
@@ -51,8 +51,8 @@
 </header>
 
 <!-- FEATURE SPLIT -->
-<section class="feature-split container" style="padding: 100px 0;">
-    <div class="split-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center;">
+<section class="feature-split container" style="padding: 80px 24px;">
+    <div class="split-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;">
         <div class="reveal">
             <div class="video-placeholder" style="height: 400px;">
                 <i class="ph ph-cube placeholder-icon"></i>
@@ -62,7 +62,7 @@
         <div class="reveal">
             <h2 style="font-size: 48px; font-weight: 700; line-height: 1.1; margin-bottom: 24px;">Deep dives for the armchair engineer.</h2>
             <p style="color: var(--text-muted); font-size: 18px; margin-bottom: 32px;">Gone are the days of dry tutorials. We break down the world's most complex algorithms and systems using high-end 3D visuals and narrative storytelling.</p>
-            <div style="display: flex; gap: 16px; margin-top: 32px;">
+            <div style="display: flex; gap: 16px; margin-top: 32px; flex-wrap: wrap;">
                 <div style="display: flex; align-items: center; gap: 12px; padding: 16px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: var(--text-muted); font-size: 14px;">
                     <i class="ph ph-youtube-logo" style="color: var(--accent); font-size: 20px;"></i> Long Form
                 </div>
@@ -74,21 +74,42 @@
     </div>
 </section>
 
+<style>
+    @media (max-width: 768px) {
+        .feature-split {
+            padding: 60px 16px !important;
+        }
+
+        .split-grid {
+            grid-template-columns: 1fr !important;
+            gap: 40px !important;
+        }
+
+        .split-grid h2 {
+            font-size: 32px !important;
+        }
+
+        .split-grid .video-placeholder {
+            height: 250px !important;
+        }
+    }
+</style>
+
 <!-- CONTENT ECOSYSTEM -->
-<section class="global-network container" style="padding: 100px 0; text-align: center;">
+<section class="global-network container" style="padding: 80px 24px; text-align: center;">
     <div class="reveal">
         <span style="color: var(--accent); font-family: var(--font-mono); font-size: 14px; letter-spacing: 1px;">ECOSYSTEM</span>
         <h2 style="font-size: 56px; margin: 16px 0 40px;">A universe of knowledge<br>across every platform.</h2>
     </div>
 
-    <div class="globe-container reveal" style="width: 100%; max-width: 1000px; aspect-ratio: 16 / 9; margin: 60px auto;">
+    <div class="globe-container reveal" style="width: 100%; max-width: 1000px; aspect-ratio: 16 / 9; margin: 60px auto; padding: 0 24px;">
         <div class="video-placeholder" style="border-radius: 24px;">
             <i class="ph ph-share-network placeholder-icon"></i>
             <span class="placeholder-text">Content Network Visualization</span>
         </div>
     </div>
 
-    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; text-align: left;">
+    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; text-align: left; padding: 0 24px;">
         <div class="stat-card reveal" style="background: rgba(20,20,20,0.5); border: 1px solid var(--border); padding: 32px; border-radius: 16px;">
             <h3 style="font-size: 18px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
                 <i class="ph ph-youtube-logo" style="color: var(--accent);"></i> Video Essays
@@ -110,9 +131,37 @@
     </div>
 </section>
 
+<style>
+    @media (max-width: 768px) {
+        .global-network {
+            padding: 60px 16px !important;
+        }
+
+        .global-network h2 {
+            font-size: 32px !important;
+            line-height: 1.2 !important;
+        }
+
+        .globe-container {
+            margin: 40px auto !important;
+            padding: 0 !important;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr !important;
+            gap: 16px !important;
+            padding: 0 !important;
+        }
+
+        .stat-card {
+            padding: 24px !important;
+        }
+    }
+</style>
+
 <!-- LATEST CONTENT PREVIEW -->
 {% if latest_blog or latest_videos or latest_shorts %}
-<section class="container" style="padding: 100px 24px;">
+<section class="container" style="padding: 80px 24px;">
     <div class="reveal">
         <h2 style="font-size: 48px; text-align: center; margin-bottom: 60px;">Latest Content</h2>
     </div>

@@ -2,6 +2,104 @@
 
 {% block title %}Community | Cryptasium{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Community Page Responsive Styles */
+    @media (max-width: 768px) {
+        /* Hero section */
+        header .container {
+            padding: 80px 16px 60px !important;
+        }
+
+        header h1 {
+            font-size: 36px !important;
+            line-height: 1.2 !important;
+        }
+
+        header .hero-desc {
+            font-size: 16px !important;
+            padding: 0 !important;
+        }
+
+        header .btn {
+            font-size: 14px;
+            padding: 10px 20px;
+        }
+
+        header div[style*="display: flex"] {
+            flex-wrap: wrap !important;
+            gap: 12px !important;
+        }
+
+        /* Features section */
+        section.container {
+            padding: 60px 16px !important;
+        }
+
+        section.container h2 {
+            font-size: 32px !important;
+            margin-bottom: 40px !important;
+        }
+
+        .content-grid[style*="grid-template-columns: repeat(3, 1fr)"] {
+            grid-template-columns: 1fr !important;
+            gap: 24px !important;
+            margin-bottom: 60px !important;
+        }
+
+        .content-card {
+            padding: 24px !important;
+        }
+
+        .content-card i {
+            font-size: 36px !important;
+        }
+
+        .content-card h3 {
+            font-size: 20px !important;
+        }
+
+        /* Posts section */
+        #posts.container {
+            padding: 60px 16px !important;
+        }
+
+        .content-grid {
+            grid-template-columns: 1fr !important;
+            gap: 24px !important;
+        }
+
+        /* Pagination */
+        .pagination {
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            padding: 24px 0;
+        }
+
+        .pagination a,
+        .pagination span {
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        header h1 {
+            font-size: 28px !important;
+        }
+
+        section.container h2 {
+            font-size: 24px !important;
+        }
+
+        .content-card {
+            padding: 20px !important;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <!-- HERO SECTION -->
 <header>
@@ -10,7 +108,7 @@
             <div class="tag">● COMMUNITY</div>
             <h1>Join the curious<br>community.</h1>
             <p class="hero-desc">Connect with fellow engineers, share ideas, and explore the frontiers of technology together.</p>
-            <div style="display: flex; gap: 16px; justify-content: center;">
+            <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
                 <a href="#posts" class="btn btn-primary">View Posts</a>
                 <a href="{{ url_for('index') }}" class="btn btn-outline">Back to Home</a>
             </div>

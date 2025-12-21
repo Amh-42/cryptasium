@@ -28,13 +28,13 @@
             {% for video in videos.items %}
             <div class="content-card reveal">
                 {% if video.thumbnail_url %}
-                <div style="height: 200px; margin-bottom: 20px; background-image: url('{{ video.thumbnail_url }}'); background-size: cover; background-position: center; border-radius: 12px; position: relative;">
-                    <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3);">
-                        <i class="ph ph-play-circle" style="font-size: 48px; color: white;"></i>
+                <div onclick="openVideoModal('{{ video.video_id }}', '{{ video.title|replace("'", "\\'") }}', '{{ video.duration }}', false)" style="height: 200px; margin-bottom: 20px; background-image: url('{{ video.thumbnail_url }}'); background-size: cover; background-position: center; border-radius: 12px; position: relative; cursor: pointer; transition: transform 0.2s;">
+                    <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); border-radius: 12px; transition: background 0.2s;">
+                        <i class="ph ph-play-circle" style="font-size: 64px; color: white; transition: transform 0.2s;"></i>
                     </div>
                 </div>
                 {% else %}
-                <div class="video-placeholder" style="height: 200px; margin-bottom: 20px;">
+                <div onclick="openVideoModal('{{ video.video_id }}', '{{ video.title|replace("'", "\\'") }}', '{{ video.duration }}', false)" class="video-placeholder" style="height: 200px; margin-bottom: 20px; cursor: pointer;">
                     <i class="ph ph-play-circle placeholder-icon"></i>
                     <span class="placeholder-text">Episode</span>
                 </div>
@@ -43,10 +43,12 @@
                 <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">{{ video.description[:150] if video.description else 'Watch the full episode...' }}...</p>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
                     <span style="color: var(--text-muted); font-size: 12px; font-family: var(--font-mono);">{{ video.duration or '' }} • {{ video.created_at.strftime('%b %d') if video.created_at else '' }}</span>
-                    <span style="color: var(--text-muted); font-size: 12px;">{{ video.views }} views</span>
+                    <span style="color: var(--text-muted); font-size: 12px;">{{ video.views or 0 }} views</span>
                 </div>
                 {% if video.video_id %}
-                <a href="https://www.youtube.com/watch?v={{ video.video_id }}" target="_blank" class="btn btn-primary" style="width: 100%; margin-top: 16px; text-align: center; display: block;">Watch on YouTube</a>
+                <button onclick="openVideoModal('{{ video.video_id }}', '{{ video.title|replace("'", "\\'") }}', '{{ video.duration }}', false)" class="btn btn-primary" style="width: 100%; margin-top: 16px; text-align: center;">
+                    <i class="ph ph-play"></i> Watch Now
+                </button>
                 {% endif %}
             </div>
             {% endfor %}

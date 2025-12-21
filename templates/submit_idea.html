@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Submit Topic Idea | Cryptasium{% endblock %}
+
+{% block content %}
+<section class="container" style="padding: 140px 24px 100px; max-width: 700px; margin: 0 auto;">
+    <div class="reveal">
+        <h1 style="font-size: 48px; margin-bottom: 16px; text-align: center;">Submit a Topic Idea</h1>
+        <p style="color: var(--text-muted); font-size: 18px; text-align: center; margin-bottom: 48px; line-height: 1.6;">
+            Have a complex system or topic you'd like us to visualize? Share your idea and help shape our content.
+        </p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div style="padding: 16px; background: {% if category == 'error' %}rgba(255, 34, 34, 0.1){% else %}rgba(34, 255, 34, 0.1){% endif %}; border: 1px solid {% if category == 'error' %}rgba(255, 34, 34, 0.3){% else %}rgba(34, 255, 34, 0.3){% endif %}; border-radius: 12px; margin-bottom: 32px; color: {% if category == 'error' %}var(--accent){% else %}var(--text-main){% endif %};">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 20px; padding: 48px; display: flex; flex-direction: column; gap: 24px;">
+            <div>
+                <label for="topic" style="display: block; margin-bottom: 8px; color: var(--text-main); font-weight: 500;">Topic Title *</label>
+                <input type="text" id="topic" name="topic" required placeholder="e.g., How Neural Networks Learn" style="width: 100%; padding: 14px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 16px; font-family: inherit;">
+            </div>
+
+            <div>
+                <label for="description" style="display: block; margin-bottom: 8px; color: var(--text-main); font-weight: 500;">Description *</label>
+                <textarea id="description" name="description" required rows="6" placeholder="Tell us more about this topic. What makes it interesting? What aspects would you like to see visualized?" style="width: 100%; padding: 14px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 16px; font-family: inherit; resize: vertical;"></textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div>
+                    <label for="name" style="display: block; margin-bottom: 8px; color: var(--text-muted); font-weight: 500;">Your Name (Optional)</label>
+                    <input type="text" id="name" name="name" placeholder="John Doe" style="width: 100%; padding: 14px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 16px; font-family: inherit;">
+                </div>
+
+                <div>
+                    <label for="email" style="display: block; margin-bottom: 8px; color: var(--text-muted); font-weight: 500;">Email (Optional)</label>
+                    <input type="email" id="email" name="email" placeholder="john@example.com" style="width: 100%; padding: 14px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 16px; font-family: inherit;">
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 16px; font-size: 16px; margin-top: 8px;">Submit Idea</button>
+        </form>
+
+        <div style="text-align: center; margin-top: 32px;">
+            <a href="{{ url_for('index') }}" style="color: var(--text-muted); text-decoration: none; font-size: 14px;">← Back to Home</a>
+        </div>
+    </div>
+</section>
+
+<style>
+    @media (max-width: 768px) {
+        section.container {
+            padding: 120px 16px 80px !important;
+        }
+
+        h1 {
+            font-size: 32px !important;
+        }
+
+        form {
+            padding: 32px 24px !important;
+        }
+
+        form > div:last-of-type {
+            grid-template-columns: 1fr !important;
+        }
+    }
+</style>
+{% endblock %}
+

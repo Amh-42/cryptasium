@@ -2,6 +2,8 @@
 
 {% block title %}{% if post %}Edit{% else %}New{% endif %} Blog Post | Admin{% endblock %}
 
+{% block page_title %}{% if post %}Edit{% else %}New{% endif %} Blog Post{% endblock %}
+
 {% block extra_css %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
 <style>
@@ -54,7 +56,7 @@
         border: 1px solid var(--border);
         border-radius: 8px;
         padding: 16px;
-        margin-bottom: 24px;
+        margin-bottom: 16px;
         font-size: 12px;
         color: var(--text-muted);
     }
@@ -89,49 +91,52 @@
 {% endblock %}
 
 {% block content %}
-<div class="container" style="padding: 120px 24px 100px; max-width: 1200px;">
-    <div class="reveal">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 48px;">
-            <h1 style="font-size: 48px;">{% if post %}Edit{% else %}New{% endif %} Blog Post</h1>
-            <a href="{{ url_for('admin_blog_list') }}" class="btn btn-outline">← Back</a>
-        </div>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{% if post %}Edit{% else %}New{% endif %} Blog Post</h1>
+        <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">{% if post %}Update your blog post{% else %}Create a new blog post{% endif %}</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('admin_blog_list') }}" class="btn btn-outline">
+            <i class="ph ph-arrow-left"></i>
+            Back
+        </a>
+    </div>
+</div>
 
-        <form method="POST" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px; padding: 48px;">
-            <div style="margin-bottom: 24px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Title *</label>
-                <input type="text" name="title" id="title" value="{{ post.title if post else '' }}" required style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
+<div class="filament-table-container" style="padding: 32px;">
+    <form method="POST">
+        <div style="display: grid; gap: 24px; max-width: 800px;">
+            <div>
+                <label>Title *</label>
+                <input type="text" name="title" id="title" value="{{ post.title if post else '' }}" required placeholder="Enter blog post title">
             </div>
 
-            <div style="margin-bottom: 24px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Slug (URL-friendly)</label>
-                <input type="text" name="slug" id="slug" value="{{ post.slug if post else '' }}" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
-                <small style="color: var(--text-muted); font-size: 12px;">Leave empty to auto-generate from title</small>
+            <div>
+                <label>Slug (URL-friendly)</label>
+                <input type="text" name="slug" id="slug" value="{{ post.slug if post else '' }}" placeholder="auto-generated-from-title">
+                <small style="color: var(--text-muted); font-size: 12px; margin-top: 4px; display: block;">Leave empty to auto-generate from title</small>
             </div>
 
-            <div style="margin-bottom: 24px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Excerpt</label>
-                <textarea name="excerpt" rows="3" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px; font-family: inherit;">{{ post.excerpt if post else '' }}</textarea>
+            <div>
+                <label>Excerpt</label>
+                <textarea name="excerpt" rows="3" placeholder="Brief summary of the post">{{ post.excerpt if post else '' }}</textarea>
             </div>
 
-            <div style="margin-bottom: 24px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Content * (Markdown/Obsidian-style)</label>
+            <div>
+                <label>Content * (Markdown/Obsidian-style)</label>
                 
                 <div class="markdown-help">
-                    <h4>Markdown Quick Reference (Obsidian-style)</h4>
+                    <h4>Markdown Quick Reference</h4>
                     <ul>
                         <li><strong>Headers:</strong> <code># H1</code>, <code>## H2</code>, <code>### H3</code></li>
                         <li><strong>Bold:</strong> <code>**text**</code> or <code>__text__</code></li>
                         <li><strong>Italic:</strong> <code>*text*</code> or <code>_text_</code></li>
-                        <li><strong>Links:</strong> <code>[text](url)</code> or <code>[[internal-link]]</code></li>
-                        <li><strong>Images:</strong> <code>![alt](url)</code> or <code>![[image.png]]</code></li>
-                        <li><strong>Code:</strong> <code>`inline code`</code></li>
-                        <li><strong>Code Block:</strong> <code>```language\ncode\n```</code></li>
+                        <li><strong>Links:</strong> <code>[text](url)</code></li>
+                        <li><strong>Images:</strong> <code>![alt](url)</code></li>
+                        <li><strong>Code:</strong> <code>`inline code`</code> or <code>```lang ... ```</code></li>
                         <li><strong>Lists:</strong> <code>- item</code> or <code>1. item</code></li>
                         <li><strong>Blockquote:</strong> <code>&gt; quote</code></li>
-                        <li><strong>Horizontal Rule:</strong> <code>---</code></li>
-                        <li><strong>Tables:</strong> Use <code>|</code> to separate columns</li>
-                        <li><strong>Strikethrough:</strong> <code>~~text~~</code></li>
-                        <li><strong>Highlight:</strong> <code>==text==</code></li>
                     </ul>
                 </div>
                 
@@ -139,29 +144,32 @@
                 <div id="content-error" style="color: var(--accent); font-size: 12px; margin-top: 8px; display: none;">Content is required</div>
             </div>
 
-            <div style="margin-bottom: 24px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Featured Image URL</label>
-                <input type="url" name="featured_image" value="{{ post.featured_image if post else '' }}" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
+            <div>
+                <label>Featured Image URL</label>
+                <input type="url" name="featured_image" value="{{ post.featured_image if post else '' }}" placeholder="https://...">
             </div>
 
-            <div style="margin-bottom: 24px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Author</label>
-                <input type="text" name="author" value="{{ post.author if post else 'Cryptasium Team' }}" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
+            <div>
+                <label>Author</label>
+                <input type="text" name="author" value="{{ post.author if post else 'Cryptasium Team' }}">
             </div>
 
-            <div style="margin-bottom: 32px;">
-                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
-                    <input type="checkbox" name="published" {% if post and post.published %}checked{% endif %} style="width: 20px; height: 20px;">
-                    <span style="color: var(--text-muted); font-size: 14px;">Publish immediately</span>
+            <div>
+                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; margin-bottom: 0;">
+                    <input type="checkbox" name="published" {% if post and post.published %}checked{% endif %} style="width: 18px; height: 18px; accent-color: var(--accent);">
+                    <span>Publish immediately</span>
                 </label>
             </div>
 
-            <div style="display: flex; gap: 16px;">
-                <button type="submit" class="btn btn-primary" style="flex: 1;">{% if post %}Update{% else %}Create{% endif %} Post</button>
+            <div style="display: flex; gap: 12px; padding-top: 8px;">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ph ph-{% if post %}check{% else %}plus{% endif %}"></i>
+                    {% if post %}Update{% else %}Create{% endif %} Post
+                </button>
                 <a href="{{ url_for('admin_blog_list') }}" class="btn btn-outline">Cancel</a>
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
 </div>
 {% endblock %}
 
@@ -172,7 +180,7 @@
         const easyMDE = new EasyMDE({
             element: document.getElementById('content'),
             spellChecker: false,
-            autofocus: true,
+            autofocus: false,
             autosave: {
                 enabled: true,
                 uniqueId: 'blog-content-{{ post.id if post else "new" }}',
@@ -226,14 +234,12 @@
             if (!contentValue) {
                 e.preventDefault();
                 contentError.style.display = 'block';
-                // Scroll to error
                 contentError.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 return false;
             } else {
                 contentError.style.display = 'none';
             }
             
-            // Ensure EasyMDE content is synced to textarea before submission
             document.getElementById('content').value = contentValue;
         });
     });

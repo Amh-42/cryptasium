@@ -26,11 +26,11 @@
     <div class="content-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
         {% if shorts.items %}
             {% for short in shorts.items %}
-            <div class="content-card reveal" style="aspect-ratio: 9/16;">
+            <div class="content-card reveal" style="aspect-ratio: 9/16; cursor: pointer;" onclick="openVideoModal('{{ short.video_id }}', '{{ short.title|replace("'", "\\'") }}', '{{ short.duration }}', true)">
                 {% if short.thumbnail_url %}
-                <div style="height: 100%; margin-bottom: 20px; background-image: url('{{ short.thumbnail_url }}'); background-size: cover; background-position: center; border-radius: 12px; position: relative;">
-                    <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2);">
-                        <i class="ph ph-play-circle" style="font-size: 48px; color: white;"></i>
+                <div style="height: 100%; margin-bottom: 20px; background-image: url('{{ short.thumbnail_url }}'); background-size: cover; background-position: center; border-radius: 12px; position: relative; transition: transform 0.2s;">
+                    <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); border-radius: 12px; transition: background 0.2s;">
+                        <i class="ph ph-play-circle" style="font-size: 64px; color: white; transition: transform 0.2s;"></i>
                     </div>
                 </div>
                 {% else %}
@@ -42,10 +42,12 @@
                 <h3 style="margin-bottom: 12px; font-size: 16px;">{{ short.title }}</h3>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
                     <span style="color: var(--text-muted); font-size: 12px; font-family: var(--font-mono);">{{ short.duration or '60s' }}</span>
-                    <span style="color: var(--text-muted); font-size: 12px;">{{ short.views }} views</span>
+                    <span style="color: var(--text-muted); font-size: 12px;">{{ short.views or 0 }} views</span>
                 </div>
                 {% if short.video_id %}
-                <a href="https://www.youtube.com/shorts/{{ short.video_id }}" target="_blank" class="btn btn-primary" style="width: 100%; margin-top: 16px; text-align: center; display: block; font-size: 12px; padding: 8px 16px;">Watch</a>
+                <button onclick="event.stopPropagation(); openVideoModal('{{ short.video_id }}', '{{ short.title|replace("'", "\\'") }}', '{{ short.duration }}', true)" class="btn btn-primary" style="width: 100%; margin-top: 16px; text-align: center; font-size: 12px; padding: 8px 16px;">
+                    <i class="ph ph-play"></i> Watch
+                </button>
                 {% endif %}
             </div>
             {% endfor %}

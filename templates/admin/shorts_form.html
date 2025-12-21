@@ -2,54 +2,66 @@
 
 {% block title %}{% if short %}Edit{% else %}New{% endif %} Short | Admin{% endblock %}
 
+{% block page_title %}{% if short %}Edit{% else %}New{% endif %} Short{% endblock %}
+
 {% block content %}
-<div class="container" style="padding: 120px 24px 100px; max-width: 900px;">
-    <div class="reveal">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 48px;">
-            <h1 style="font-size: 48px;">{% if short %}Edit{% else %}New{% endif %} Short</h1>
-            <a href="{{ url_for('admin_shorts_list') }}" class="btn btn-outline">← Back</a>
-        </div>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{% if short %}Edit{% else %}New{% endif %} Short</h1>
+        <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">{% if short %}Update your short video{% else %}Create a new short video{% endif %}</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('admin_shorts_list') }}" class="btn btn-outline">
+            <i class="ph ph-arrow-left"></i>
+            Back
+        </a>
+    </div>
+</div>
 
-        <form method="POST" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px; padding: 48px;">
-            <div style="margin-bottom: 24px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Title *</label>
-                <input type="text" name="title" value="{{ short.title if short else '' }}" required style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
+<div class="filament-table-container" style="padding: 32px;">
+    <form method="POST">
+        <div style="display: grid; gap: 24px; max-width: 600px;">
+            <div>
+                <label>Title *</label>
+                <input type="text" name="title" value="{{ short.title if short else '' }}" required placeholder="Enter short title">
             </div>
 
-            <div style="margin-bottom: 24px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Description</label>
-                <textarea name="description" rows="3" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">{{ short.description if short else '' }}</textarea>
+            <div>
+                <label>Description</label>
+                <textarea name="description" rows="3" placeholder="Brief description of the short">{{ short.description if short else '' }}</textarea>
             </div>
 
-            <div style="margin-bottom: 24px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Video ID *</label>
-                <input type="text" name="video_id" value="{{ short.video_id if short else '' }}" required placeholder="e.g., dQw4w9WgXcQ" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
-                <small style="color: var(--text-muted); font-size: 12px;">YouTube Shorts video ID</small>
+            <div>
+                <label>Video ID *</label>
+                <input type="text" name="video_id" value="{{ short.video_id if short else '' }}" required placeholder="e.g., dQw4w9WgXcQ">
+                <small style="color: var(--text-muted); font-size: 12px; margin-top: 4px; display: block;">YouTube Shorts video ID from the URL</small>
             </div>
 
-            <div style="margin-bottom: 24px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Thumbnail URL</label>
-                <input type="url" name="thumbnail_url" value="{{ short.thumbnail_url if short else '' }}" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
+            <div>
+                <label>Thumbnail URL</label>
+                <input type="url" name="thumbnail_url" value="{{ short.thumbnail_url if short else '' }}" placeholder="https://...">
             </div>
 
-            <div style="margin-bottom: 24px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px;">Duration</label>
-                <input type="text" name="duration" value="{{ short.duration if short else '60s' }}" placeholder="e.g., 60s" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 14px;">
+            <div>
+                <label>Duration</label>
+                <input type="text" name="duration" value="{{ short.duration if short else '60s' }}" placeholder="e.g., 60s">
             </div>
 
-            <div style="margin-bottom: 32px;">
-                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
-                    <input type="checkbox" name="published" {% if short and short.published %}checked{% endif %} style="width: 20px; height: 20px;">
-                    <span style="color: var(--text-muted); font-size: 14px;">Publish immediately</span>
+            <div>
+                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; margin-bottom: 0;">
+                    <input type="checkbox" name="published" {% if short and short.published %}checked{% endif %} style="width: 18px; height: 18px; accent-color: var(--accent);">
+                    <span>Publish immediately</span>
                 </label>
             </div>
 
-            <div style="display: flex; gap: 16px;">
-                <button type="submit" class="btn btn-primary" style="flex: 1;">{% if short %}Update{% else %}Create{% endif %} Short</button>
+            <div style="display: flex; gap: 12px; padding-top: 8px;">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ph ph-{% if short %}check{% else %}plus{% endif %}"></i>
+                    {% if short %}Update{% else %}Create{% endif %} Short
+                </button>
                 <a href="{{ url_for('admin_shorts_list') }}" class="btn btn-outline">Cancel</a>
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
 </div>
 {% endblock %}
-

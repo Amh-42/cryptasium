@@ -1,0 +1,214 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Topic Ideas | Admin{% endblock %}
+
+{% block page_title %}Topic Ideas{% endblock %}
+
+{% block extra_css %}
+<style>
+    .action-btn.approve { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    .action-btn.reject { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+    .action-btn.pending { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Topic Ideas</h1>
+        <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">Community submitted topic suggestions</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline">
+            <i class="ph ph-arrow-left"></i>
+            Dashboard
+        </a>
+    </div>
+</div>
+
+<div class="filament-table-container">
+    <div class="table-header">
+        <div class="table-search">
+            <i class="ph ph-magnifying-glass"></i>
+            <input type="text" id="searchInput" placeholder="Search ideas..." onkeyup="filterTable()">
+        </div>
+        <div class="table-filters">
+            <button class="filter-btn active" data-filter="all" onclick="filterByStatus('all')">
+                <i class="ph ph-list"></i>
+                All
+            </button>
+            <button class="filter-btn" data-filter="pending" onclick="filterByStatus('pending')">
+                <i class="ph ph-clock"></i>
+                Pending
+            </button>
+            <button class="filter-btn" data-filter="approved" onclick="filterByStatus('approved')">
+                <i class="ph ph-check-circle"></i>
+                Approved
+            </button>
+            <button class="filter-btn" data-filter="rejected" onclick="filterByStatus('rejected')">
+                <i class="ph ph-x-circle"></i>
+                Rejected
+            </button>
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <table class="filament-table">
+            <thead>
+                <tr>
+                    <th class="sortable" onclick="sortTable(0)">
+                        Topic
+                        <i class="ph ph-arrows-down-up"></i>
+                    </th>
+                    <th class="sortable" onclick="sortTable(1)">
+                        Status
+                        <i class="ph ph-arrows-down-up"></i>
+                    </th>
+                    <th class="hide-mobile">Submitted By</th>
+                    <th class="sortable hide-mobile" onclick="sortTable(2)">
+                        Date
+                        <i class="ph ph-arrows-down-up"></i>
+                    </th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                {% for idea in ideas %}
+                <tr data-status="{{ idea.status or 'pending' }}" data-title="{{ idea.topic|lower }}">
+                    <td>
+                        <div style="font-weight: 500; margin-bottom: 4px;">{{ idea.topic }}</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">{{ idea.description[:80] if idea.description else 'No description' }}...</div>
+                    </td>
+                    <td>
+                        <span class="status-badge {% if idea.status == 'approved' %}published{% elif idea.status == 'rejected' %}draft{% else %}pending{% endif %}">
+                            <i class="ph ph-{% if idea.status == 'approved' %}check-circle{% elif idea.status == 'rejected' %}x-circle{% else %}clock{% endif %}"></i>
+                            {{ idea.status|capitalize if idea.status else 'Pending' }}
+                        </span>
+                    </td>
+                    <td class="hide-mobile">
+                        <div style="font-size: 13px;">{{ idea.name or 'Anonymous' }}</div>
+                        {% if idea.email %}
+                        <div style="font-size: 11px; color: var(--text-muted);">{{ idea.email }}</div>
+                        {% endif %}
+                    </td>
+                    <td class="hide-mobile">
+                        <div style="font-size: 13px;">{{ idea.created_at.strftime('%b %d, %Y') if idea.created_at else 'N/A' }}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">{{ idea.created_at.strftime('%I:%M %p') if idea.created_at else '' }}</div>
+                    </td>
+                    <td>
+                        <div class="action-buttons" style="justify-content: flex-end;">
+                            {% if idea.status != 'approved' %}
+                            <form method="POST" action="{{ url_for('admin_ideas_approve', id=idea.id) }}" style="display: inline;">
+                                <button type="submit" class="action-btn approve" title="Approve">
+                                    <i class="ph ph-check"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                            {% if idea.status != 'rejected' %}
+                            <form method="POST" action="{{ url_for('admin_ideas_reject', id=idea.id) }}" style="display: inline;">
+                                <button type="submit" class="action-btn reject" title="Reject">
+                                    <i class="ph ph-x"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                            {% if idea.status in ['approved', 'rejected'] %}
+                            <form method="POST" action="{{ url_for('admin_ideas_pending', id=idea.id) }}" style="display: inline;">
+                                <button type="submit" class="action-btn pending" title="Set Pending">
+                                    <i class="ph ph-clock"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                            <form method="POST" action="{{ url_for('admin_ideas_delete', id=idea.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this idea?');">
+                                <button type="submit" class="action-btn delete" title="Delete">
+                                    <i class="ph ph-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5">
+                        <div class="empty-state">
+                            <i class="ph ph-lightbulb"></i>
+                            <h3>No topic ideas found</h3>
+                            <p>No one has submitted topic ideas yet.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentFilter = 'all';
+    let sortDirection = {};
+
+    function filterTable() {
+        const input = document.getElementById('searchInput');
+        const filter = input.value.toLowerCase();
+        const rows = document.querySelectorAll('#tableBody tr');
+        
+        rows.forEach(row => {
+            const title = row.getAttribute('data-title') || '';
+            const matchesSearch = title.includes(filter);
+            const matchesStatus = currentFilter === 'all' || row.getAttribute('data-status') === currentFilter;
+            
+            row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
+        });
+    }
+
+    function filterByStatus(status) {
+        currentFilter = status;
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-filter') === status);
+        });
+        filterTable();
+    }
+
+    function sortTable(columnIndex) {
+        const table = document.querySelector('.filament-table');
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr:not([style*="display: none"])'));
+        
+        if (!sortDirection[columnIndex]) {
+            sortDirection[columnIndex] = 'asc';
+        } else {
+            sortDirection[columnIndex] = sortDirection[columnIndex] === 'asc' ? 'desc' : 'asc';
+        }
+
+        rows.sort((a, b) => {
+            let aVal, bVal;
+            
+            switch(columnIndex) {
+                case 0:
+                    aVal = a.getAttribute('data-title') || '';
+                    bVal = b.getAttribute('data-title') || '';
+                    break;
+                case 1:
+                    aVal = a.getAttribute('data-status') || '';
+                    bVal = b.getAttribute('data-status') || '';
+                    break;
+                case 2:
+                    aVal = a.cells[3].textContent.trim();
+                    bVal = b.cells[3].textContent.trim();
+                    break;
+                default:
+                    return 0;
+            }
+
+            if (sortDirection[columnIndex] === 'asc') {
+                return aVal > bVal ? 1 : -1;
+            } else {
+                return aVal < bVal ? 1 : -1;
+            }
+        });
+
+        rows.forEach(row => tbody.appendChild(row));
+    }
+</script>
+{% endblock %}
