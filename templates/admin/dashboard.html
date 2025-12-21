@@ -228,8 +228,8 @@
     }
 
     .subscribers-display {
-        background: rgba(255, 0, 0, 0.1);
-        border: 1px solid rgba(255, 0, 0, 0.3);
+        background: rgba(14, 165, 233, 0.1);
+        border: 1px solid rgba(14, 165, 233, 0.3);
         border-radius: 12px;
         padding: 16px 24px;
         display: flex;
@@ -240,7 +240,7 @@
 
     .subscribers-display i {
         font-size: 24px;
-        color: #ff0000;
+        color: #0ea5e9;
     }
 
     .subscribers-count {
@@ -328,7 +328,7 @@
         width: 40px;
         height: 40px;
         border-radius: 10px;
-        background: rgba(255, 34, 34, 0.1);
+        background: rgba(14, 165, 233, 0.1);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -547,7 +547,7 @@
                         <span class="progress-item-value">{{ "{:,}".format(gamification.total_points) }} / {{ "{:,}".format(next_rank.points) }}</span>
                     </div>
                     <div class="progress-bar-container">
-                        <div class="progress-bar-fill {% if progress.points >= 100 %}complete{% endif %}" style="width: {{ progress.points }}%;"></div>
+                        <div class="progress-bar-fill {% if progress.points >= 100 %}complete{% endif %}" style="width: {{ progress.points|default(0) }}%;"></div>
                     </div>
                 </div>
                 <div class="progress-item">
@@ -556,7 +556,7 @@
                         <span class="progress-item-value">{{ "{:,}".format(gamification.subscriber_count) }} / {{ "{:,}".format(next_rank.subscribers) }}</span>
                     </div>
                     <div class="progress-bar-container">
-                        <div class="progress-bar-fill {% if progress.subscribers >= 100 %}complete{% endif %}" style="width: {{ progress.subscribers }}%;"></div>
+                        <div class="progress-bar-fill {% if progress.subscribers >= 100 %}complete{% endif %}" style="width: {{ progress.subscribers|default(0) }}%;"></div>
                     </div>
                 </div>
                 <div class="progress-item">
@@ -565,7 +565,7 @@
                         <span class="progress-item-value">{{ "{:,}".format(gamification.total_views) }} / {{ "{:,}".format(next_rank.views) }}</span>
                     </div>
                     <div class="progress-bar-container">
-                        <div class="progress-bar-fill {% if progress.views >= 100 %}complete{% endif %}" style="width: {{ progress.views }}%;"></div>
+                        <div class="progress-bar-fill {% if progress.views >= 100 %}complete{% endif %}" style="width: {{ progress.views|default(0) }}%;"></div>
                     </div>
                 </div>
                 <div class="progress-item">
@@ -574,7 +574,7 @@
                         <span class="progress-item-value">{{ gamification.total_content_count }} / {{ next_rank.content }}</span>
                     </div>
                     <div class="progress-bar-container">
-                        <div class="progress-bar-fill {% if progress.content >= 100 %}complete{% endif %}" style="width: {{ progress.content }}%;"></div>
+                        <div class="progress-bar-fill {% if progress.content >= 100 %}complete{% endif %}" style="width: {{ progress.content|default(0) }}%;"></div>
                     </div>
                 </div>
             </div>
@@ -712,10 +712,10 @@
         YouTube Analytics
     </h2>
     <div class="stats-grid" style="margin-bottom: 0;">
-        <div class="stat-card" style="background: linear-gradient(135deg, rgba(255, 0, 0, 0.1), transparent); border-color: rgba(255, 0, 0, 0.3);">
+        <div class="stat-card" style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), transparent); border-color: rgba(14, 165, 233, 0.3);">
             <div class="stat-header">
                 <div class="stat-title">Total Views</div>
-                <div class="stat-icon" style="background: rgba(255, 0, 0, 0.2);">
+                <div class="stat-icon" style="background: rgba(14, 165, 233, 0.2);">
                     <i class="ph ph-eye"></i>
             </div>
             </div>
@@ -726,10 +726,10 @@
             </div>
         </div>
 
-        <div class="stat-card" style="background: linear-gradient(135deg, rgba(255, 0, 0, 0.1), transparent); border-color: rgba(255, 0, 0, 0.3);">
+        <div class="stat-card" style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), transparent); border-color: rgba(14, 165, 233, 0.3);">
             <div class="stat-header">
                 <div class="stat-title">Avg. Views per Video</div>
-                <div class="stat-icon" style="background: rgba(255, 0, 0, 0.2);">
+                <div class="stat-icon" style="background: rgba(14, 165, 233, 0.2);">
                     <i class="ph ph-trend-up"></i>
                 </div>
             </div>
