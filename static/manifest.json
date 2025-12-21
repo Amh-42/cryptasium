@@ -1,7 +1,7 @@
 {
   "name": "Cryptasium",
   "short_name": "Cryptasium",
-  "description": "An element of mystery.f",
+  "description": "An element of mystery.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#050505",
