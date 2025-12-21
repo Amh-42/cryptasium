@@ -25,6 +25,15 @@ wheels/
 
 # Flask
 .webassets-cache
+instance/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+*.sqlite3.db
+
+
 
 
 # Environment variables
