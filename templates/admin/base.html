@@ -15,8 +15,8 @@
             --bg-card: #0f0f0f;
             --bg-card-hover: #141414;
             --border: #262626;
-            --accent: #ff2222;
-            --accent-hover: #e61919;
+            --accent: #0ea5e9;
+            --accent-hover: #0284c7;
             --text-main: #ffffff;
             --text-muted: #a3a3a3;
             --font-sans: 'Inter', sans-serif;
@@ -70,13 +70,13 @@
             font-size: 14px; font-weight: 500; position: relative;
         }
         .nav-item:hover { background: rgba(255,255,255,0.05); color: var(--text-main); }
-        .nav-item.active { background: rgba(255, 34, 34, 0.1); color: var(--accent); }
+        .nav-item.active { background: rgba(14, 165, 233, 0.1); color: var(--accent); }
         .nav-item.active::before {
             content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
             width: 3px; height: 60%; background: var(--accent); border-radius: 0 2px 2px 0;
         }
         .nav-item i { font-size: 20px; width: 24px; display: flex; align-items: center; justify-content: center; }
-        .nav-badge { margin-left: auto; background: rgba(255, 34, 34, 0.2); color: var(--accent); padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .nav-badge { margin-left: auto; background: rgba(14, 165, 233, 0.2); color: var(--accent); padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
 
         /* Main */
         .admin-main { flex: 1; margin-left: 280px; min-height: 100vh; position: relative; z-index: 1; overflow-x: hidden; max-width: calc(100vw - 280px); }

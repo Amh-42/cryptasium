@@ -352,3 +352,48 @@ def fetch_single_video(video_id):
         
     except Exception as e:
         return None, str(e)
+
+
+def fetch_channel_statistics():
+    """
+    Fetch channel statistics including subscriber count and total views.
+    Returns a dict with subscriber_count, view_count, video_count or None on error.
+    """
+    api_key = get_api_key()
+    channel_id = get_channel_id()
+    
+    if not api_key:
+        return None, "YouTube API key not configured."
+    
+    if not channel_id:
+        return None, "YouTube channel ID not configured."
+    
+    try:
+        channel_url = f"{YOUTUBE_API_BASE}/channels"
+        channel_params = {
+            'key': api_key,
+            'id': channel_id,
+            'part': 'statistics,snippet'
+        }
+        
+        response = requests.get(channel_url, params=channel_params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        if not data.get('items'):
+            return None, "Channel not found."
+        
+        stats = data['items'][0].get('statistics', {})
+        snippet = data['items'][0].get('snippet', {})
+        
+        return {
+            'subscriber_count': int(stats.get('subscriberCount', 0)),
+            'view_count': int(stats.get('viewCount', 0)),
+            'video_count': int(stats.get('videoCount', 0)),
+            'channel_title': snippet.get('title', ''),
+            'channel_description': snippet.get('description', ''),
+            'hidden_subscriber_count': stats.get('hiddenSubscriberCount', False)
+        }, None
+        
+    except Exception as e:
+        return None, f"Error fetching channel stats: {str(e)}"

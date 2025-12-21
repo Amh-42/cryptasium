@@ -8,7 +8,10 @@ import os
 import markdown
 
 from config import config
-from models import db, BlogPost, YouTubeVideo, Podcast, Short, CommunityPost, TopicIdea
+from models import (
+    db, BlogPost, YouTubeVideo, Podcast, Short, CommunityPost, TopicIdea,
+    GamificationStats, RANKS, CONTENT_POINTS, get_video_content_type, get_rank_for_stats
+)
 import youtube_service
 
 def create_app(config_name=None):
@@ -94,12 +97,17 @@ def create_app(config_name=None):
             # Add new videos and update existing ones with latest stats
             for v in videos:
                 existing = YouTubeVideo.query.filter_by(video_id=v['video_id']).first()
+                duration_seconds = v.get('duration_seconds', 0)
+                content_type = get_video_content_type(duration_seconds)
+                
                 if existing:
                     # Update existing video stats
                     existing.views = v.get('view_count', 0)
                     existing.title = v['title']
                     existing.thumbnail_url = v['thumbnail_url']
                     existing.duration = v['duration']
+                    existing.duration_seconds = duration_seconds
+                    existing.content_type = content_type
                 else:
                     video = YouTubeVideo(
                         title=v['title'],
@@ -107,6 +115,8 @@ def create_app(config_name=None):
                         video_id=v['video_id'],
                         thumbnail_url=v['thumbnail_url'],
                         duration=v['duration'],
+                        duration_seconds=duration_seconds,
+                        content_type=content_type,
                         views=v.get('view_count', 0),
                         published=True,
                         created_at=v['published_at']
@@ -147,6 +157,129 @@ def create_app(config_name=None):
             
         except Exception:
             return None  # Silently fail during auto-sync
+    
+    def calculate_gamification_stats():
+        """
+        Calculate and update gamification statistics based on all content.
+        Returns the updated GamificationStats object.
+        """
+        # Get or create the stats record (we use a single row for global stats)
+        stats = GamificationStats.query.first()
+        if not stats:
+            stats = GamificationStats()
+            db.session.add(stats)
+        
+        # Count and calculate points for each content type
+        
+        # 1. Blog posts
+        blog_count = BlogPost.query.filter_by(published=True).count()
+        blog_points = blog_count * CONTENT_POINTS['blog']
+        
+        # 2. Shorts (from Short model)
+        shorts_count = Short.query.filter_by(published=True).count()
+        shorts_points = shorts_count * CONTENT_POINTS['shorts']
+        
+        # 3. Podcasts
+        podcast_count = Podcast.query.filter_by(published=True).count()
+        podcast_points = podcast_count * CONTENT_POINTS['podcast']
+        
+        # 4. YouTube Videos (categorized by duration)
+        videos = YouTubeVideo.query.filter_by(published=True).all()
+        
+        short_longs_count = 0
+        mid_longs_count = 0
+        longs_count = 0
+        
+        for video in videos:
+            # Determine content type based on duration_seconds
+            duration_sec = video.duration_seconds or 0
+            
+            # If duration_seconds is 0, try to parse from duration string
+            if duration_sec == 0 and video.duration:
+                parts = video.duration.split(':')
+                if len(parts) == 3:  # H:MM:SS
+                    duration_sec = int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+                elif len(parts) == 2:  # M:SS
+                    duration_sec = int(parts[0]) * 60 + int(parts[1])
+                
+                # Update the video record with duration_seconds
+                video.duration_seconds = duration_sec
+            
+            # Categorize video
+            content_type = get_video_content_type(duration_sec)
+            video.content_type = content_type
+            
+            if content_type == 'short_longs':
+                short_longs_count += 1
+            elif content_type == 'mid_longs':
+                mid_longs_count += 1
+            elif content_type == 'longs':
+                longs_count += 1
+        
+        short_longs_points = short_longs_count * CONTENT_POINTS['short_longs']
+        mid_longs_points = mid_longs_count * CONTENT_POINTS['mid_longs']
+        longs_points = longs_count * CONTENT_POINTS['longs']
+        
+        # Calculate totals
+        total_points = (blog_points + shorts_points + short_longs_points + 
+                       podcast_points + mid_longs_points + longs_points)
+        total_content = (blog_count + shorts_count + short_longs_count + 
+                        podcast_count + mid_longs_count + longs_count)
+        
+        # Calculate total views
+        total_video_views = db.session.query(db.func.sum(YouTubeVideo.views)).scalar() or 0
+        total_shorts_views = db.session.query(db.func.sum(Short.views)).scalar() or 0
+        total_blog_views = db.session.query(db.func.sum(BlogPost.views)).scalar() or 0
+        total_views = total_video_views + total_shorts_views + total_blog_views
+        
+        # Update stats
+        stats.blog_count = blog_count
+        stats.blog_points = blog_points
+        stats.shorts_count = shorts_count
+        stats.shorts_points = shorts_points
+        stats.short_longs_count = short_longs_count
+        stats.short_longs_points = short_longs_points
+        stats.podcast_count = podcast_count
+        stats.podcast_points = podcast_points
+        stats.mid_longs_count = mid_longs_count
+        stats.mid_longs_points = mid_longs_points
+        stats.longs_count = longs_count
+        stats.longs_points = longs_points
+        
+        stats.total_points = total_points
+        stats.total_content_count = total_content
+        stats.total_views = total_views
+        stats.updated_at = datetime.utcnow()
+        
+        # Calculate and update rank
+        stats.calculate_rank()
+        
+        db.session.commit()
+        return stats
+    
+    def sync_channel_stats():
+        """Sync subscriber count and channel stats from YouTube API"""
+        try:
+            channel_data, error = youtube_service.fetch_channel_statistics()
+            if error:
+                return None, error
+            
+            stats = GamificationStats.query.first()
+            if not stats:
+                stats = GamificationStats()
+                db.session.add(stats)
+            
+            stats.subscriber_count = channel_data['subscriber_count']
+            stats.total_channel_views = channel_data['view_count']
+            stats.last_sync_at = datetime.utcnow()
+            
+            # Recalculate rank with new subscriber count
+            stats.calculate_rank()
+            
+            db.session.commit()
+            return stats, None
+        except Exception as e:
+            return None, str(e)
     
     def admin_required(f):
         """Decorator to require admin authentication"""
@@ -345,7 +478,20 @@ def create_app(config_name=None):
             'total_views': total_video_views + total_shorts_views,
         }
         
-        return render_template('admin/dashboard.html', stats=stats, sync_message=sync_message)
+        # Calculate gamification stats
+        gamification = calculate_gamification_stats()
+        current_rank, next_rank = gamification.calculate_rank()
+        progress = gamification.get_progress_to_next_rank()
+        
+        return render_template('admin/dashboard.html', 
+                             stats=stats, 
+                             sync_message=sync_message,
+                             gamification=gamification,
+                             current_rank=current_rank,
+                             next_rank=next_rank,
+                             progress=progress,
+                             ranks=RANKS,
+                             content_points=CONTENT_POINTS)
     
     # Blog management
     @app.route('/admin/blog')
@@ -511,11 +657,16 @@ def create_app(config_name=None):
         # Add or update videos
         for video_data in videos:
             existing = YouTubeVideo.query.filter_by(video_id=video_data['video_id']).first()
+            duration_seconds = video_data.get('duration_seconds', 0)
+            content_type = get_video_content_type(duration_seconds)
+            
             if existing:
                 # Update existing video with latest stats
                 existing.title = video_data['title']
                 existing.thumbnail_url = video_data['thumbnail_url']
                 existing.duration = video_data['duration']
+                existing.duration_seconds = duration_seconds
+                existing.content_type = content_type
                 existing.views = video_data.get('view_count', 0)
                 videos_updated += 1
             else:
@@ -525,6 +676,8 @@ def create_app(config_name=None):
                     video_id=video_data['video_id'],
                     thumbnail_url=video_data['thumbnail_url'],
                     duration=video_data['duration'],
+                    duration_seconds=duration_seconds,
+                    content_type=content_type,
                     views=video_data.get('view_count', 0),
                     published=True,
                     created_at=video_data['published_at']
@@ -558,10 +711,19 @@ def create_app(config_name=None):
         
         db.session.commit()
         
+        # Also sync channel subscriber stats
+        channel_stats, channel_error = sync_channel_stats()
+        subscriber_msg = ""
+        if channel_stats:
+            subscriber_msg = f" Subscribers: {channel_stats.subscriber_count:,}"
+        
+        # Recalculate gamification stats
+        calculate_gamification_stats()
+        
         if videos_added or shorts_added or videos_updated or shorts_updated:
-            flash(f'Synced successfully! Added {videos_added} videos, {shorts_added} shorts. Updated {videos_updated} videos, {shorts_updated} shorts.', 'success')
+            flash(f'Synced successfully! Added {videos_added} videos, {shorts_added} shorts. Updated {videos_updated} videos, {shorts_updated} shorts.{subscriber_msg}', 'success')
         else:
-            flash('Sync complete. No changes detected.', 'success')
+            flash(f'Sync complete. No changes detected.{subscriber_msg}', 'success')
         
         return redirect(url_for('admin_youtube_list'))
     

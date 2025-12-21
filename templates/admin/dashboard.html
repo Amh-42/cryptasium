@@ -6,6 +6,290 @@
 
 {% block extra_css %}
 <style>
+    /* ========== GAMIFICATION STYLES ========== */
+    .gamification-section {
+        margin-bottom: 40px;
+    }
+
+    .rank-card {
+        background: linear-gradient(135deg, rgba(20, 20, 20, 0.95), rgba(10, 10, 10, 0.98));
+        border: 2px solid var(--rank-color, var(--border));
+        border-radius: 20px;
+        padding: 32px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .rank-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--rank-color, var(--accent)), transparent);
+    }
+
+    .rank-card::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle, var(--rank-color, var(--accent)) 0%, transparent 70%);
+        opacity: 0.05;
+        pointer-events: none;
+    }
+
+    .rank-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 24px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .rank-info {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .rank-badge {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--rank-color, #666), rgba(var(--rank-color, 102), 0.3));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+        box-shadow: 0 0 30px rgba(var(--rank-color-rgb, 102, 102, 102), 0.3);
+        animation: rankPulse 3s ease-in-out infinite;
+    }
+
+    @keyframes rankPulse {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 30px rgba(var(--rank-color-rgb, 102, 102, 102), 0.3); }
+        50% { transform: scale(1.05); box-shadow: 0 0 50px rgba(var(--rank-color-rgb, 102, 102, 102), 0.5); }
+    }
+
+    .rank-details h2 {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--rank-color, var(--text-main));
+        margin-bottom: 4px;
+    }
+
+    .rank-code {
+        font-family: var(--font-mono);
+        font-size: 14px;
+        color: var(--text-muted);
+        background: rgba(255, 255, 255, 0.05);
+        padding: 4px 12px;
+        border-radius: 4px;
+        display: inline-block;
+    }
+
+    .points-display {
+        text-align: right;
+    }
+
+    .points-value {
+        font-size: 42px;
+        font-weight: 800;
+        background: linear-gradient(180deg, var(--rank-color, #fff) 0%, rgba(255,255,255,0.7) 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        line-height: 1;
+    }
+
+    .points-label {
+        font-size: 14px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    .progress-section {
+        position: relative;
+        z-index: 1;
+    }
+
+    .next-rank-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        font-size: 14px;
+        color: var(--text-muted);
+    }
+
+    .next-rank-name {
+        color: var(--text-main);
+        font-weight: 600;
+    }
+
+    .progress-bars {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+    }
+
+    .progress-item {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+    }
+
+    .progress-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .progress-item-label {
+        font-size: 12px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .progress-item-value {
+        font-size: 12px;
+        color: var(--text-main);
+        font-weight: 600;
+    }
+
+    .progress-bar-container {
+        height: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .progress-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent), var(--rank-color, var(--accent)));
+        border-radius: 4px;
+        transition: width 1s ease;
+    }
+
+    .progress-bar-fill.complete {
+        background: linear-gradient(90deg, #22c55e, #16a34a);
+    }
+
+    .content-breakdown {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 12px;
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border);
+        position: relative;
+        z-index: 1;
+    }
+
+    .content-type-item {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px;
+        text-align: center;
+        transition: all 0.2s;
+    }
+
+    .content-type-item:hover {
+        border-color: var(--accent);
+        background: rgba(255, 255, 255, 0.04);
+    }
+
+    .content-type-count {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+
+    .content-type-label {
+        font-size: 11px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .content-type-points {
+        font-size: 12px;
+        color: var(--accent);
+        margin-top: 4px;
+    }
+
+    .subscribers-display {
+        background: rgba(255, 0, 0, 0.1);
+        border: 1px solid rgba(255, 0, 0, 0.3);
+        border-radius: 12px;
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 20px;
+    }
+
+    .subscribers-display i {
+        font-size: 24px;
+        color: #ff0000;
+    }
+
+    .subscribers-count {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+
+    .subscribers-label {
+        font-size: 12px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+    }
+
+    .max-rank-achieved {
+        background: linear-gradient(135deg, rgba(255, 34, 34, 0.2), rgba(255, 215, 0, 0.1));
+        border: 2px solid var(--accent);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        margin-top: 20px;
+    }
+
+    .max-rank-achieved h3 {
+        font-size: 24px;
+        color: var(--accent);
+        margin-bottom: 8px;
+    }
+
+    @media (max-width: 768px) {
+        .rank-header {
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .points-display {
+            text-align: left;
+        }
+
+        .progress-bars {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .content-breakdown {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    /* ========== EXISTING STYLES ========== */
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -91,7 +375,11 @@
         gap: 12px;
     }
 
-    .action-btn {
+    .actions-grid form {
+        display: contents;
+    }
+
+    .quick-action-btn {
         padding: 16px 24px;
         background: rgba(255,255,255,0.05);
         border: 1px solid var(--border);
@@ -106,16 +394,18 @@
         font-size: 14px;
         font-weight: 500;
         min-height: 56px;
+        width: 100%;
+        cursor: pointer;
     }
 
-    .action-btn:hover {
+    .quick-action-btn:hover {
         background: var(--accent);
         border-color: var(--accent);
         color: white;
         transform: translateY(-2px);
     }
 
-    .action-btn i {
+    .quick-action-btn i {
         font-size: 20px;
         width: 20px;
         height: 20px;
@@ -124,7 +414,7 @@
         justify-content: center;
     }
 
-    .action-btn span {
+    .quick-action-btn span {
         white-space: nowrap;
     }
 
@@ -211,7 +501,7 @@
         }
 
         .actions-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, 1fr);
         }
     }
 </style>
@@ -224,6 +514,124 @@
     {{ sync_message }}
 </div>
 {% endif %}
+
+<!-- GAMIFICATION SECTION -->
+<div class="gamification-section">
+    <div class="rank-card" style="--rank-color: {{ current_rank.color if current_rank else '#666' }};">
+        <div class="rank-header">
+            <div class="rank-info">
+                <div class="rank-badge">
+                    {{ current_rank.icon if current_rank else '⭐' }}
+                </div>
+                <div class="rank-details">
+                    <h2>{{ current_rank.name if current_rank else 'Unranked' }}</h2>
+                    <span class="rank-code">{{ current_rank.code if current_rank else 'UNRANKED' }}</span>
+                </div>
+            </div>
+            <div class="points-display">
+                <div class="points-value">{{ "{:,}".format(gamification.total_points) }}</div>
+                <div class="points-label">Total Points</div>
+            </div>
+        </div>
+
+        {% if progress and next_rank %}
+        <div class="progress-section">
+            <div class="next-rank-label">
+                <span>Progress to next rank</span>
+                <span class="next-rank-name">{{ next_rank.icon }} {{ next_rank.name }} ({{ next_rank.code }})</span>
+            </div>
+            <div class="progress-bars">
+                <div class="progress-item">
+                    <div class="progress-item-header">
+                        <span class="progress-item-label">Points</span>
+                        <span class="progress-item-value">{{ "{:,}".format(gamification.total_points) }} / {{ "{:,}".format(next_rank.points) }}</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill {% if progress.points >= 100 %}complete{% endif %}" style="width: {{ progress.points }}%;"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <div class="progress-item-header">
+                        <span class="progress-item-label">Subscribers</span>
+                        <span class="progress-item-value">{{ "{:,}".format(gamification.subscriber_count) }} / {{ "{:,}".format(next_rank.subscribers) }}</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill {% if progress.subscribers >= 100 %}complete{% endif %}" style="width: {{ progress.subscribers }}%;"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <div class="progress-item-header">
+                        <span class="progress-item-label">Views</span>
+                        <span class="progress-item-value">{{ "{:,}".format(gamification.total_views) }} / {{ "{:,}".format(next_rank.views) }}</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill {% if progress.views >= 100 %}complete{% endif %}" style="width: {{ progress.views }}%;"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <div class="progress-item-header">
+                        <span class="progress-item-label">Content</span>
+                        <span class="progress-item-value">{{ gamification.total_content_count }} / {{ next_rank.content }}</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill {% if progress.content >= 100 %}complete{% endif %}" style="width: {{ progress.content }}%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% elif current_rank and current_rank.code == 'AL' %}
+        <div class="max-rank-achieved">
+            <h3>👑 APEX LEGEND ACHIEVED!</h3>
+            <p style="color: var(--text-muted);">You have reached the maximum rank. Legendary status unlocked!</p>
+        </div>
+        {% endif %}
+
+        <div class="content-breakdown">
+            <div class="content-type-item">
+                <div class="content-type-count">{{ gamification.blog_count }}</div>
+                <div class="content-type-label">Blog</div>
+                <div class="content-type-points">+{{ "{:,}".format(gamification.blog_points) }} PT</div>
+            </div>
+            <div class="content-type-item">
+                <div class="content-type-count">{{ gamification.shorts_count }}</div>
+                <div class="content-type-label">Shorts</div>
+                <div class="content-type-points">+{{ "{:,}".format(gamification.shorts_points) }} PT</div>
+            </div>
+            <div class="content-type-item">
+                <div class="content-type-count">{{ gamification.short_longs_count }}</div>
+                <div class="content-type-label">Short Longs</div>
+                <div class="content-type-points">+{{ "{:,}".format(gamification.short_longs_points) }} PT</div>
+            </div>
+            <div class="content-type-item">
+                <div class="content-type-count">{{ gamification.podcast_count }}</div>
+                <div class="content-type-label">Podcast</div>
+                <div class="content-type-points">+{{ "{:,}".format(gamification.podcast_points) }} PT</div>
+            </div>
+            <div class="content-type-item">
+                <div class="content-type-count">{{ gamification.mid_longs_count }}</div>
+                <div class="content-type-label">Mid Longs</div>
+                <div class="content-type-points">+{{ "{:,}".format(gamification.mid_longs_points) }} PT</div>
+            </div>
+            <div class="content-type-item">
+                <div class="content-type-count">{{ gamification.longs_count }}</div>
+                <div class="content-type-label">Longs</div>
+                <div class="content-type-points">+{{ "{:,}".format(gamification.longs_points) }} PT</div>
+            </div>
+        </div>
+
+        <div class="subscribers-display">
+            <i class="ph ph-youtube-logo"></i>
+            <div>
+                <div class="subscribers-count">{{ "{:,}".format(gamification.subscriber_count) }}</div>
+                <div class="subscribers-label">YouTube Subscribers</div>
+            </div>
+            <div style="margin-left: auto; text-align: right;">
+                <div style="font-size: 14px; color: var(--text-muted);">Last synced</div>
+                <div style="font-size: 12px; color: var(--text-main);">{{ gamification.last_sync_at.strftime('%b %d, %Y %H:%M') if gamification.last_sync_at else 'Never' }}</div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="stats-grid">
     <div class="stat-card">
@@ -339,21 +747,21 @@
         Quick Actions
     </h2>
     <div class="actions-grid">
-        <form method="POST" action="{{ url_for('admin_youtube_sync') }}" style="display: contents;">
-            <button type="submit" class="action-btn" style="background: rgba(255, 34, 34, 0.1); border-color: var(--accent);">
+        <form method="POST" action="{{ url_for('admin_youtube_sync') }}">
+            <button type="submit" class="quick-action-btn" style="background: rgba(14, 165, 233, 0.1); border-color: var(--accent);">
                 <i class="ph ph-arrows-clockwise"></i>
                 <span>Sync YouTube</span>
             </button>
         </form>
-        <a href="{{ url_for('admin_blog_new') }}" class="action-btn">
+        <a href="{{ url_for('admin_blog_new') }}" class="quick-action-btn">
             <i class="ph ph-plus"></i>
             <span>New Blog</span>
         </a>
-        <a href="{{ url_for('admin_podcast_new') }}" class="action-btn">
+        <a href="{{ url_for('admin_podcast_new') }}" class="quick-action-btn">
             <i class="ph ph-plus"></i>
             <span>New Podcast</span>
         </a>
-        <a href="{{ url_for('admin_community_new') }}" class="action-btn">
+        <a href="{{ url_for('admin_community_new') }}" class="quick-action-btn">
             <i class="ph ph-plus"></i>
             <span>New Post</span>
         </a>
