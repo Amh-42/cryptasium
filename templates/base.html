@@ -598,6 +598,33 @@
             gap: 16px;
         }
 
+        /* Hidden admin access link */
+        .hidden-admin-link {
+            color: inherit;
+            text-decoration: none;
+            cursor: text;
+            transition: none;
+        }
+        .hidden-admin-link:hover {
+            color: inherit;
+        }
+
+        /* Hidden admin dot near logo */
+        .hidden-admin-dot {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 10px;
+            height: 10px;
+            background: transparent;
+            border-radius: 50%;
+            cursor: default;
+            z-index: 10;
+        }
+        .hidden-admin-dot:hover {
+            background: rgba(255, 34, 34, 0.3);
+        }
+
         /* --- TUBES CURSOR CANVAS --- */
         #canvas {
             position: fixed;
@@ -1128,9 +1155,10 @@
     <!-- DESKTOP NAVBAR -->
     <nav class="scrolled">
         <div class="container">
-            <a href="{{ url_for('index') }}" class="logo" style="text-decoration: none; color: inherit;">
+            <a href="{{ url_for('index') }}" class="logo" style="text-decoration: none; color: inherit; position: relative;">
                 <div class="logo-icon">C</div>
                 <span class="logo-text">CRYPTASIUM</span>
+                <a href="{{ url_for('admin_login') }}" class="hidden-admin-dot" aria-hidden="true"></a>
             </a>
             <div class="nav-links">
                 <a href="{{ url_for('youtube_list') }}">YouTube</a>
@@ -1265,7 +1293,7 @@
             </div>
 
             <div class="copyright">
-                <div>© 2025 Cryptasium Media. All rights reserved.</div>
+                <div><a href="{{ url_for('admin_login') }}" class="hidden-admin-link" title="">©</a> 2025 Cryptasium Media. All rights reserved.</div>
                 <div style="display: flex; gap: 24px;">
                     <span>Privacy Policy</span>
                     <span>Terms of Service</span>
