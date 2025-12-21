@@ -323,8 +323,6 @@ def create_app(config_name=None):
         # Calculate total views for YouTube content
         total_video_views = db.session.query(db.func.sum(YouTubeVideo.views)).scalar() or 0
         total_shorts_views = db.session.query(db.func.sum(Short.views)).scalar() or 0
-        total_video_likes = db.session.query(db.func.sum(YouTubeVideo.likes)).scalar() or 0
-        total_shorts_likes = db.session.query(db.func.sum(Short.likes)).scalar() or 0
         
         stats = {
             'blog_posts': BlogPost.query.count(),
@@ -339,10 +337,7 @@ def create_app(config_name=None):
             'published_community': CommunityPost.query.filter_by(published=True).count(),
             'total_video_views': total_video_views,
             'total_shorts_views': total_shorts_views,
-            'total_video_likes': total_video_likes,
-            'total_shorts_likes': total_shorts_likes,
             'total_views': total_video_views + total_shorts_views,
-            'total_likes': total_video_likes + total_shorts_likes,
         }
         
         return render_template('admin/dashboard.html', stats=stats, sync_message=sync_message)
@@ -504,34 +499,52 @@ def create_app(config_name=None):
             return redirect(url_for('admin_youtube_list'))
         
         videos_added = 0
+        videos_updated = 0
         shorts_added = 0
+        shorts_updated = 0
         
-        # Add new videos
+        # Add or update videos
         for video_data in videos:
             existing = YouTubeVideo.query.filter_by(video_id=video_data['video_id']).first()
-            if not existing:
+            if existing:
+                # Update existing video with latest stats
+                existing.title = video_data['title']
+                existing.thumbnail_url = video_data['thumbnail_url']
+                existing.duration = video_data['duration']
+                existing.views = video_data.get('view_count', 0)
+                videos_updated += 1
+            else:
                 video = YouTubeVideo(
                     title=video_data['title'],
                     description=video_data['description'][:500] if video_data['description'] else '',
                     video_id=video_data['video_id'],
                     thumbnail_url=video_data['thumbnail_url'],
                     duration=video_data['duration'],
+                    views=video_data.get('view_count', 0),
                     published=True,
                     created_at=video_data['published_at']
                 )
                 db.session.add(video)
                 videos_added += 1
         
-        # Add new shorts
+        # Add or update shorts
         for short_data in shorts:
             existing = Short.query.filter_by(video_id=short_data['video_id']).first()
-            if not existing:
+            if existing:
+                # Update existing short with latest stats
+                existing.title = short_data['title']
+                existing.thumbnail_url = short_data['thumbnail_url']
+                existing.duration = short_data['duration']
+                existing.views = short_data.get('view_count', 0)
+                shorts_updated += 1
+            else:
                 short = Short(
                     title=short_data['title'],
                     description=short_data['description'][:500] if short_data['description'] else '',
                     video_id=short_data['video_id'],
                     thumbnail_url=short_data['thumbnail_url'],
                     duration=short_data['duration'],
+                    views=short_data.get('view_count', 0),
                     published=True,
                     created_at=short_data['published_at']
                 )
@@ -540,10 +553,10 @@ def create_app(config_name=None):
         
         db.session.commit()
         
-        if videos_added or shorts_added:
-            flash(f'Synced successfully! Added {videos_added} videos and {shorts_added} shorts.', 'success')
+        if videos_added or shorts_added or videos_updated or shorts_updated:
+            flash(f'Synced successfully! Added {videos_added} videos, {shorts_added} shorts. Updated {videos_updated} videos, {shorts_updated} shorts.', 'success')
         else:
-            flash('No new videos to sync. All videos are already imported.', 'success')
+            flash('Sync complete. No changes detected.', 'success')
         
         return redirect(url_for('admin_youtube_list'))
     
