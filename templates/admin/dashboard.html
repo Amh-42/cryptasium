@@ -617,6 +617,16 @@
                 <div class="content-type-label">Longs</div>
                 <div class="content-type-points">+{{ "{:,}".format(gamification.longs_points) }} PT</div>
             </div>
+            <div class="content-type-item">
+                <div class="content-type-count">{{ "{:,}".format(gamification.subscriber_count) }}</div>
+                <div class="content-type-label">Subscribers</div>
+                <div class="content-type-points">+{{ "{:,}".format(gamification.subscriber_points|default(0)) }} PT</div>
+            </div>
+            <div class="content-type-item">
+                <div class="content-type-count">{{ "{:,}".format(gamification.total_views) }}</div>
+                <div class="content-type-label">Views</div>
+                <div class="content-type-points">+{{ "{:,}".format(gamification.views_points|default(0)) }} PT</div>
+            </div>
         </div>
 
         <div class="subscribers-display">

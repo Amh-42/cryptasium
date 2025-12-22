@@ -221,8 +221,8 @@ def create_app(config_name=None):
         longs_points = longs_count * CONTENT_POINTS['longs']
         
         # Calculate totals
-        total_points = (blog_points + shorts_points + short_longs_points + 
-                       podcast_points + mid_longs_points + longs_points)
+        content_points = (blog_points + shorts_points + short_longs_points + 
+                         podcast_points + mid_longs_points + longs_points)
         total_content = (blog_count + shorts_count + short_longs_count + 
                         podcast_count + mid_longs_count + longs_count)
         
@@ -231,6 +231,14 @@ def create_app(config_name=None):
         total_shorts_views = db.session.query(db.func.sum(Short.views)).scalar() or 0
         total_blog_views = db.session.query(db.func.sum(BlogPost.views)).scalar() or 0
         total_views = total_video_views + total_shorts_views + total_blog_views
+        
+        # Calculate subscriber and view points
+        subscriber_count = stats.subscriber_count or 0
+        subscriber_points = int(subscriber_count * CONTENT_POINTS['subscriber'])  # 1 sub = 20 pts
+        views_points = int(total_views * CONTENT_POINTS['view'])  # 1 view = 0.5 pts
+        
+        # Total points includes content + subscriber + view points
+        total_points = content_points + subscriber_points + views_points
         
         # Update stats
         stats.blog_count = blog_count
@@ -245,6 +253,8 @@ def create_app(config_name=None):
         stats.mid_longs_points = mid_longs_points
         stats.longs_count = longs_count
         stats.longs_points = longs_points
+        stats.subscriber_points = subscriber_points
+        stats.views_points = views_points
         
         stats.total_points = total_points
         stats.total_content_count = total_content

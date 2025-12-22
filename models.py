@@ -100,7 +100,9 @@ CONTENT_POINTS = {
     'short_longs': 200,  # Videos under 5 min
     'podcast': 400,
     'mid_longs': 800,    # Videos 5-15 min
-    'longs': 1000        # Videos over 15 min
+    'longs': 1000,       # Videos over 15 min
+    'subscriber': 20,    # 1 subscriber = 20 pts
+    'view': 0.5          # 1 view = 0.5 pts
 }
 
 def get_video_content_type(duration_seconds):
@@ -177,6 +179,8 @@ class GamificationStats(db.Model):
     podcast_points = db.Column(db.Integer, default=0)
     mid_longs_points = db.Column(db.Integer, default=0)
     longs_points = db.Column(db.Integer, default=0)
+    subscriber_points = db.Column(db.Integer, default=0)  # 1 subscriber = 20 pts
+    views_points = db.Column(db.Integer, default=0)       # 1 view = 0.5 pts
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -242,6 +246,8 @@ class GamificationStats(db.Model):
                 'podcast': {'count': self.podcast_count, 'points': self.podcast_points},
                 'mid_longs': {'count': self.mid_longs_count, 'points': self.mid_longs_points},
                 'longs': {'count': self.longs_count, 'points': self.longs_points},
+                'subscribers': {'count': self.subscriber_count, 'points': self.subscriber_points},
+                'views': {'count': self.total_views, 'points': self.views_points},
             },
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
