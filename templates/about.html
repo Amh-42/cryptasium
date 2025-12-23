@@ -5,6 +5,17 @@
 {% block content %}
 <style>
     /* ========== ABOUT PAGE STYLES ========== */
+    
+    /* Prevent horizontal overflow */
+    .about-hero,
+    .philosophy-section,
+    .values-section,
+    .stack-section,
+    .manifest-section {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
     .about-hero {
         min-height: 60vh;
         display: flex;
@@ -66,12 +77,18 @@
     .philosophy-block::before {
         content: '';
         position: absolute;
-        left: -40px;
+        left: 0;
         top: 0;
         width: 3px;
         height: 100%;
         background: linear-gradient(180deg, var(--accent), transparent);
         border-radius: 2px;
+    }
+    
+    @media (min-width: 600px) {
+        .philosophy-block {
+            padding-left: 40px;
+        }
     }
 
     .philosophy-label {
@@ -334,12 +351,19 @@
     .manifest-quote::before {
         content: '"';
         position: absolute;
-        left: -40px;
+        left: 0;
         top: -20px;
-        font-size: 120px;
+        font-size: 80px;
         color: rgba(14, 165, 233, 0.2);
         font-family: Georgia, serif;
         line-height: 1;
+    }
+    
+    @media (min-width: 600px) {
+        .manifest-quote::before {
+            left: -40px;
+            font-size: 120px;
+        }
     }
 
     .manifest-author {
@@ -482,7 +506,7 @@
 <!-- THE STACK (Team) -->
 <section class="stack-section">
     <div class="stack-header reveal">
-        <span class="tag">● THE STACK</span>
+        <span class="tag">● THE Team</span>
         <h2>Who builds this.</h2>
         <p>A hybrid collective of human creativity and artificial capability. We don't hide it—we embrace it.</p>
     </div>
