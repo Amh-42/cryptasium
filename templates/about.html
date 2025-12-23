@@ -1,0 +1,569 @@
+{% extends "base.html" %}
+
+{% block title %}About | Cryptasium{% endblock %}
+
+{% block content %}
+<style>
+    /* ========== ABOUT PAGE STYLES ========== */
+    .about-hero {
+        min-height: 60vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 120px 24px 80px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .about-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 800px;
+        height: 800px;
+        background: radial-gradient(circle, rgba(14, 165, 233, 0.08) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+    .about-hero .tag {
+        margin-bottom: 24px;
+    }
+
+    .about-hero h1 {
+        font-size: clamp(48px, 10vw, 96px);
+        font-weight: 700;
+        letter-spacing: -2px;
+        margin-bottom: 24px;
+        background: linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.6) 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .about-hero p {
+        font-size: 20px;
+        color: var(--text-muted);
+        max-width: 600px;
+        line-height: 1.6;
+    }
+
+    /* Philosophy Section */
+    .philosophy-section {
+        padding: 100px 24px;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .philosophy-block {
+        margin-bottom: 80px;
+        position: relative;
+    }
+
+    .philosophy-block::before {
+        content: '';
+        position: absolute;
+        left: -40px;
+        top: 0;
+        width: 3px;
+        height: 100%;
+        background: linear-gradient(180deg, var(--accent), transparent);
+        border-radius: 2px;
+    }
+
+    .philosophy-label {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--accent);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .philosophy-label::before {
+        content: '';
+        width: 8px;
+        height: 8px;
+        background: var(--accent);
+        border-radius: 50%;
+    }
+
+    .philosophy-title {
+        font-size: 32px;
+        font-weight: 600;
+        margin-bottom: 20px;
+        line-height: 1.3;
+    }
+
+    .philosophy-text {
+        font-size: 18px;
+        color: var(--text-muted);
+        line-height: 1.8;
+    }
+
+    /* Values Grid */
+    .values-section {
+        padding: 100px 24px;
+        background: linear-gradient(180deg, transparent 0%, rgba(14, 165, 233, 0.03) 50%, transparent 100%);
+    }
+
+    .values-header {
+        text-align: center;
+        margin-bottom: 60px;
+    }
+
+    .values-header h2 {
+        font-size: 48px;
+        margin-bottom: 16px;
+    }
+
+    .values-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2px;
+        max-width: 1000px;
+        margin: 0 auto;
+        background: var(--border);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    .value-card {
+        background: var(--bg-body);
+        padding: 48px 32px;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .value-card:hover {
+        background: rgba(14, 165, 233, 0.05);
+    }
+
+    .value-icon {
+        font-size: 32px;
+        color: var(--accent);
+        margin-bottom: 20px;
+    }
+
+    .value-name {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 12px;
+    }
+
+    .value-desc {
+        font-size: 14px;
+        color: var(--text-muted);
+        line-height: 1.6;
+    }
+
+    /* The Stack (Team) Section */
+    .stack-section {
+        padding: 100px 24px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .stack-header {
+        text-align: center;
+        margin-bottom: 80px;
+    }
+
+    .stack-header h2 {
+        font-size: 48px;
+        margin-bottom: 16px;
+    }
+
+    .stack-header p {
+        font-size: 18px;
+        color: var(--text-muted);
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .stack-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+    }
+
+    .stack-member {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 40px 32px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.4s ease;
+    }
+
+    .stack-member::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--member-color, var(--accent));
+        transform: scaleX(0);
+        transition: transform 0.4s ease;
+    }
+
+    .stack-member:hover::before {
+        transform: scaleX(1);
+    }
+
+    .stack-member:hover {
+        border-color: var(--member-color, var(--accent));
+        transform: translateY(-4px);
+    }
+
+    .stack-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 16px;
+        margin: 0 auto 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px;
+        background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+        border: 1px solid var(--border);
+        position: relative;
+    }
+
+    .stack-avatar i {
+        color: var(--member-color, var(--accent));
+    }
+
+    .stack-name {
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .stack-role {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--member-color, var(--accent));
+        letter-spacing: 1px;
+        margin-bottom: 16px;
+    }
+
+    .stack-desc {
+        font-size: 14px;
+        color: var(--text-muted);
+        line-height: 1.6;
+    }
+
+    .stack-member.human {
+        grid-column: span 3;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 40px;
+        text-align: left;
+        padding: 48px;
+        background: linear-gradient(135deg, rgba(14, 165, 233, 0.08), rgba(14, 165, 233, 0.02));
+        border-color: rgba(14, 165, 233, 0.3);
+    }
+
+    .stack-member.human .stack-avatar {
+        width: 120px;
+        height: 120px;
+        font-size: 48px;
+        margin: 0;
+        border-radius: 24px;
+        background: linear-gradient(135deg, var(--accent), rgba(14, 165, 233, 0.5));
+    }
+
+    .stack-member.human .stack-avatar i {
+        color: white;
+    }
+
+    .stack-member.human .stack-info {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .stack-member.human .stack-name {
+        font-size: 28px;
+    }
+
+    .stack-member.human .stack-desc {
+        font-size: 16px;
+        max-width: 500px;
+    }
+
+    /* Manifest Section */
+    .manifest-section {
+        padding: 120px 24px;
+        text-align: center;
+        position: relative;
+    }
+
+    .manifest-section::before {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(circle, rgba(14, 165, 233, 0.05) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+    .manifest-quote {
+        font-size: clamp(24px, 4vw, 40px);
+        font-weight: 300;
+        line-height: 1.4;
+        max-width: 800px;
+        margin: 0 auto 40px;
+        position: relative;
+    }
+
+    .manifest-quote::before {
+        content: '"';
+        position: absolute;
+        left: -40px;
+        top: -20px;
+        font-size: 120px;
+        color: rgba(14, 165, 233, 0.2);
+        font-family: Georgia, serif;
+        line-height: 1;
+    }
+
+    .manifest-author {
+        font-family: var(--font-mono);
+        font-size: 14px;
+        color: var(--text-muted);
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+        .values-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stack-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stack-member.human {
+            grid-column: span 1;
+            grid-template-columns: 1fr;
+            text-align: center;
+        }
+
+        .stack-member.human .stack-avatar {
+            margin: 0 auto 24px;
+        }
+
+        .stack-member.human .stack-desc {
+            max-width: 100%;
+        }
+
+        .philosophy-block::before {
+            display: none;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .about-hero {
+            padding: 100px 16px 60px;
+        }
+
+        .philosophy-section {
+            padding: 60px 16px;
+        }
+
+        .philosophy-title {
+            font-size: 24px;
+        }
+
+        .values-section {
+            padding: 60px 16px;
+        }
+
+        .values-header h2 {
+            font-size: 32px;
+        }
+
+        .stack-section {
+            padding: 60px 16px;
+        }
+
+        .stack-header h2 {
+            font-size: 32px;
+        }
+    }
+</style>
+
+<!-- HERO -->
+<section class="about-hero">
+    <div class="reveal">
+        <span class="tag">● WHO WE ARE</span>
+        <h1>We decode<br>the future.</h1>
+        <p>Part research lab. Part production studio. All obsession with making the complex feel inevitable.</p>
+    </div>
+</section>
+
+<!-- PHILOSOPHY -->
+<section class="philosophy-section">
+    <div class="philosophy-block reveal">
+        <div class="philosophy-label">Mission</div>
+        <h3 class="philosophy-title">To illuminate the hidden architectures that power our digital world.</h3>
+        <p class="philosophy-text">We don't just explain technology—we reveal the invisible systems that shape how you think, work, and live. Every video, every article, every podcast is a lens into the matrix of modern civilization.</p>
+    </div>
+
+    <div class="philosophy-block reveal">
+        <div class="philosophy-label">Vision</div>
+        <h3 class="philosophy-title">A world where anyone can understand the code that runs reality.</h3>
+        <p class="philosophy-text">Imagine a future where system architecture isn't gatekept by PhDs, where the algorithms controlling your feed are as legible as street signs. That's the world we're building—one deep dive at a time.</p>
+    </div>
+
+    <div class="philosophy-block reveal">
+        <div class="philosophy-label">Approach</div>
+        <h3 class="philosophy-title">High-fidelity storytelling for the curious mind.</h3>
+        <p class="philosophy-text">We treat every topic like it deserves a documentary. 3D visualizations. Cinematic pacing. Technical accuracy that would make an engineer nod. Because if you're going to spend 15 minutes learning something, it should feel like an experience.</p>
+    </div>
+</section>
+
+<!-- VALUES -->
+<section class="values-section">
+    <div class="values-header reveal">
+        <span class="tag">● PRINCIPLES</span>
+        <h2>What we stand for.</h2>
+    </div>
+
+    <div class="values-grid reveal">
+        <div class="value-card">
+            <div class="value-icon"><i class="ph ph-magnifying-glass"></i></div>
+            <h4 class="value-name">Radical Clarity</h4>
+            <p class="value-desc">If we can't explain it simply, we don't understand it well enough.</p>
+        </div>
+        <div class="value-card">
+            <div class="value-icon"><i class="ph ph-compass"></i></div>
+            <h4 class="value-name">First Principles</h4>
+            <p class="value-desc">We dig to the foundation. Surface-level explanations are for someone else.</p>
+        </div>
+        <div class="value-card">
+            <div class="value-icon"><i class="ph ph-palette"></i></div>
+            <h4 class="value-name">Craft Over Speed</h4>
+            <p class="value-desc">We ship when it's beautiful, not when the calendar says so.</p>
+        </div>
+        <div class="value-card">
+            <div class="value-icon"><i class="ph ph-brain"></i></div>
+            <h4 class="value-name">Intellectual Honesty</h4>
+            <p class="value-desc">We say "I don't know" more than most. It's how we learn.</p>
+        </div>
+        <div class="value-card">
+            <div class="value-icon"><i class="ph ph-infinity"></i></div>
+            <h4 class="value-name">Evergreen Value</h4>
+            <p class="value-desc">Content that's useful in 5 years beats content that's viral today.</p>
+        </div>
+        <div class="value-card">
+            <div class="value-icon"><i class="ph ph-hand-heart"></i></div>
+            <h4 class="value-name">Respect for Time</h4>
+            <p class="value-desc">Your attention is sacred. We earn every second of it.</p>
+        </div>
+    </div>
+</section>
+
+<!-- THE STACK (Team) -->
+<section class="stack-section">
+    <div class="stack-header reveal">
+        <span class="tag">● THE STACK</span>
+        <h2>Who builds this.</h2>
+        <p>A hybrid collective of human creativity and artificial capability. We don't hide it—we embrace it.</p>
+    </div>
+
+    <div class="stack-grid">
+        <!-- Human Lead -->
+        <div class="stack-member human reveal">
+            <div class="stack-avatar">
+                <i class="ph ph-user"></i>
+            </div>
+            <div class="stack-info">
+                <div class="stack-role">CEO</div>
+                <h4 class="stack-name">The Human</h4>
+                <p class="stack-desc">The one who asks "why" until the universe gets annoyed. Orchestrates the vision, writes the scripts, and makes sure the AI doesn't get too creative. Also handles the existential dread of content creation.</p>
+            </div>
+        </div>
+
+        <!-- AI Partners -->
+        <div class="stack-member reveal" style="--member-color: #10a37f;">
+            <div class="stack-avatar">
+                <i class="ph ph-robot"></i>
+            </div>
+            <h4 class="stack-name">ChatGPT</h4>
+            <div class="stack-role">RESEARCH & IDEATION</div>
+            <p class="stack-desc">The tireless research partner who reads a thousand papers so you don't have to. Brainstorming at 3 AM? It's there.</p>
+        </div>
+
+        <div class="stack-member reveal" style="--member-color: #4285f4;">
+            <div class="stack-avatar">
+                <i class="ph ph-google-logo"></i>
+            </div>
+            <h4 class="stack-name">Gemini</h4>
+            <div class="stack-role">MULTIMODAL REASONING</div>
+            <p class="stack-desc">The one who sees the big picture—literally. Analyzes visuals, connects dots across domains, and catches what others miss.</p>
+        </div>
+
+        <div class="stack-member reveal" style="--member-color: #ff0000;">
+            <div class="stack-avatar">
+                <i class="ph ph-youtube-logo"></i>
+            </div>
+            <h4 class="stack-name">YouTube</h4>
+            <div class="stack-role">DISTRIBUTION ENGINE</div>
+            <p class="stack-desc">The stage where ideas become movements. 2 billion monthly users. Infinite opportunity for impact.</p>
+        </div>
+
+        <div class="stack-member reveal" style="--member-color: #ff61f6;">
+            <div class="stack-avatar">
+                <i class="ph ph-paint-brush"></i>
+            </div>
+            <h4 class="stack-name">Adobe</h4>
+            <div class="stack-role">CREATIVE SUITE</div>
+            <p class="stack-desc">Premiere. After Effects. Illustrator. The toolkit that turns raw ideas into polished visual stories.</p>
+        </div>
+
+        <div class="stack-member reveal" style="--member-color: #f5792a;">
+            <div class="stack-avatar">
+                <i class="ph ph-cube"></i>
+            </div>
+            <h4 class="stack-name">Blender</h4>
+            <div class="stack-role">3D ENGINE</div>
+            <p class="stack-desc">The open-source powerhouse behind every 3D visualization. From abstract concepts to photorealistic renders—all free.</p>
+        </div>
+
+        <div class="stack-member reveal" style="--member-color: #fbbf24;">
+            <div class="stack-avatar">
+                <i class="ph ph-game-controller"></i>
+            </div>
+            <h4 class="stack-name">LifeUp</h4>
+            <div class="stack-role">GAMIFICATION SYSTEM</div>
+            <p class="stack-desc">The app that turns content creation into an RPG. XP, ranks, daily quests—because discipline needs a game layer.</p>
+        </div>
+    </div>
+</section>
+
+<!-- MANIFEST -->
+<section class="manifest-section reveal">
+    <blockquote class="manifest-quote">
+        We build at the intersection of human curiosity and machine capability. Not because it's trendy—because it's true.
+    </blockquote>
+    <p class="manifest-author">— Cryptasium, 2024</p>
+</section>
+
+{% endblock %}
+

@@ -332,6 +332,11 @@ def create_app(config_name=None):
                              latest_videos=latest_videos,
                              latest_shorts=latest_shorts)
     
+    @app.route('/about')
+    def about():
+        """About page"""
+        return render_template('about.html')
+    
     @app.route('/submit-idea', methods=['GET', 'POST'])
     def submit_idea():
         """Submit topic idea page"""
