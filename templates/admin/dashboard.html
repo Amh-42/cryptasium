@@ -66,13 +66,7 @@
         align-items: center;
         justify-content: center;
         font-size: 40px;
-        box-shadow: 0 0 30px rgba(var(--rank-color-rgb, 102, 102, 102), 0.3);
-        animation: rankPulse 3s ease-in-out infinite;
-    }
-
-    @keyframes rankPulse {
-        0%, 100% { transform: scale(1); box-shadow: 0 0 30px rgba(var(--rank-color-rgb, 102, 102, 102), 0.3); }
-        50% { transform: scale(1.05); box-shadow: 0 0 50px rgba(var(--rank-color-rgb, 102, 102, 102), 0.5); }
+        box-shadow: 0 0 20px rgba(var(--rank-color-rgb, 102, 102, 102), 0.2);
     }
 
     .rank-details h2 {
@@ -521,16 +515,16 @@
         <div class="rank-header">
             <div class="rank-info">
                 <div class="rank-badge">
-                    {{ current_rank.icon if current_rank else '⭐' }}
+                    <img src="{{ url_for('static', filename='badges/' ~ (current_rank.icon if current_rank else 'PNG/UN.png')) }}" alt="{{ current_rank.code if current_rank else 'UN' }}" style="width: 60px; height: 60px;">
                 </div>
                 <div class="rank-details">
                     <h2>{{ current_rank.name if current_rank else 'Unranked' }}</h2>
-                    <span class="rank-code">{{ current_rank.code if current_rank else 'UNRANKED' }}</span>
+                    <span class="rank-code">{{ current_rank.code if current_rank else 'UN' }}</span>
                 </div>
             </div>
             <div class="points-display">
                 <div class="points-value">{{ "{:,}".format(gamification.total_points) }}</div>
-                <div class="points-label">Total Points</div>
+                <div class="points-label">Total {{ points_name }}</div>
             </div>
         </div>
 
@@ -538,7 +532,10 @@
         <div class="progress-section">
             <div class="next-rank-label">
                 <span>Progress to next rank</span>
-                <span class="next-rank-name">{{ next_rank.icon }} {{ next_rank.name }} ({{ next_rank.code }})</span>
+                <span class="next-rank-name" style="display: flex; align-items: center; gap: 8px;">
+                    <img src="{{ url_for('static', filename='badges/' ~ next_rank.icon) }}" alt="{{ next_rank.code }}" style="width: 24px; height: 24px;">
+                    {{ next_rank.name }} ({{ next_rank.code }})
+                </span>
             </div>
             <div class="progress-bars">
                 <div class="progress-item">
@@ -581,51 +578,56 @@
         </div>
         {% elif current_rank and current_rank.code == 'AL' %}
         <div class="max-rank-achieved">
-            <h3>👑 APEX LEGEND ACHIEVED!</h3>
+            <h3><i class="ph ph-crown"></i> APEX LEGEND ACHIEVED!</h3>
             <p style="color: var(--text-muted);">You have reached the maximum rank. Legendary status unlocked!</p>
         </div>
         {% endif %}
 
         <div class="content-breakdown">
+            <div class="content-type-item" style="background: rgba(14, 165, 233, 0.1); border-color: rgba(14, 165, 233, 0.3);">
+                <div class="content-type-count"><i class="ph ph-lightning" style="font-size: 24px; color: var(--accent);"></i></div>
+                <div class="content-type-label">Daily XP</div>
+                <div class="content-type-points">+{{ "{:,}".format(gamification.daily_xp_points|default(0)) }} {{ points_name }}</div>
+            </div>
             <div class="content-type-item">
                 <div class="content-type-count">{{ gamification.blog_count }}</div>
                 <div class="content-type-label">Blog</div>
-                <div class="content-type-points">+{{ "{:,}".format(gamification.blog_points) }} PT</div>
+                <div class="content-type-points">+{{ "{:,}".format(gamification.blog_points) }} {{ points_name }}</div>
             </div>
             <div class="content-type-item">
                 <div class="content-type-count">{{ gamification.shorts_count }}</div>
                 <div class="content-type-label">Shorts</div>
-                <div class="content-type-points">+{{ "{:,}".format(gamification.shorts_points) }} PT</div>
+                <div class="content-type-points">+{{ "{:,}".format(gamification.shorts_points) }} {{ points_name }}</div>
             </div>
             <div class="content-type-item">
                 <div class="content-type-count">{{ gamification.short_longs_count }}</div>
                 <div class="content-type-label">Short Longs</div>
-                <div class="content-type-points">+{{ "{:,}".format(gamification.short_longs_points) }} PT</div>
+                <div class="content-type-points">+{{ "{:,}".format(gamification.short_longs_points) }} {{ points_name }}</div>
             </div>
             <div class="content-type-item">
                 <div class="content-type-count">{{ gamification.podcast_count }}</div>
                 <div class="content-type-label">Podcast</div>
-                <div class="content-type-points">+{{ "{:,}".format(gamification.podcast_points) }} PT</div>
+                <div class="content-type-points">+{{ "{:,}".format(gamification.podcast_points) }} {{ points_name }}</div>
             </div>
             <div class="content-type-item">
                 <div class="content-type-count">{{ gamification.mid_longs_count }}</div>
                 <div class="content-type-label">Mid Longs</div>
-                <div class="content-type-points">+{{ "{:,}".format(gamification.mid_longs_points) }} PT</div>
+                <div class="content-type-points">+{{ "{:,}".format(gamification.mid_longs_points) }} {{ points_name }}</div>
             </div>
             <div class="content-type-item">
                 <div class="content-type-count">{{ gamification.longs_count }}</div>
                 <div class="content-type-label">Longs</div>
-                <div class="content-type-points">+{{ "{:,}".format(gamification.longs_points) }} PT</div>
+                <div class="content-type-points">+{{ "{:,}".format(gamification.longs_points) }} {{ points_name }}</div>
             </div>
             <div class="content-type-item">
                 <div class="content-type-count">{{ "{:,}".format(gamification.subscriber_count) }}</div>
                 <div class="content-type-label">Subscribers</div>
-                <div class="content-type-points">+{{ "{:,}".format(gamification.subscriber_points|default(0)) }} PT</div>
+                <div class="content-type-points">+{{ "{:,}".format(gamification.subscriber_points|default(0)) }} {{ points_name }}</div>
             </div>
             <div class="content-type-item">
                 <div class="content-type-count">{{ "{:,}".format(gamification.total_views) }}</div>
                 <div class="content-type-label">Views</div>
-                <div class="content-type-points">+{{ "{:,}".format(gamification.views_points|default(0)) }} PT</div>
+                <div class="content-type-points">+{{ "{:,}".format(gamification.views_points|default(0)) }} {{ points_name }}</div>
             </div>
         </div>
 
@@ -757,6 +759,10 @@
         Quick Actions
     </h2>
     <div class="actions-grid">
+        <a href="{{ url_for('admin_progress') }}" class="quick-action-btn" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(14, 165, 233, 0.1)); border-color: rgba(168, 85, 247, 0.5);">
+            <i class="ph ph-game-controller"></i>
+            <span>Daily XP</span>
+        </a>
         <form method="POST" action="{{ url_for('admin_youtube_sync') }}">
             <button type="submit" class="quick-action-btn" style="background: rgba(14, 165, 233, 0.1); border-color: var(--accent);">
                 <i class="ph ph-arrows-clockwise"></i>

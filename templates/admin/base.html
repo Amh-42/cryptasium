@@ -440,6 +440,7 @@
                 <div class="nav-group">
                     <div class="nav-group-label">Main</div>
                     <a href="{{ url_for('admin_dashboard') }}" class="nav-item" data-route="dashboard"><i class="ph ph-gauge"></i><span>Dashboard</span></a>
+                    <a href="{{ url_for('admin_progress') }}" class="nav-item" data-route="progress"><i class="ph ph-game-controller"></i><span>Progress</span></a>
                 </div>
                 <div class="nav-group">
                     <div class="nav-group-label">Content</div>
@@ -493,9 +494,9 @@
     <nav class="mobile-bottom-nav">
         <div class="mobile-nav-items">
             <a href="{{ url_for('admin_dashboard') }}" class="mobile-nav-item" data-route="dashboard"><i class="ph ph-gauge"></i><span>Dashboard</span></a>
-            <a href="{{ url_for('admin_blog_list') }}" class="mobile-nav-item" data-route="blog"><i class="ph ph-article"></i><span>Blog</span></a>
+            <a href="{{ url_for('admin_progress') }}" class="mobile-nav-item" data-route="progress"><i class="ph ph-game-controller"></i><span>Progress</span></a>
             <a href="{{ url_for('admin_youtube_list') }}" class="mobile-nav-item" data-route="youtube"><i class="ph ph-youtube-logo"></i><span>Videos</span></a>
-            <a href="{{ url_for('admin_podcast_list') }}" class="mobile-nav-item" data-route="podcast"><i class="ph ph-microphone"></i><span>Podcast</span></a>
+            <a href="{{ url_for('admin_blog_list') }}" class="mobile-nav-item" data-route="blog"><i class="ph ph-article"></i><span>Blog</span></a>
             <button class="mobile-nav-item" id="mobileMoreBtn"><i class="ph ph-dots-three"></i><span>More</span></button>
         </div>
     </nav>
@@ -505,6 +506,7 @@
         <div class="mobile-more-overlay"></div>
         <div class="mobile-more-content">
             <div class="mobile-more-items">
+                <a href="{{ url_for('admin_podcast_list') }}" class="mobile-more-item"><i class="ph ph-microphone"></i><span>Podcast</span></a>
                 <a href="{{ url_for('admin_shorts_list') }}" class="mobile-more-item"><i class="ph ph-video"></i><span>Shorts</span></a>
                 <a href="{{ url_for('admin_community_list') }}" class="mobile-more-item"><i class="ph ph-users"></i><span>Community</span></a>
                 <a href="{{ url_for('admin_ideas_list') }}" class="mobile-more-item">

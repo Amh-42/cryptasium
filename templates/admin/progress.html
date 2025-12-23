@@ -1,0 +1,978 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Progress Dashboard | Cryptasium{% endblock %}
+
+{% block page_title %}Progress Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ========== PROGRESS DASHBOARD STYLES ========== */
+    .progress-page {
+        display: grid;
+        gap: 24px;
+    }
+
+    /* Hero Stats Row */
+    .hero-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+
+    .hero-stat {
+        background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(14, 165, 233, 0.05));
+        border: 1px solid rgba(14, 165, 233, 0.3);
+        border-radius: 16px;
+        padding: 20px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero-stat.streak {
+        background: linear-gradient(135deg, rgba(255, 149, 0, 0.2), rgba(255, 149, 0, 0.05));
+        border-color: rgba(255, 149, 0, 0.4);
+    }
+
+    .hero-stat.perfect {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.05));
+        border-color: rgba(34, 197, 94, 0.4);
+    }
+
+    .hero-stat.rank {
+        background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(168, 85, 247, 0.05));
+        border-color: rgba(168, 85, 247, 0.4);
+    }
+
+    .hero-stat-icon {
+        font-size: 32px;
+        margin-bottom: 8px;
+    }
+
+    .hero-stat-value {
+        font-size: 36px;
+        font-weight: 800;
+        color: var(--text-main);
+        line-height: 1;
+    }
+
+    .hero-stat-label {
+        font-size: 12px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-top: 4px;
+    }
+
+    /* Section Cards */
+    .section-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .section-title-icon {
+        font-size: 24px;
+    }
+
+    .section-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .section-badge.goal-met {
+        background: rgba(34, 197, 94, 0.2);
+        color: #22c55e;
+    }
+
+    .section-badge.in-progress {
+        background: rgba(245, 158, 11, 0.2);
+        color: #f59e0b;
+    }
+
+    .section-content {
+        padding: 24px;
+    }
+
+    /* Daily XP Tasks */
+    .daily-tasks {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .daily-task {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        transition: all 0.2s;
+    }
+
+    .daily-task:hover {
+        border-color: var(--accent);
+        background: rgba(255, 255, 255, 0.04);
+    }
+
+    .daily-task.completed {
+        border-color: rgba(34, 197, 94, 0.5);
+        background: rgba(34, 197, 94, 0.1);
+    }
+
+    .task-checkbox {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 2px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: transparent;
+        flex-shrink: 0;
+    }
+
+    .task-checkbox:hover {
+        border-color: var(--accent);
+    }
+
+    .daily-task.completed .task-checkbox {
+        background: #22c55e;
+        border-color: #22c55e;
+        color: white;
+    }
+
+    .task-icon {
+        font-size: 24px;
+        flex-shrink: 0;
+    }
+
+    .task-info {
+        flex: 1;
+    }
+
+    .task-name {
+        font-weight: 600;
+        font-size: 15px;
+        margin-bottom: 2px;
+    }
+
+    .task-desc {
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    .task-xp {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--accent);
+        padding: 8px 16px;
+        background: rgba(14, 165, 233, 0.1);
+        border-radius: 20px;
+    }
+
+    /* XP Progress Bar */
+    .xp-progress-container {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+    }
+
+    .xp-progress-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+    }
+
+    .xp-current {
+        font-size: 24px;
+        font-weight: 700;
+    }
+
+    .xp-goal {
+        font-size: 14px;
+        color: var(--text-muted);
+    }
+
+    .xp-bar {
+        height: 12px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+    .xp-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent), #06b6d4);
+        border-radius: 6px;
+        transition: width 0.5s ease;
+    }
+
+    .xp-bar-fill.complete {
+        background: linear-gradient(90deg, #22c55e, #16a34a);
+    }
+
+    /* Weekly Full House */
+    .weekly-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+
+    .weekly-item {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.2s;
+    }
+
+    .weekly-item.complete {
+        border-color: rgba(34, 197, 94, 0.5);
+        background: rgba(34, 197, 94, 0.1);
+    }
+
+    .weekly-icon {
+        font-size: 32px;
+        margin-bottom: 8px;
+    }
+
+    .weekly-name {
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+
+    .weekly-desc {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-bottom: 12px;
+    }
+
+    .weekly-counter {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+    }
+
+    .counter-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border);
+        color: var(--text-main);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .counter-btn:hover {
+        background: var(--accent);
+        border-color: var(--accent);
+    }
+
+    .counter-value {
+        font-size: 20px;
+        font-weight: 700;
+        min-width: 60px;
+    }
+
+    .counter-target {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    /* Perfect Week Banner */
+    .perfect-week-banner {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.05));
+        border: 2px solid rgba(34, 197, 94, 0.5);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        margin-top: 20px;
+    }
+
+    .perfect-week-banner h3 {
+        font-size: 20px;
+        color: #22c55e;
+        margin-bottom: 8px;
+    }
+
+    .perfect-week-banner p {
+        color: var(--text-muted);
+        font-size: 14px;
+    }
+
+    /* Architect Ranks Ladder */
+    .ranks-ladder {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .rank-item {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        opacity: 0.5;
+        transition: all 0.2s;
+    }
+
+    .rank-item.current {
+        opacity: 1;
+        border-color: var(--accent);
+        background: rgba(14, 165, 233, 0.1);
+        box-shadow: 0 0 20px rgba(14, 165, 233, 0.2);
+    }
+
+    .rank-item.achieved {
+        opacity: 1;
+        border-color: rgba(34, 197, 94, 0.5);
+        background: rgba(34, 197, 94, 0.05);
+    }
+
+    .rank-item.next {
+        opacity: 0.8;
+        border-style: dashed;
+    }
+
+    .rank-level {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+
+    .rank-item.current .rank-level {
+        background: var(--accent);
+    }
+
+    .rank-item.achieved .rank-level {
+        background: #22c55e;
+    }
+
+    .rank-icon {
+        font-size: 28px;
+        flex-shrink: 0;
+    }
+
+    .rank-info {
+        flex: 1;
+    }
+
+    .rank-name {
+        font-weight: 600;
+        font-size: 15px;
+        margin-bottom: 2px;
+    }
+
+    .rank-milestone {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    .rank-focus {
+        font-size: 11px;
+        color: var(--text-muted);
+        font-style: italic;
+    }
+
+    .rank-code {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        padding: 4px 10px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+    }
+
+    /* Milestone Buttons */
+    .milestones-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+    }
+
+    .milestone-btn {
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: var(--text-main);
+    }
+
+    .milestone-btn:hover {
+        border-color: var(--accent);
+        background: rgba(14, 165, 233, 0.1);
+    }
+
+    .milestone-btn.achieved {
+        border-color: rgba(34, 197, 94, 0.5);
+        background: rgba(34, 197, 94, 0.1);
+    }
+
+    .milestone-icon {
+        font-size: 24px;
+        margin-bottom: 8px;
+    }
+
+    .milestone-name {
+        font-weight: 600;
+        font-size: 13px;
+    }
+
+    .milestone-status {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 4px;
+    }
+
+    /* Recent Activity */
+    .recent-logs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .log-day {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        transition: all 0.2s;
+    }
+
+    .log-day.goal-met {
+        background: rgba(34, 197, 94, 0.3);
+        border: 1px solid rgba(34, 197, 94, 0.5);
+        color: #22c55e;
+    }
+
+    .log-day.partial {
+        background: rgba(245, 158, 11, 0.2);
+        border: 1px solid rgba(245, 158, 11, 0.4);
+        color: #f59e0b;
+    }
+
+    .log-day.missed {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+    }
+
+    .log-day-name {
+        font-weight: 600;
+        font-size: 10px;
+    }
+
+    .log-day-xp {
+        font-weight: 700;
+    }
+
+    /* Two Column Layout */
+    .two-columns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+
+    @media (max-width: 1024px) {
+        .two-columns {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Monthly Sprint */
+    .monthly-sprint-form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .sprint-input {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .sprint-input label {
+        font-size: 12px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+    }
+
+    .sprint-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    .sprint-checkbox:hover {
+        border-color: var(--accent);
+    }
+
+    .sprint-checkbox input {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--accent);
+    }
+
+    /* Animations */
+    .current-rank-glow {
+        box-shadow: 0 0 20px rgba(14, 165, 233, 0.3);
+    }
+
+    /* Streak Fire Animation */
+    @keyframes fire {
+        0%, 100% { transform: scale(1) rotate(-2deg); }
+        25% { transform: scale(1.1) rotate(2deg); }
+        50% { transform: scale(1) rotate(-2deg); }
+        75% { transform: scale(1.1) rotate(2deg); }
+    }
+
+    .streak-fire {
+        animation: fire 0.5s ease-in-out infinite;
+        display: inline-block;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .hero-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .weekly-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .milestones-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .section-header {
+            flex-direction: column;
+            gap: 12px;
+            align-items: flex-start;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="progress-page">
+    <!-- Hero Stats -->
+    <div class="hero-stats">
+        <div class="hero-stat">
+            <div class="hero-stat-icon"><i class="ph ph-lightning" style="font-size: 32px; color: var(--accent);"></i></div>
+            <div class="hero-stat-value">{{ today_xp.total_xp }}</div>
+            <div class="hero-stat-label">Today's {{ points_name }}</div>
+        </div>
+        <div class="hero-stat streak">
+            <div class="hero-stat-icon">
+                <i class="ph ph-fire {% if daily_streak >= 7 %}streak-fire{% endif %}" style="font-size: 32px; color: #ff9500;"></i>
+            </div>
+            <div class="hero-stat-value">{{ daily_streak }}</div>
+            <div class="hero-stat-label">Day Streak</div>
+        </div>
+        <div class="hero-stat perfect">
+            <div class="hero-stat-icon"><i class="ph ph-sparkle" style="font-size: 32px; color: #22c55e;"></i></div>
+            <div class="hero-stat-value">{{ weekly_streak }}</div>
+            <div class="hero-stat-label">Perfect Weeks</div>
+        </div>
+        <div class="hero-stat rank" style="--rank-color: {{ current_rank.color if current_rank else '#666' }}; border-color: {{ current_rank.color if current_rank else 'rgba(168, 85, 247, 0.4)' }};">
+            <div class="hero-stat-icon">
+                <img src="{{ url_for('static', filename='badges/' ~ (current_rank.icon if current_rank else 'PNG/UN.png')) }}" alt="{{ current_rank.code if current_rank else 'UN' }}" style="width: 40px; height: 40px;">
+            </div>
+            <div class="hero-stat-value" style="color: {{ current_rank.color if current_rank else 'inherit' }};">{{ current_rank.code if current_rank else 'UN' }}</div>
+            <div class="hero-stat-label">{{ current_rank.name if current_rank else 'Unranked' }}</div>
+        </div>
+        <div class="hero-stat">
+            <div class="hero-stat-icon"><i class="ph ph-gem" style="font-size: 32px; color: #06b6d4;"></i></div>
+            <div class="hero-stat-value">{{ "{:,}".format(gamification.total_points) if gamification else 0 }}</div>
+            <div class="hero-stat-label">Total {{ points_name }}</div>
+        </div>
+    </div>
+
+    <!-- Daily XP Section -->
+    <div class="section-card">
+        <div class="section-header">
+            <div class="section-title">
+                <span class="section-title-icon"><i class="ph ph-clipboard-text"></i></span>
+                <span>Daily XP Grind</span>
+            </div>
+            <span class="section-badge {% if today_xp.goal_met %}goal-met{% else %}in-progress{% endif %}">
+                {% if today_xp.goal_met %}<i class="ph ph-check"></i> Goal Met!{% else %}{{ today_xp.total_xp }}/{{ daily_xp_goal }} XP{% endif %}
+            </span>
+        </div>
+        <div class="section-content">
+            <div class="daily-tasks">
+                {% for task in daily_tasks %}
+                {% set is_completed = (task.task_key == 'research' and today_xp.research_completed) or 
+                                      (task.task_key == 'recording' and today_xp.recording_completed) or 
+                                      (task.task_key == 'engagement' and today_xp.engagement_completed) or 
+                                      (task.task_key == 'learning' and today_xp.learning_completed) %}
+                <form method="POST" action="{{ url_for('admin_toggle_daily_task') }}" class="daily-task {% if is_completed %}completed{% endif %}">
+                    <input type="hidden" name="task" value="{{ task.task_key }}">
+                    <button type="submit" class="task-checkbox">
+                        {% if is_completed %}<i class="ph ph-check" style="font-size: 16px;"></i>{% endif %}
+                    </button>
+                    <span class="task-icon"><i class="ph {{ task.icon }}"></i></span>
+                    <div class="task-info">
+                        <div class="task-name">{{ task.name }}</div>
+                        <div class="task-desc">{{ task.description }}</div>
+                    </div>
+                    <span class="task-xp">+{{ task.xp_value }} {{ points_name }}</span>
+                </form>
+                {% endfor %}
+            </div>
+
+            <div class="xp-progress-container">
+                <div class="xp-progress-header">
+                    <span class="xp-current">{{ today_xp.total_xp }} {{ points_name }}</span>
+                    <span class="xp-goal">Goal: {{ daily_xp_goal }} {{ points_name }}</span>
+                </div>
+                <div class="xp-bar">
+                    <div class="xp-bar-fill {% if today_xp.goal_met %}complete{% endif %}" 
+                         style="width: {{ [100, (today_xp.total_xp / daily_xp_goal * 100)|int]|min }}%;"></div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
+                <h4 style="font-size: 14px; color: var(--text-muted); margin-bottom: 12px;">Last 7 Days</h4>
+                <div class="recent-logs">
+                    {% for log in recent_logs %}
+                    <div class="log-day {% if log.goal_met %}goal-met{% elif log.total_xp > 0 %}partial{% else %}missed{% endif %}"
+                         title="{{ log.date.strftime('%b %d') }} - {{ log.total_xp }} XP">
+                        <span class="log-day-name">{{ log.date.strftime('%a') }}</span>
+                        <span class="log-day-xp">{{ log.total_xp }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weekly Full House -->
+    <div class="section-card">
+        <div class="section-header">
+            <div class="section-title">
+                <span class="section-title-icon"><i class="ph ph-house"></i></span>
+                <span>Weekly Full House</span>
+            </div>
+            <span class="section-badge {% if current_week.perfect_week %}goal-met{% else %}in-progress{% endif %}">
+                {% if current_week.perfect_week %}<i class="ph ph-confetti"></i> PERFECT WEEK!{% else %}Week {{ current_week.week_number }}{% endif %}
+            </span>
+        </div>
+        <div class="section-content">
+            <div class="weekly-grid">
+                {% for req in weekly_requirements %}
+                {% set completed_count = current_week.long_form_completed if req.content_type == 'long_form' else 
+                                         (current_week.shorts_completed if req.content_type == 'shorts' else 
+                                         (current_week.blog_completed if req.content_type == 'blog' else 
+                                         current_week.podcast_completed)) %}
+                {% set is_complete = completed_count >= req.required_count %}
+                <div class="weekly-item {% if is_complete %}complete{% endif %}">
+                    <div class="weekly-icon"><i class="ph {{ req.icon }}"></i></div>
+                    <div class="weekly-name">{{ req.name }}</div>
+                    <div class="weekly-desc">{{ req.description }}</div>
+                    <div class="weekly-counter">
+                        <div class="counter-value" style="font-size: 28px;">{{ completed_count }}<span style="color: var(--text-muted); font-size: 16px;">/{{ req.required_count }}</span></div>
+                    </div>
+                    {% if is_complete %}
+                    <div style="margin-top: 8px;"><span style="color: #22c55e; font-size: 12px;"><i class="ph ph-check-circle"></i> Complete</span></div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div style="margin-top: 16px; padding: 12px 16px; background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 8px; font-size: 13px; color: var(--text-muted);">
+                <i class="ph ph-info" style="color: var(--accent);"></i>
+                Auto-synced from your published content this week ({{ current_week.week_start.strftime('%b %d') }} - {{ current_week.week_end.strftime('%b %d') }})
+            </div>
+
+            {% if current_week.perfect_week %}
+            <div class="perfect-week-banner">
+                <h3><i class="ph ph-confetti"></i> PERFECT WEEK ACHIEVED!</h3>
+                <p>+{{ perfect_week_bonus }} {{ points_name }} Bonus added to your total! Keep the streak going!</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="two-columns">
+        <!-- Rank Ladder (Existing System) -->
+        <div class="section-card">
+            <div class="section-header">
+                <div class="section-title">
+                    <span class="section-title-icon"><i class="ph ph-trophy"></i></span>
+                    <span>Rank Progression</span>
+                </div>
+                <span class="section-badge goal-met" style="background: rgba({{ current_rank.color|replace('#', '') }}, 0.2) if current_rank else 'rgba(102, 102, 102, 0.2)'; display: flex; align-items: center; gap: 6px;">
+                    <img src="{{ url_for('static', filename='badges/' ~ (current_rank.icon if current_rank else 'PNG/UN.png')) }}" alt="{{ current_rank.code if current_rank else 'UN' }}" style="width: 20px; height: 20px;">
+                    {{ current_rank.code if current_rank else 'UN' }}
+                </span>
+            </div>
+            <div class="section-content">
+                <!-- Progress to Next Rank -->
+                {% if progress and next_rank %}
+                <div style="margin-bottom: 24px; padding: 20px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <span style="color: var(--text-muted); font-size: 14px;">Progress to</span>
+                        <span style="font-weight: 600; color: {{ next_rank.color }}; display: flex; align-items: center; gap: 8px;">
+                            <img src="{{ url_for('static', filename='badges/' ~ next_rank.icon) }}" alt="{{ next_rank.code }}" style="width: 24px; height: 24px;">
+                            {{ next_rank.name }}
+                        </span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                        <div>
+                            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">{{ points_name }}</div>
+                            <div class="xp-bar" style="height: 8px;"><div class="xp-bar-fill {% if progress.points >= 100 %}complete{% endif %}" style="width: {{ progress.points }}%;"></div></div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">{{ "{:,}".format(gamification.total_points) }} / {{ "{:,}".format(next_rank.points) }}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Subscribers</div>
+                            <div class="xp-bar" style="height: 8px;"><div class="xp-bar-fill {% if progress.subscribers >= 100 %}complete{% endif %}" style="width: {{ progress.subscribers }}%;"></div></div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">{{ "{:,}".format(gamification.subscriber_count) }} / {{ "{:,}".format(next_rank.subscribers) }}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Views</div>
+                            <div class="xp-bar" style="height: 8px;"><div class="xp-bar-fill {% if progress.views >= 100 %}complete{% endif %}" style="width: {{ progress.views }}%;"></div></div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">{{ "{:,}".format(gamification.total_views) }} / {{ "{:,}".format(next_rank.views) }}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Content</div>
+                            <div class="xp-bar" style="height: 8px;"><div class="xp-bar-fill {% if progress.content >= 100 %}complete{% endif %}" style="width: {{ progress.content }}%;"></div></div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">{{ gamification.total_content_count }} / {{ next_rank.content }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% elif current_rank and current_rank.code == 'AL' %}
+                <div class="perfect-week-banner" style="margin-bottom: 24px;">
+                    <h3><i class="ph ph-crown"></i> APEX LEGEND ACHIEVED!</h3>
+                    <p>Maximum rank reached. You are the authority in tech!</p>
+                </div>
+                {% endif %}
+
+                <!-- Rank Ladder -->
+                <div class="ranks-ladder">
+                    {% for rank in ranks %}
+                    {% set is_current = current_rank and current_rank.code == rank.code %}
+                    {% set is_achieved = gamification and gamification.total_points >= rank.points and gamification.subscriber_count >= rank.subscribers and gamification.total_views >= rank.views and gamification.total_content_count >= rank.content %}
+                    {% set is_next = next_rank and next_rank.code == rank.code %}
+                    <div class="rank-item {% if is_current %}current current-rank-glow{% elif is_achieved and not is_current %}achieved{% elif is_next %}next{% endif %}">
+                        <div class="rank-icon">
+                            <img src="{{ url_for('static', filename='badges/' ~ rank.icon) }}" alt="{{ rank.code }}" style="width: 36px; height: 36px;">
+                        </div>
+                        <div class="rank-info">
+                            <div class="rank-name" style="color: {{ rank.color }};">{{ rank.name }}</div>
+                            <div class="rank-milestone">{{ "{:,}".format(rank.points) }} {{ points_name }} • {{ "{:,}".format(rank.subscribers) }} subs • {{ "{:,}".format(rank.views) }} views</div>
+                        </div>
+                        <div class="rank-code" style="color: {{ rank.color }};">{{ rank.code }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Milestones & Monthly -->
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+            <!-- Quick Milestones -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span class="section-title-icon"><i class="ph ph-target"></i></span>
+                        <span>Milestones</span>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="milestones-grid">
+                        <form method="POST" action="{{ url_for('admin_toggle_milestone') }}" style="display: contents;">
+                            <input type="hidden" name="milestone" value="collab">
+                            <button type="submit" class="milestone-btn {% if architect_progress.collabs_completed > 0 %}achieved{% endif %}">
+                                <div class="milestone-icon"><i class="ph ph-handshake"></i></div>
+                                <div class="milestone-name">Collab</div>
+                                <div class="milestone-status">{{ architect_progress.collabs_completed }} completed</div>
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin_toggle_milestone') }}" style="display: contents;">
+                            <input type="hidden" name="milestone" value="series">
+                            <button type="submit" class="milestone-btn {% if architect_progress.series_launched > 0 %}achieved{% endif %}">
+                                <div class="milestone-icon"><i class="ph ph-monitor-play"></i></div>
+                                <div class="milestone-name">Series</div>
+                                <div class="milestone-status">{{ architect_progress.series_launched }} launched</div>
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin_toggle_milestone') }}" style="display: contents;">
+                            <input type="hidden" name="milestone" value="revenue">
+                            <button type="submit" class="milestone-btn {% if architect_progress.revenue_achieved %}achieved{% endif %}">
+                                <div class="milestone-icon"><i class="ph ph-currency-circle-dollar"></i></div>
+                                <div class="milestone-name">Revenue</div>
+                                <div class="milestone-status">{% if architect_progress.revenue_achieved %}Achieved!{% else %}Not yet{% endif %}</div>
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin_toggle_milestone') }}" style="display: contents;">
+                            <input type="hidden" name="milestone" value="team">
+                            <button type="submit" class="milestone-btn {% if architect_progress.team_hired %}achieved{% endif %}">
+                                <div class="milestone-icon"><i class="ph ph-users-three"></i></div>
+                                <div class="milestone-name">Team</div>
+                                <div class="milestone-status">{% if architect_progress.team_hired %}Hired!{% else %}Solo{% endif %}</div>
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin_toggle_milestone') }}" style="display: contents;">
+                            <input type="hidden" name="milestone" value="viral">
+                            <button type="submit" class="milestone-btn {% if architect_progress.viral_video_achieved %}achieved{% endif %}">
+                                <div class="milestone-icon"><i class="ph ph-rocket-launch"></i></div>
+                                <div class="milestone-name">Viral</div>
+                                <div class="milestone-status">{% if architect_progress.viral_video_achieved %}Gone viral!{% else %}Pending{% endif %}</div>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monthly Sprint -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span class="section-title-icon"><i class="ph ph-person-simple-run"></i></span>
+                        <span>Monthly Sprint</span>
+                    </div>
+                    <span class="section-badge {% if current_month.experimental_completed %}goal-met{% else %}in-progress{% endif %}">
+                        {{ current_month.year }}-{{ '%02d' % current_month.month }}
+                    </span>
+                </div>
+                <div class="section-content">
+                    <form method="POST" action="{{ url_for('admin_update_experimental') }}" class="monthly-sprint-form">
+                        <div class="sprint-input">
+                            <label>Experimental Content Description</label>
+                            <input type="text" name="experimental_content" 
+                                   value="{{ current_month.experimental_content or '' }}"
+                                   placeholder="e.g., 'Collab with TechChannel' or 'New animation style video'">
+                        </div>
+                        <div class="sprint-input">
+                            <label>Type</label>
+                            <select name="experimental_type">
+                                <option value="">Select type...</option>
+                                <option value="collab" {% if current_month.experimental_type == 'collab' %}selected{% endif %}>Collaboration</option>
+                                <option value="new_style" {% if current_month.experimental_type == 'new_style' %}selected{% endif %}>New Video Style</option>
+                                <option value="series" {% if current_month.experimental_type == 'series' %}selected{% endif %}>Series Launch</option>
+                                <option value="format" {% if current_month.experimental_type == 'format' %}selected{% endif %}>New Format</option>
+                                <option value="other" {% if current_month.experimental_type == 'other' %}selected{% endif %}>Other</option>
+                            </select>
+                        </div>
+                        <label class="sprint-checkbox">
+                            <input type="checkbox" name="experimental_completed" 
+                                   {% if current_month.experimental_completed %}checked{% endif %}>
+                            <span>Experimental content completed</span>
+                        </label>
+                        <button type="submit" class="btn btn-primary" style="align-self: flex-start;">
+                            <i class="ph ph-floppy-disk"></i> Save Sprint
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Summary -->
+    <div class="section-card">
+        <div class="section-header">
+            <div class="section-title">
+                <span class="section-title-icon"><i class="ph ph-chart-bar"></i></span>
+                <span>Stats Summary</span>
+            </div>
+        </div>
+        <div class="section-content">
+            <div class="hero-stats" style="margin-bottom: 0;">
+                <div class="hero-stat">
+                    <div class="hero-stat-icon"><i class="ph ph-chart-line-up" style="font-size: 32px; color: var(--accent);"></i></div>
+                    <div class="hero-stat-value">{{ week_total_xp }}</div>
+                    <div class="hero-stat-label">Week Total {{ points_name }}</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-icon"><i class="ph ph-fire" style="font-size: 32px; color: #ff9500;"></i></div>
+                    <div class="hero-stat-value">{{ architect_progress.longest_daily_streak }}</div>
+                    <div class="hero-stat-label">Best Streak</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-icon"><i class="ph ph-stack" style="font-size: 32px; color: #a855f7;"></i></div>
+                    <div class="hero-stat-value">{{ gamification.total_content_count if gamification else 0 }}</div>
+                    <div class="hero-stat-label">Total Content</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-icon"><i class="ph ph-users" style="font-size: 32px; color: #22c55e;"></i></div>
+                    <div class="hero-stat-value">{{ "{:,}".format(gamification.subscriber_count) if gamification else 0 }}</div>
+                    <div class="hero-stat-label">Subscribers</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-icon"><i class="ph ph-eye" style="font-size: 32px; color: #f59e0b;"></i></div>
+                    <div class="hero-stat-value">{{ "{:,}".format(gamification.total_views) if gamification else 0 }}</div>
+                    <div class="hero-stat-label">Total Views</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-update streak animation based on streak length
+    const streak = {{ daily_streak }};
+    if (streak >= 30) {
+        document.querySelector('.streak-fire')?.classList.add('mega-fire');
+    }
+</script>
+{% endblock %}
+

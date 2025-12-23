@@ -10,9 +10,15 @@ import markdown
 from config import config
 from models import (
     db, BlogPost, YouTubeVideo, Podcast, Short, CommunityPost, TopicIdea,
-    GamificationStats, RANKS, CONTENT_POINTS, get_video_content_type, get_rank_for_stats
+    GamificationStats, get_video_content_type, get_rank_for_stats,
+    DailyXPLog, WeeklyProgress, MonthlyProgress, YearlyMilestones, ArchitectRankProgress,
+    SystemSettings, Rank, ContentPointValue, DailyTask, WeeklyRequirement,
+    get_content_points, get_daily_xp_goal, get_perfect_week_bonus, get_points_name
 )
 import youtube_service
+
+
+
 
 def create_app(config_name=None):
     """Application factory pattern"""
@@ -169,19 +175,22 @@ def create_app(config_name=None):
             stats = GamificationStats()
             db.session.add(stats)
         
+        # Get content point values from database
+        content_points_db = get_content_points()
+        
         # Count and calculate points for each content type
         
         # 1. Blog posts
         blog_count = BlogPost.query.filter_by(published=True).count()
-        blog_points = blog_count * CONTENT_POINTS['blog']
+        blog_points = blog_count * content_points_db.get('blog', 50)
         
         # 2. Shorts (from Short model)
         shorts_count = Short.query.filter_by(published=True).count()
-        shorts_points = shorts_count * CONTENT_POINTS['shorts']
+        shorts_points = shorts_count * content_points_db.get('shorts', 100)
         
         # 3. Podcasts
         podcast_count = Podcast.query.filter_by(published=True).count()
-        podcast_points = podcast_count * CONTENT_POINTS['podcast']
+        podcast_points = podcast_count * content_points_db.get('podcast', 400)
         
         # 4. YouTube Videos (categorized by duration)
         videos = YouTubeVideo.query.filter_by(published=True).all()
@@ -216,12 +225,12 @@ def create_app(config_name=None):
             elif content_type == 'longs':
                 longs_count += 1
         
-        short_longs_points = short_longs_count * CONTENT_POINTS['short_longs']
-        mid_longs_points = mid_longs_count * CONTENT_POINTS['mid_longs']
-        longs_points = longs_count * CONTENT_POINTS['longs']
+        short_longs_points = short_longs_count * content_points_db.get('short_longs', 200)
+        mid_longs_points = mid_longs_count * content_points_db.get('mid_longs', 800)
+        longs_points = longs_count * content_points_db.get('longs', 1000)
         
         # Calculate totals
-        content_points = (blog_points + shorts_points + short_longs_points + 
+        content_points_total = (blog_points + shorts_points + short_longs_points + 
                          podcast_points + mid_longs_points + longs_points)
         total_content = (blog_count + shorts_count + short_longs_count + 
                         podcast_count + mid_longs_count + longs_count)
@@ -234,11 +243,13 @@ def create_app(config_name=None):
         
         # Calculate subscriber and view points
         subscriber_count = stats.subscriber_count or 0
-        subscriber_points = int(subscriber_count * CONTENT_POINTS['subscriber'])  # 1 sub = 20 pts
-        views_points = int(total_views * CONTENT_POINTS['view'])  # 1 view = 0.5 pts
+        subscriber_points = int(subscriber_count * content_points_db.get('subscriber', 20))
+        views_points = int(total_views * content_points_db.get('view', 0.5))
         
-        # Total points includes content + subscriber + view points
-        total_points = content_points + subscriber_points + views_points
+        # Total points includes content + subscriber + view points + daily XP
+        # Preserve existing daily_xp_points from daily tasks
+        daily_xp_points = stats.daily_xp_points or 0
+        total_points = content_points_total + subscriber_points + views_points + daily_xp_points
         
         # Update stats
         stats.blog_count = blog_count
@@ -493,6 +504,11 @@ def create_app(config_name=None):
         current_rank, next_rank = gamification.calculate_rank()
         progress = gamification.get_progress_to_next_rank()
         
+        # Get ranks and content points from database
+        ranks = [r.to_dict() for r in Rank.get_all_ordered()]
+        content_points = get_content_points()
+        points_name = get_points_name()
+        
         return render_template('admin/dashboard.html', 
                              stats=stats, 
                              sync_message=sync_message,
@@ -500,8 +516,374 @@ def create_app(config_name=None):
                              current_rank=current_rank,
                              next_rank=next_rank,
                              progress=progress,
-                             ranks=RANKS,
-                             content_points=CONTENT_POINTS)
+                             ranks=ranks,
+                             content_points=content_points,
+                             points_name=points_name)
+    
+    # ========== PROGRESS DASHBOARD ROUTES ==========
+    
+    def get_or_create_today_xp():
+        """Get or create today's XP log"""
+        from datetime import date
+        today = date.today()
+        xp_log = DailyXPLog.query.filter_by(date=today).first()
+        if not xp_log:
+            xp_log = DailyXPLog(date=today)
+            db.session.add(xp_log)
+            db.session.commit()
+        return xp_log
+    
+    def get_or_create_current_week():
+        """Get or create current week's progress with auto-calculated content counts from DB"""
+        from datetime import date, timedelta
+        today = date.today()
+        # Get Monday of current week
+        week_start = today - timedelta(days=today.weekday())
+        week_end = week_start + timedelta(days=6)
+        year, week_num, _ = today.isocalendar()
+        
+        weekly = WeeklyProgress.query.filter_by(year=year, week_number=week_num).first()
+        if not weekly:
+            weekly = WeeklyProgress(
+                year=year,
+                week_number=week_num,
+                week_start=week_start,
+                week_end=week_end
+            )
+            db.session.add(weekly)
+        
+        # Auto-calculate content counts from database for this week
+        # Convert dates to datetime for comparison with created_at fields
+        from datetime import datetime
+        week_start_dt = datetime.combine(week_start, datetime.min.time())
+        week_end_dt = datetime.combine(week_end, datetime.max.time())
+        
+        # Count Long Form videos (duration > 60 seconds, published this week)
+        long_form_count = YouTubeVideo.query.filter(
+            YouTubeVideo.published == True,
+            YouTubeVideo.created_at >= week_start_dt,
+            YouTubeVideo.created_at <= week_end_dt,
+            YouTubeVideo.duration_seconds > 60  # Exclude shorts
+        ).count()
+        
+        # Count Shorts (duration <= 60 seconds OR from Short model, published this week)
+        shorts_count = Short.query.filter(
+            Short.published == True,
+            Short.created_at >= week_start_dt,
+            Short.created_at <= week_end_dt
+        ).count()
+        
+        # Count Blog posts published this week
+        blog_count = BlogPost.query.filter(
+            BlogPost.published == True,
+            BlogPost.created_at >= week_start_dt,
+            BlogPost.created_at <= week_end_dt
+        ).count()
+        
+        # Count Podcast episodes published this week
+        podcast_count = Podcast.query.filter(
+            Podcast.published == True,
+            Podcast.created_at >= week_start_dt,
+            Podcast.created_at <= week_end_dt
+        ).count()
+        
+        # Update weekly progress with actual counts
+        weekly.long_form_completed = long_form_count
+        weekly.shorts_completed = shorts_count
+        weekly.blog_completed = blog_count
+        weekly.podcast_completed = podcast_count
+        
+        # Check for perfect week
+        was_perfect = weekly.perfect_week
+        weekly.check_perfect_week()
+        
+        # If perfect week just achieved, award bonus XP
+        if weekly.perfect_week and not was_perfect and weekly.bonus_xp == 0:
+            bonus = get_perfect_week_bonus()
+            weekly.bonus_xp = bonus
+            
+            # Add bonus XP to main gamification stats
+            gamification = GamificationStats.query.first()
+            if gamification:
+                gamification.total_points += bonus
+                gamification.calculate_rank()
+            
+            # Update monthly perfect weeks count
+            current_month = get_or_create_current_month()
+            current_month.perfect_weeks += 1
+        
+        db.session.commit()
+        return weekly
+    
+    def get_or_create_current_month():
+        """Get or create current month's progress"""
+        from datetime import date
+        today = date.today()
+        monthly = MonthlyProgress.query.filter_by(year=today.year, month=today.month).first()
+        if not monthly:
+            monthly = MonthlyProgress(year=today.year, month=today.month)
+            db.session.add(monthly)
+            db.session.commit()
+        return monthly
+    
+    def get_or_create_current_year():
+        """Get or create current year's milestones"""
+        from datetime import date
+        today = date.today()
+        yearly = YearlyMilestones.query.filter_by(year=today.year).first()
+        if not yearly:
+            yearly = YearlyMilestones(year=today.year)
+            db.session.add(yearly)
+            db.session.commit()
+        return yearly
+    
+    def get_or_create_architect_progress():
+        """Get or create architect rank progress"""
+        progress = ArchitectRankProgress.query.first()
+        if not progress:
+            progress = ArchitectRankProgress()
+            db.session.add(progress)
+            db.session.commit()
+        return progress
+    
+    def calculate_streak():
+        """Calculate current daily XP streak"""
+        from datetime import date, timedelta
+        streak = 0
+        current_date = date.today()
+        
+        while True:
+            log = DailyXPLog.query.filter_by(date=current_date).first()
+            if log and log.goal_met:
+                streak += 1
+                current_date -= timedelta(days=1)
+            else:
+                break
+        
+        return streak
+    
+    def calculate_weekly_streak():
+        """Calculate consecutive perfect weeks"""
+        from datetime import date, timedelta
+        streak = 0
+        today = date.today()
+        year, week_num, _ = today.isocalendar()
+        
+        while True:
+            weekly = WeeklyProgress.query.filter_by(year=year, week_number=week_num).first()
+            if weekly and weekly.perfect_week:
+                streak += 1
+                # Go to previous week
+                week_num -= 1
+                if week_num < 1:
+                    year -= 1
+                    week_num = 52
+            else:
+                break
+        
+        return streak
+    
+    @app.route('/admin/progress')
+    @admin_required
+    def admin_progress():
+        """Progress Dashboard - Track daily XP, weekly Full House, monthly/yearly goals"""
+        from datetime import date, timedelta
+        
+        # Get or create all progress records
+        today_xp = get_or_create_today_xp()
+        current_week = get_or_create_current_week()
+        current_month = get_or_create_current_month()
+        current_year = get_or_create_current_year()
+        architect_progress = get_or_create_architect_progress()
+        
+        # Calculate streaks
+        daily_streak = calculate_streak()
+        weekly_streak = calculate_weekly_streak()
+        
+        # Update architect progress
+        architect_progress.daily_streak = daily_streak
+        architect_progress.weekly_streak = weekly_streak
+        if daily_streak > architect_progress.longest_daily_streak:
+            architect_progress.longest_daily_streak = daily_streak
+        if weekly_streak > architect_progress.longest_weekly_streak:
+            architect_progress.longest_weekly_streak = weekly_streak
+        
+        # Get gamification stats for subscriber count
+        gamification = GamificationStats.query.first()
+        subscriber_count = gamification.subscriber_count if gamification else 0
+        total_content = gamification.total_content_count if gamification else 0
+        
+        # Calculate current architect rank
+        architect_progress.calculate_current_rank(subscriber_count, total_content)
+        db.session.commit()
+        
+        # Get recent XP logs (last 7 days)
+        week_ago = date.today() - timedelta(days=7)
+        recent_logs = DailyXPLog.query.filter(DailyXPLog.date >= week_ago)\
+            .order_by(DailyXPLog.date.desc()).all()
+        
+        # Calculate week's total XP
+        week_total_xp = sum(log.total_xp for log in recent_logs)
+        
+        # Get recent weekly progress (last 4 weeks)
+        recent_weeks = WeeklyProgress.query.order_by(WeeklyProgress.week_start.desc()).limit(4).all()
+        
+        # Calculate current rank using existing system
+        current_rank, next_rank = gamification.calculate_rank() if gamification else (None, None)
+        progress = gamification.get_progress_to_next_rank() if gamification else None
+        
+        # Get data from database
+        daily_tasks = DailyTask.get_active_tasks()
+        weekly_requirements = WeeklyRequirement.get_active_requirements()
+        ranks = [r.to_dict() for r in Rank.get_all_ordered()]
+        daily_xp_goal = get_daily_xp_goal()
+        points_name = get_points_name()
+        perfect_week_bonus = get_perfect_week_bonus()
+        
+        return render_template('admin/progress.html',
+            today_xp=today_xp,
+            current_week=current_week,
+            current_month=current_month,
+            current_year=current_year,
+            architect_progress=architect_progress,
+            daily_streak=daily_streak,
+            weekly_streak=weekly_streak,
+            recent_logs=recent_logs,
+            recent_weeks=recent_weeks,
+            week_total_xp=week_total_xp,
+            daily_tasks=daily_tasks,
+            daily_xp_goal=daily_xp_goal,
+            weekly_requirements=weekly_requirements,
+            gamification=gamification,
+            current_rank=current_rank,
+            next_rank=next_rank,
+            progress=progress,
+            ranks=ranks,
+            points_name=points_name,
+            perfect_week_bonus=perfect_week_bonus
+        )
+    
+    @app.route('/admin/progress/daily/toggle', methods=['POST'])
+    @admin_required
+    def admin_toggle_daily_task():
+        """Toggle a daily XP task completion"""
+        task_key = request.form.get('task')
+        
+        # Get task from database
+        task = DailyTask.get_task(task_key)
+        if not task:
+            flash('Invalid task.', 'error')
+            return redirect(url_for('admin_progress'))
+        
+        today_xp = get_or_create_today_xp()
+        task_xp = task.xp_value
+        
+        # Get current task state before toggle
+        was_completed = False
+        if task_key == 'research':
+            was_completed = today_xp.research_completed
+            today_xp.research_completed = not today_xp.research_completed
+        elif task_key == 'recording':
+            was_completed = today_xp.recording_completed
+            today_xp.recording_completed = not today_xp.recording_completed
+        elif task_key == 'engagement':
+            was_completed = today_xp.engagement_completed
+            today_xp.engagement_completed = not today_xp.engagement_completed
+        elif task_key == 'learning':
+            was_completed = today_xp.learning_completed
+            today_xp.learning_completed = not today_xp.learning_completed
+        
+        # Recalculate daily XP using database values
+        today_xp.calculate_xp()
+        
+        # Update the main gamification stats with XP change
+        gamification = GamificationStats.query.first()
+        if not gamification:
+            gamification = GamificationStats()
+            db.session.add(gamification)
+        
+        # Add or remove XP from daily_xp_points based on toggle
+        if was_completed:
+            # Task was completed, now uncompleted - subtract XP
+            gamification.daily_xp_points = max(0, (gamification.daily_xp_points or 0) - task_xp)
+        else:
+            # Task was uncompleted, now completed - add XP
+            gamification.daily_xp_points = (gamification.daily_xp_points or 0) + task_xp
+        
+        # Recalculate total points to include daily XP
+        content_total = (gamification.blog_points + gamification.shorts_points + 
+                        gamification.short_longs_points + gamification.podcast_points + 
+                        gamification.mid_longs_points + gamification.longs_points +
+                        gamification.subscriber_points + gamification.views_points)
+        gamification.total_points = content_total + gamification.daily_xp_points
+        
+        # Recalculate rank with new points
+        gamification.calculate_rank()
+        
+        # Update architect progress for streak tracking
+        architect = get_or_create_architect_progress()
+        architect.lifetime_xp = gamification.total_points
+        if today_xp.goal_met:
+            architect.last_daily_log = today_xp.date
+        
+        db.session.commit()
+        
+        is_completed = not was_completed
+        status = "completed" if is_completed else "uncompleted"
+        points_name = get_points_name()
+        flash(f'{task.name} {status}! {("+" if is_completed else "")}{task_xp if is_completed else -task_xp} {points_name} (Total: {gamification.total_points:,} {points_name})', 'success')
+        return redirect(url_for('admin_progress'))
+    
+    
+    @app.route('/admin/progress/monthly/experimental', methods=['POST'])
+    @admin_required
+    def admin_update_experimental():
+        """Update monthly experimental content"""
+        current_month = get_or_create_current_month()
+        
+        current_month.experimental_content = request.form.get('experimental_content', '')
+        current_month.experimental_type = request.form.get('experimental_type', '')
+        current_month.experimental_completed = request.form.get('experimental_completed') == 'on'
+        
+        db.session.commit()
+        
+        flash('Monthly experimental content updated!', 'success')
+        return redirect(url_for('admin_progress'))
+    
+    @app.route('/admin/progress/milestone/toggle', methods=['POST'])
+    @admin_required
+    def admin_toggle_milestone():
+        """Toggle an architect milestone"""
+        milestone = request.form.get('milestone')
+        architect = get_or_create_architect_progress()
+        
+        if milestone == 'collab':
+            architect.collabs_completed += 1
+            flash(f'Collab #{architect.collabs_completed} logged!', 'success')
+        elif milestone == 'series':
+            architect.series_launched += 1
+            flash(f'Series #{architect.series_launched} launched!', 'success')
+        elif milestone == 'revenue':
+            architect.revenue_achieved = not architect.revenue_achieved
+            status = "achieved" if architect.revenue_achieved else "removed"
+            flash(f'Revenue milestone {status}!', 'success')
+        elif milestone == 'team':
+            architect.team_hired = not architect.team_hired
+            status = "achieved" if architect.team_hired else "removed"
+            flash(f'Team hiring milestone {status}!', 'success')
+        elif milestone == 'viral':
+            architect.viral_video_achieved = not architect.viral_video_achieved
+            status = "achieved" if architect.viral_video_achieved else "removed"
+            flash(f'Viral video milestone {status}!', 'success')
+        
+        # Recalculate rank
+        gamification = GamificationStats.query.first()
+        subscriber_count = gamification.subscriber_count if gamification else 0
+        total_content = gamification.total_content_count if gamification else 0
+        architect.calculate_current_rank(subscriber_count, total_content)
+        
+        db.session.commit()
+        return redirect(url_for('admin_progress'))
     
     # Blog management
     @app.route('/admin/blog')

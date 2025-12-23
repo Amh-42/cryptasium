@@ -27,6 +27,8 @@ def migrate():
         ("gamification_stats", "subscriber_points", "INTEGER DEFAULT 0"),
         # Add views_points to gamification_stats
         ("gamification_stats", "views_points", "INTEGER DEFAULT 0"),
+        # Add daily_xp_points to gamification_stats
+        ("gamification_stats", "daily_xp_points", "INTEGER DEFAULT 0"),
     ]
     
     for table, column, column_type in migrations:
@@ -64,6 +66,7 @@ def migrate():
             longs_points INTEGER DEFAULT 0,
             subscriber_points INTEGER DEFAULT 0,
             views_points INTEGER DEFAULT 0,
+            daily_xp_points INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             last_sync_at DATETIME
