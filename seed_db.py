@@ -118,10 +118,10 @@ def seed_daily_tasks():
         return False
     
     daily_tasks = [
-        ('research', 'Research/Scripting', 'Deep work for Long Form/Blog', 15, 'ph-books', 1),
-        ('recording', 'Recording/Editing', 'Technical execution', 20, 'ph-film-slate', 2),
-        ('engagement', 'Community Engagement', 'Replying to comments/Discord', 10, 'ph-chat-circle', 3),
-        ('learning', 'Learning/Skill-Up', 'Watching masterclass or technical whitepaper', 5, 'ph-graduation-cap', 4),
+        ('research', 'Research & Scripting', 'Topic Relevance', 15, 'ph-magnifying-glass', 1),
+        ('recording', 'Voiceover & Editing', 'Retention', 20, 'ph-video-camera', 2),
+        ('engagement', 'Title, Thumbnail & Hook', 'CTR Optimization', 10, 'ph-cursor-click', 3),
+        ('learning', 'Learning & Skill Up', 'Level Up', 5, 'ph-trend-up', 4),
     ]
     
     for key, name, desc, xp, icon, order in daily_tasks:

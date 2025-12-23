@@ -56,10 +56,10 @@ def update_icons():
     
     # Update Daily Tasks
     task_icon_map = {
-        '📚': 'ph-books',
-        '🎬': 'ph-film-slate',
-        '💬': 'ph-chat-circle',
-        '🎓': 'ph-graduation-cap',
+        '📚': 'ph-magnifying-glass',
+        '🎬': 'ph-video-camera',
+        '💬': 'ph-cursor-click',
+        '🎓': 'ph-trend-up',
     }
     
     tasks = DailyTask.query.all()
