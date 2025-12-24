@@ -652,11 +652,31 @@ def create_app(config_name=None):
         return progress
     
     def calculate_streak():
-        """Calculate current daily XP streak"""
+        """Calculate current daily XP streak
+        
+        Logic:
+        - If today is completed, count from today backwards
+        - If today is NOT completed yet, count from yesterday backwards
+          (streak is still alive, just not extended yet today)
+        - Streak only breaks if you MISS a day entirely (yesterday not completed)
+        """
         from datetime import date, timedelta
         streak = 0
-        current_date = date.today()
+        today = date.today()
         
+        # Check if today is completed
+        today_log = DailyXPLog.query.filter_by(date=today).first()
+        today_completed = today_log and today_log.goal_met
+        
+        if today_completed:
+            # Start counting from today
+            current_date = today
+        else:
+            # Today not done yet - start counting from yesterday
+            # (streak is preserved until end of today)
+            current_date = today - timedelta(days=1)
+        
+        # Count consecutive completed days backwards
         while True:
             log = DailyXPLog.query.filter_by(date=current_date).first()
             if log and log.goal_met:
