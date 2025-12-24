@@ -1,0 +1,45 @@
+# Robots.txt for Cryptasium
+# https://cryptasium.com
+
+User-agent: *
+Allow: /
+
+# Crawl-delay for polite crawling
+Crawl-delay: 1
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /api/
+Disallow: /static/badges/
+
+# Allow important resources
+Allow: /static/images/
+Allow: /static/icons/
+Allow: /static/manifest.json
+
+# Sitemap location
+Sitemap: https://cryptasium.com/sitemap.xml
+
+# Google-specific
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# Bing-specific
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Social media crawlers
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: Discordbot
+Allow: /
+

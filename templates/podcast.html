@@ -1,6 +1,17 @@
 {% extends "base.html" %}
 
 {% block title %}Podcast | Cryptasium{% endblock %}
+{% block meta_title %}Podcast | Cryptasium Tech Conversations{% endblock %}
+{% block meta_description %}Listen to the Cryptasium podcast. Conversations with engineers, futurists, and creators about the ethics and philosophy of technology.{% endblock %}
+{% block meta_keywords %}Cryptasium podcast, tech podcast, programming podcast, AI podcast, software engineering podcast, tech interviews, developer podcast{% endblock %}
+{% block canonical_url %}https://cryptasium.com/podcast{% endblock %}
+{% block og_url %}https://cryptasium.com/podcast{% endblock %}
+{% block og_type %}music.album{% endblock %}
+{% block og_title %}Podcast | Cryptasium Tech Conversations{% endblock %}
+{% block og_description %}Conversations with engineers, futurists, and creators about technology and its impact on society.{% endblock %}
+{% block twitter_url %}https://cryptasium.com/podcast{% endblock %}
+{% block twitter_title %}Podcast | Cryptasium{% endblock %}
+{% block twitter_description %}Conversations with engineers, futurists, and creators about technology.{% endblock %}
 
 {% block content %}
 <!-- HERO SECTION -->
@@ -105,12 +116,12 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
 <script>
-(function() {
+window.addEventListener('load', function() {
     const container = document.getElementById('crystal-container');
-    if (!container) return;
+    if (!container || typeof THREE === 'undefined') return;
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 1, 1000);
     camera.position.z = 8;
@@ -223,7 +234,7 @@
         renderer.render(scene, camera); 
     }
     animate();
-})();
+});
 </script>
 {% endblock %}
 

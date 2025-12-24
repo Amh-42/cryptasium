@@ -319,6 +319,60 @@ def create_app(config_name=None):
         """Offline page for PWA"""
         return render_template('offline.html')
     
+    @app.route('/robots.txt')
+    def robots_txt():
+        """Serve robots.txt for SEO"""
+        from flask import send_from_directory
+        return send_from_directory(app.static_folder, 'robots.txt', mimetype='text/plain')
+    
+    @app.route('/sitemap.xml')
+    def sitemap_xml():
+        """Generate dynamic sitemap.xml for SEO"""
+        from flask import Response
+        from datetime import date
+        
+        # Base URL
+        base_url = 'https://cryptasium.com'
+        
+        # Static pages
+        pages = [
+            {'url': '/', 'priority': '1.0', 'changefreq': 'daily'},
+            {'url': '/about', 'priority': '0.8', 'changefreq': 'monthly'},
+            {'url': '/youtube', 'priority': '0.9', 'changefreq': 'daily'},
+            {'url': '/podcast', 'priority': '0.8', 'changefreq': 'weekly'},
+            {'url': '/blog', 'priority': '0.9', 'changefreq': 'weekly'},
+            {'url': '/shorts', 'priority': '0.8', 'changefreq': 'daily'},
+            {'url': '/community', 'priority': '0.7', 'changefreq': 'weekly'},
+            {'url': '/submit-idea', 'priority': '0.5', 'changefreq': 'monthly'},
+        ]
+        
+        # Add blog posts
+        blog_posts = BlogPost.query.filter_by(published=True).order_by(BlogPost.created_at.desc()).all()
+        for post in blog_posts:
+            pages.append({
+                'url': f'/blog/{post.slug}',
+                'priority': '0.7',
+                'changefreq': 'monthly',
+                'lastmod': post.updated_at.strftime('%Y-%m-%d') if post.updated_at else post.created_at.strftime('%Y-%m-%d') if post.created_at else None
+            })
+        
+        # Build XML
+        xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n'
+        xml_content += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        
+        for page in pages:
+            xml_content += '  <url>\n'
+            xml_content += f'    <loc>{base_url}{page["url"]}</loc>\n'
+            if page.get('lastmod'):
+                xml_content += f'    <lastmod>{page["lastmod"]}</lastmod>\n'
+            xml_content += f'    <changefreq>{page["changefreq"]}</changefreq>\n'
+            xml_content += f'    <priority>{page["priority"]}</priority>\n'
+            xml_content += '  </url>\n'
+        
+        xml_content += '</urlset>'
+        
+        return Response(xml_content, mimetype='application/xml')
+    
     @app.route('/')
     def index():
         """Homepage"""

@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 
 {% block title %}Cryptasium | An element of mystery.{% endblock %}
+{% block meta_title %}Cryptasium | An element of mystery.{% endblock %}
+{% block meta_description %}Cryptasium produces cinematic, Netflix-grade documentaries about technology, AI, and software engineering. 1,000 tech entrepreneurs by 2033.{% endblock %}
+{% block meta_keywords %}Cryptasium, tech documentaries, AI education, software engineering, programming tutorials, technology YouTube, developer content, tech entrepreneur{% endblock %}
+{% block canonical_url %}https://cryptasium.com{% endblock %}
+{% block og_url %}https://cryptasium.com{% endblock %}
+{% block twitter_url %}https://cryptasium.com{% endblock %}
 
 {% block content %}
 <!-- HERO SECTION -->
@@ -212,15 +218,16 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- Three.js for 3D Crystal -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.min.js"></script>
+<!-- Three.js for 3D Crystal (deferred for performance) -->
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.min.js"></script>
 
 <script>
-(function() {
+// Wait for Three.js to load
+window.addEventListener('load', function() {
     const container = document.getElementById('crystal-container');
-    if (!container) return;
+    if (!container || typeof THREE === 'undefined') return;
 
     // Scene setup
     const scene = new THREE.Scene();
@@ -345,7 +352,7 @@
     }
     
     animate();
-})();
+});
 </script>
 {% endblock %}
 
