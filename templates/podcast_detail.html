@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block title %}{{ podcast.title if podcast else 'Episode Not Found' }} | Cryptasium Podcast{% endblock %}
+{% block meta_title %}{{ podcast.title if podcast else 'Episode Not Found' }} | Cryptasium Podcast{% endblock %}
+{% block meta_description %}{{ podcast.description[:160] + '...' if podcast and podcast.description else 'Listen to this podcast episode on Cryptasium.' }}{% endblock %}
+{% block canonical_url %}https://cryptasium.com/podcast/{{ podcast.id if podcast else '' }}{% endblock %}
+{% block og_type %}music.song{% endblock %}
+{% block og_title %}{{ podcast.title if podcast else 'Episode Not Found' }}{% endblock %}
+{% block og_description %}{{ podcast.description[:200] + '...' if podcast and podcast.description else 'Listen to this podcast episode.' }}{% endblock %}
+{% block og_image %}{{ podcast.thumbnail_url if podcast and podcast.thumbnail_url else url_for('static', filename='images/og-image.png', _external=True) }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .podcast-detail-container {
+        padding: 120px 24px 80px;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .podcast-back-link {
+        color: var(--accent);
+        font-size: 14px;
+        margin-bottom: 24px;
+        display: inline-block;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .podcast-header {
+        display: flex;
+        gap: 32px;
+        margin-bottom: 32px;
+        align-items: flex-start;
+    }
+
+    .podcast-thumbnail {
+        width: 200px;
+        height: 200px;
+        border-radius: 16px;
+        object-fit: cover;
+        flex-shrink: 0;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .podcast-info {
+        flex: 1;
+    }
+
+    .podcast-episode {
+        color: var(--accent);
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .podcast-title {
+        font-size: 32px;
+        line-height: 1.3;
+        margin-bottom: 16px;
+        font-weight: 700;
+    }
+
+    .podcast-meta {
+        display: flex;
+        gap: 16px;
+        color: var(--text-muted);
+        font-size: 14px;
+        flex-wrap: wrap;
+    }
+
+    .podcast-meta span {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .audio-player {
+        width: 100%;
+        margin: 32px 0;
+        padding: 24px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .audio-player audio {
+        width: 100%;
+        height: 48px;
+    }
+
+    .podcast-description {
+        line-height: 1.7;
+        font-size: 16px;
+        color: rgba(255, 255, 255, 0.85);
+        white-space: pre-wrap;
+    }
+
+    /* Same styles as blog for reactions, share, comments */
+    .reactions-section {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-top: 32px;
+        padding: 20px 24px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .like-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        background: rgba(255, 34, 34, 0.1);
+        border: 1px solid rgba(255, 34, 34, 0.3);
+        border-radius: 24px;
+        color: var(--text-main);
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .like-btn:hover { background: rgba(255, 34, 34, 0.2); transform: scale(1.05); }
+    .like-btn.liked { background: rgba(255, 34, 34, 0.3); color: #ff4444; }
+    .like-btn i { font-size: 20px; }
+    .like-count { font-size: 14px; color: var(--text-muted); }
+
+    .share-section { margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+    .share-title { font-size: 14px; color: var(--text-muted); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px; }
+    .share-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+    .share-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 8px; font-size: 14px; font-weight: 500; text-decoration: none; transition: all 0.2s; border: 1px solid transparent; }
+    .share-btn i { font-size: 18px; }
+    .share-btn.twitter { background: rgba(29, 161, 242, 0.15); color: #1DA1F2; border-color: rgba(29, 161, 242, 0.3); }
+    .share-btn.whatsapp { background: rgba(37, 211, 102, 0.15); color: #25D366; border-color: rgba(37, 211, 102, 0.3); }
+    .share-btn.copy { background: rgba(255, 255, 255, 0.08); color: var(--text-main); border-color: rgba(255, 255, 255, 0.15); }
+
+    .comments-section { margin-top: 48px; padding-top: 32px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+    .comments-title { font-size: 24px; font-weight: 700; margin-bottom: 24px; }
+
+    @media (max-width: 600px) {
+        .podcast-detail-container { padding: 100px 16px 60px; }
+        .podcast-header { flex-direction: column; align-items: center; text-align: center; }
+        .podcast-thumbnail { width: 150px; height: 150px; }
+        .podcast-title { font-size: 24px; }
+        .podcast-meta { justify-content: center; }
+        .share-buttons { flex-direction: column; }
+        .share-btn { width: 100%; justify-content: center; }
+    }
+
+    /* Light mode overrides */
+    [data-theme="light"] .podcast-description {
+        color: var(--text-main);
+    }
+    [data-theme="light"] .audio-player {
+        background: rgba(0, 0, 0, 0.03);
+        border-color: var(--border);
+    }
+    [data-theme="light"] .share-section {
+        border-top-color: var(--border);
+    }
+    [data-theme="light"] .comments-section {
+        border-top-color: var(--border);
+    }
+    [data-theme="light"] .share-btn.copy {
+        background: rgba(0, 0, 0, 0.05);
+        border-color: var(--border);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="podcast-detail-container">
+    {% if podcast %}
+    <div class="reveal">
+        <a href="{{ url_for('podcast_list') }}" class="podcast-back-link">← Back to Podcast</a>
+    </div>
+
+    <div class="podcast-header reveal">
+        {% if podcast.thumbnail_url %}
+        <img src="{{ podcast.thumbnail_url }}" alt="{{ podcast.title }}" class="podcast-thumbnail">
+        {% else %}
+        <div class="podcast-thumbnail" style="display: flex; align-items: center; justify-content: center;">
+            <i class="ph ph-microphone" style="font-size: 64px; color: var(--accent);"></i>
+        </div>
+        {% endif %}
+        
+        <div class="podcast-info">
+            {% if podcast.episode_number %}
+            <div class="podcast-episode">Episode {{ podcast.episode_number }}</div>
+            {% endif %}
+            <h1 class="podcast-title">{{ podcast.title }}</h1>
+            <div class="podcast-meta">
+                <span><i class="ph ph-play"></i> {{ podcast.views or 0 }} plays</span>
+                <span><i class="ph ph-clock"></i> {{ podcast.duration or 'N/A' }}</span>
+                <span><i class="ph ph-calendar"></i> {{ podcast.created_at.strftime('%B %d, %Y') if podcast.created_at else 'Unknown' }}</span>
+            </div>
+        </div>
+    </div>
+
+    {% if podcast.audio_url %}
+    <div class="audio-player reveal">
+        <audio controls preload="metadata">
+            <source src="{{ podcast.audio_url }}" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+    {% endif %}
+
+    {% if podcast.description %}
+    <div class="podcast-description reveal">
+        {{ podcast.description }}
+    </div>
+    {% endif %}
+
+    <div class="share-section reveal">
+        <div class="share-title">Share this episode</div>
+        <div class="share-buttons">
+            <a href="https://twitter.com/intent/tweet?text={{ podcast.title|urlencode }}&url={{ url_for('podcast_detail', id=podcast.id, _external=True)|urlencode }}&via=Cryptasium" 
+               target="_blank" rel="noopener noreferrer" class="share-btn twitter">
+                <i class="ph ph-x-logo"></i> Twitter
+            </a>
+            <a href="https://api.whatsapp.com/send?text={{ podcast.title|urlencode }}%20{{ url_for('podcast_detail', id=podcast.id, _external=True)|urlencode }}" 
+               target="_blank" rel="noopener noreferrer" class="share-btn whatsapp">
+                <i class="ph ph-whatsapp-logo"></i> WhatsApp
+            </a>
+            <button class="share-btn copy" onclick="copyLink()" aria-label="Copy link">
+                <i class="ph ph-copy"></i> <span id="copyText">Copy Link</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="comments-section reveal">
+        <h3 class="comments-title">Comments</h3>
+        <div id="disqus_thread"></div>
+    </div>
+
+    {% else %}
+    <div class="reveal" style="text-align: center; padding: 100px 24px;">
+        <h1 style="font-size: 48px; margin-bottom: 24px;">Episode Not Found</h1>
+        <p style="color: var(--text-muted); margin-bottom: 32px;">The podcast episode you're looking for doesn't exist.</p>
+        <a href="{{ url_for('podcast_list') }}" class="btn btn-primary">Back to Podcast</a>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+{% if podcast %}
+<script>
+    function copyLink() {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            document.getElementById('copyText').textContent = 'Copied!';
+            setTimeout(() => { document.getElementById('copyText').textContent = 'Copy Link'; }, 2000);
+        });
+    }
+
+    var disqus_config = function () {
+        this.page.url = '{{ url_for("podcast_detail", id=podcast.id, _external=True) }}';
+        this.page.identifier = 'podcast_{{ podcast.id }}';
+        this.page.title = '{{ podcast.title|e }}';
+    };
+    (function() {
+        var d = document, s = d.createElement('script');
+        s.src = 'https://cryptasium.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+{% endif %}
+{% endblock %}
+

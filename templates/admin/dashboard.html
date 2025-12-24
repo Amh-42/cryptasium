@@ -141,22 +141,36 @@
 
     .progress-item-header {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
+        flex-direction: column;
+        gap: 4px;
         margin-bottom: 12px;
     }
 
     .progress-item-label {
-        font-size: 12px;
+        font-size: 11px;
         color: var(--text-muted);
         text-transform: uppercase;
         letter-spacing: 1px;
     }
 
     .progress-item-value {
-        font-size: 12px;
+        font-size: 18px;
         color: var(--text-main);
-        font-weight: 600;
+        font-weight: 700;
+        font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+        letter-spacing: -0.5px;
+    }
+    
+    .progress-item-value .separator {
+        color: var(--text-muted);
+        font-weight: 400;
+        margin: 0 2px;
+    }
+    
+    .progress-item-value .target {
+        color: var(--text-muted);
+        font-weight: 500;
+        font-size: 14px;
     }
 
     .progress-bar-container {
@@ -541,7 +555,7 @@
                 <div class="progress-item">
                     <div class="progress-item-header">
                         <span class="progress-item-label">Points</span>
-                        <span class="progress-item-value">{{ "{:,}".format(gamification.total_points) }} / {{ "{:,}".format(next_rank.points) }}</span>
+                        <span class="progress-item-value">{{ gamification.total_points|format_number }}<span class="separator">/</span><span class="target">{{ next_rank.points|format_number }}</span></span>
                     </div>
                     <div class="progress-bar-container">
                         <div class="progress-bar-fill {% if progress.points >= 100 %}complete{% endif %}" style="width: {{ progress.points|default(0) }}%;"></div>
@@ -550,7 +564,7 @@
                 <div class="progress-item">
                     <div class="progress-item-header">
                         <span class="progress-item-label">Subscribers</span>
-                        <span class="progress-item-value">{{ "{:,}".format(gamification.subscriber_count) }} / {{ "{:,}".format(next_rank.subscribers) }}</span>
+                        <span class="progress-item-value">{{ gamification.subscriber_count|format_number }}<span class="separator">/</span><span class="target">{{ next_rank.subscribers|format_number }}</span></span>
                     </div>
                     <div class="progress-bar-container">
                         <div class="progress-bar-fill {% if progress.subscribers >= 100 %}complete{% endif %}" style="width: {{ progress.subscribers|default(0) }}%;"></div>
@@ -559,7 +573,7 @@
                 <div class="progress-item">
                     <div class="progress-item-header">
                         <span class="progress-item-label">Views</span>
-                        <span class="progress-item-value">{{ "{:,}".format(gamification.total_views) }} / {{ "{:,}".format(next_rank.views) }}</span>
+                        <span class="progress-item-value">{{ gamification.total_views|format_number }}<span class="separator">/</span><span class="target">{{ next_rank.views|format_number }}</span></span>
                     </div>
                     <div class="progress-bar-container">
                         <div class="progress-bar-fill {% if progress.views >= 100 %}complete{% endif %}" style="width: {{ progress.views|default(0) }}%;"></div>
@@ -568,7 +582,7 @@
                 <div class="progress-item">
                     <div class="progress-item-header">
                         <span class="progress-item-label">Content</span>
-                        <span class="progress-item-value">{{ gamification.total_content_count }} / {{ next_rank.content }}</span>
+                        <span class="progress-item-value">{{ gamification.total_content_count|format_number }}<span class="separator">/</span><span class="target">{{ next_rank.content|format_number }}</span></span>
                     </div>
                     <div class="progress-bar-container">
                         <div class="progress-bar-fill {% if progress.content >= 100 %}complete{% endif %}" style="width: {{ progress.content|default(0) }}%;"></div>
@@ -587,54 +601,54 @@
             <div class="content-type-item" style="background: rgba(14, 165, 233, 0.1); border-color: rgba(14, 165, 233, 0.3);">
                 <div class="content-type-count"><i class="ph ph-lightning" style="font-size: 24px; color: var(--accent);"></i></div>
                 <div class="content-type-label">Daily XP</div>
-                <div class="content-type-points">+{{ "{:,}".format(gamification.daily_xp_points|default(0)) }} {{ points_name }}</div>
+                <div class="content-type-points">+{{ (gamification.daily_xp_points|default(0))|format_number }} {{ points_name }}</div>
             </div>
             <div class="content-type-item">
-                <div class="content-type-count">{{ gamification.blog_count }}</div>
+                <div class="content-type-count">{{ gamification.blog_count|format_number }}</div>
                 <div class="content-type-label">Blog</div>
-                <div class="content-type-points">+{{ "{:,}".format(gamification.blog_points) }} {{ points_name }}</div>
+                <div class="content-type-points">+{{ gamification.blog_points|format_number }} {{ points_name }}</div>
             </div>
             <div class="content-type-item">
-                <div class="content-type-count">{{ gamification.shorts_count }}</div>
+                <div class="content-type-count">{{ gamification.shorts_count|format_number }}</div>
                 <div class="content-type-label">Shorts</div>
-                <div class="content-type-points">+{{ "{:,}".format(gamification.shorts_points) }} {{ points_name }}</div>
+                <div class="content-type-points">+{{ gamification.shorts_points|format_number }} {{ points_name }}</div>
             </div>
             <div class="content-type-item">
-                <div class="content-type-count">{{ gamification.short_longs_count }}</div>
+                <div class="content-type-count">{{ gamification.short_longs_count|format_number }}</div>
                 <div class="content-type-label">Short Longs</div>
-                <div class="content-type-points">+{{ "{:,}".format(gamification.short_longs_points) }} {{ points_name }}</div>
+                <div class="content-type-points">+{{ gamification.short_longs_points|format_number }} {{ points_name }}</div>
             </div>
             <div class="content-type-item">
-                <div class="content-type-count">{{ gamification.podcast_count }}</div>
+                <div class="content-type-count">{{ gamification.podcast_count|format_number }}</div>
                 <div class="content-type-label">Podcast</div>
-                <div class="content-type-points">+{{ "{:,}".format(gamification.podcast_points) }} {{ points_name }}</div>
+                <div class="content-type-points">+{{ gamification.podcast_points|format_number }} {{ points_name }}</div>
             </div>
             <div class="content-type-item">
-                <div class="content-type-count">{{ gamification.mid_longs_count }}</div>
+                <div class="content-type-count">{{ gamification.mid_longs_count|format_number }}</div>
                 <div class="content-type-label">Mid Longs</div>
-                <div class="content-type-points">+{{ "{:,}".format(gamification.mid_longs_points) }} {{ points_name }}</div>
+                <div class="content-type-points">+{{ gamification.mid_longs_points|format_number }} {{ points_name }}</div>
             </div>
             <div class="content-type-item">
-                <div class="content-type-count">{{ gamification.longs_count }}</div>
+                <div class="content-type-count">{{ gamification.longs_count|format_number }}</div>
                 <div class="content-type-label">Longs</div>
-                <div class="content-type-points">+{{ "{:,}".format(gamification.longs_points) }} {{ points_name }}</div>
+                <div class="content-type-points">+{{ gamification.longs_points|format_number }} {{ points_name }}</div>
             </div>
             <div class="content-type-item">
-                <div class="content-type-count">{{ "{:,}".format(gamification.subscriber_count) }}</div>
+                <div class="content-type-count">{{ gamification.subscriber_count|format_number }}</div>
                 <div class="content-type-label">Subscribers</div>
-                <div class="content-type-points">+{{ "{:,}".format(gamification.subscriber_points|default(0)) }} {{ points_name }}</div>
+                <div class="content-type-points">+{{ (gamification.subscriber_points|default(0))|format_number }} {{ points_name }}</div>
             </div>
             <div class="content-type-item">
-                <div class="content-type-count">{{ "{:,}".format(gamification.total_views) }}</div>
+                <div class="content-type-count">{{ gamification.total_views|format_number }}</div>
                 <div class="content-type-label">Views</div>
-                <div class="content-type-points">+{{ "{:,}".format(gamification.views_points|default(0)) }} {{ points_name }}</div>
+                <div class="content-type-points">+{{ (gamification.views_points|default(0))|format_number }} {{ points_name }}</div>
             </div>
         </div>
 
         <div class="subscribers-display">
             <i class="ph ph-youtube-logo"></i>
             <div>
-                <div class="subscribers-count">{{ "{:,}".format(gamification.subscriber_count) }}</div>
+                <div class="subscribers-count">{{ gamification.subscriber_count|format_number }}</div>
                 <div class="subscribers-label">YouTube Subscribers</div>
             </div>
             <div style="margin-left: auto; text-align: right;">
@@ -731,10 +745,10 @@
                     <i class="ph ph-eye"></i>
             </div>
             </div>
-            <div class="stat-value">{{ "{:,}".format(stats.total_views) }}</div>
+            <div class="stat-value">{{ stats.total_views|format_number }}</div>
             <div class="stat-label">
-                <span style="color: var(--accent);">{{ "{:,}".format(stats.total_video_views) }}</span> videos • 
-                <span style="color: var(--accent);">{{ "{:,}".format(stats.total_shorts_views) }}</span> shorts
+                <span style="color: var(--accent);">{{ stats.total_video_views|format_number }}</span> videos • 
+                <span style="color: var(--accent);">{{ stats.total_shorts_views|format_number }}</span> shorts
             </div>
         </div>
 
@@ -747,8 +761,8 @@
             </div>
             {% set total_content = stats.youtube_videos + stats.shorts %}
             {% set avg_views = (stats.total_views // total_content) if total_content > 0 else 0 %}
-            <div class="stat-value">{{ "{:,}".format(avg_views) }}</div>
-            <div class="stat-label">Across {{ total_content }} videos & shorts</div>
+            <div class="stat-value">{{ avg_views|format_number }}</div>
+            <div class="stat-label">Across {{ total_content|format_number }} videos & shorts</div>
             </div>
         </div>
 </div>

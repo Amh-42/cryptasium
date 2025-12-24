@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+
+{% block title %}{{ video.title if video else 'Video Not Found' }} | Cryptasium{% endblock %}
+{% block meta_title %}{{ video.title if video else 'Video Not Found' }} | Cryptasium{% endblock %}
+{% block meta_description %}{{ video.description[:160] + '...' if video and video.description else 'Watch this video on Cryptasium.' }}{% endblock %}
+{% block meta_keywords %}{{ video.title if video else '' }}, Cryptasium, tech video, programming, AI{% endblock %}
+{% block canonical_url %}https://cryptasium.com/youtube/{{ video.video_id if video else '' }}{% endblock %}
+{% block og_type %}video.other{% endblock %}
+{% block og_url %}https://cryptasium.com/youtube/{{ video.video_id if video else '' }}{% endblock %}
+{% block og_title %}{{ video.title if video else 'Video Not Found' }}{% endblock %}
+{% block og_description %}{{ video.description[:200] + '...' if video and video.description else 'Watch this video on Cryptasium.' }}{% endblock %}
+{% block og_image %}{{ video.thumbnail_url if video and video.thumbnail_url else url_for('static', filename='images/og-image.png', _external=True) }}{% endblock %}
+{% block twitter_url %}https://cryptasium.com/youtube/{{ video.video_id if video else '' }}{% endblock %}
+{% block twitter_title %}{{ video.title if video else 'Video Not Found' }}{% endblock %}
+{% block twitter_description %}{{ video.description[:200] + '...' if video and video.description else 'Watch this video on Cryptasium.' }}{% endblock %}
+{% block twitter_image %}{{ video.thumbnail_url if video and video.thumbnail_url else url_for('static', filename='images/og-image.png', _external=True) }}{% endblock %}
+
+{% block extra_structured_data %}
+{% if video %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    "name": "{{ video.title }}",
+    "description": "{{ video.description if video.description else '' }}",
+    "thumbnailUrl": "{{ video.thumbnail_url }}",
+    "uploadDate": "{{ video.created_at.strftime('%Y-%m-%dT%H:%M:%S+00:00') if video.created_at else '' }}",
+    "duration": "{{ video.duration }}",
+    "embedUrl": "https://www.youtube.com/embed/{{ video.video_id }}",
+    "interactionCount": "{{ video.views or 0 }}",
+    "publisher": {
+        "@type": "Organization",
+        "name": "Cryptasium",
+        "logo": {
+            "@type": "ImageObject",
+            "url": "{{ url_for('static', filename='images/logo.png', _external=True) }}"
+        }
+    }
+}
+</script>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .video-detail-container {
+        padding: 120px 24px 80px;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .video-back-link {
+        color: var(--accent);
+        font-size: 14px;
+        margin-bottom: 24px;
+        display: inline-block;
+        text-decoration: none;
+        transition: color 0.2s;
+        font-weight: 500;
+    }
+
+    .video-back-link:hover {
+        color: var(--accent-hover);
+    }
+
+    .video-player {
+        position: relative;
+        width: 100%;
+        padding-bottom: 56.25%;
+        margin-bottom: 32px;
+        border-radius: 16px;
+        overflow: hidden;
+        background: #000;
+    }
+
+    .video-player iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+
+    .video-title {
+        font-size: 32px;
+        line-height: 1.3;
+        margin-bottom: 16px;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+
+    .video-meta {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 24px;
+        color: var(--text-muted);
+        font-size: 14px;
+        flex-wrap: wrap;
+        padding-bottom: 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .video-meta span {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .video-description {
+        line-height: 1.7;
+        font-size: 16px;
+        color: rgba(255, 255, 255, 0.85);
+        white-space: pre-wrap;
+    }
+
+    /* Reactions, Share, Comments - same as blog */
+    .reactions-section {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-top: 32px;
+        padding: 20px 24px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .share-section {
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .share-title {
+        font-size: 14px;
+        color: var(--text-muted);
+        margin-bottom: 16px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .share-buttons {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .share-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+    }
+
+    .share-btn i { font-size: 18px; }
+
+    .share-btn.twitter { background: rgba(29, 161, 242, 0.15); color: #1DA1F2; border-color: rgba(29, 161, 242, 0.3); }
+    .share-btn.twitter:hover { background: rgba(29, 161, 242, 0.25); transform: translateY(-2px); }
+    .share-btn.facebook { background: rgba(66, 103, 178, 0.15); color: #4267B2; border-color: rgba(66, 103, 178, 0.3); }
+    .share-btn.facebook:hover { background: rgba(66, 103, 178, 0.25); transform: translateY(-2px); }
+    .share-btn.linkedin { background: rgba(0, 119, 181, 0.15); color: #0077B5; border-color: rgba(0, 119, 181, 0.3); }
+    .share-btn.linkedin:hover { background: rgba(0, 119, 181, 0.25); transform: translateY(-2px); }
+    .share-btn.whatsapp { background: rgba(37, 211, 102, 0.15); color: #25D366; border-color: rgba(37, 211, 102, 0.3); }
+    .share-btn.whatsapp:hover { background: rgba(37, 211, 102, 0.25); transform: translateY(-2px); }
+    .share-btn.copy { background: rgba(255, 255, 255, 0.08); color: var(--text-main); border-color: rgba(255, 255, 255, 0.15); }
+    .share-btn.copy:hover { background: rgba(255, 255, 255, 0.12); transform: translateY(-2px); }
+
+    .comments-section {
+        margin-top: 48px;
+        padding-top: 32px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .comments-title {
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 24px;
+        color: var(--text-main);
+    }
+
+    #disqus_thread {
+        background: rgba(255, 255, 255, 0.02);
+        padding: 24px;
+        border-radius: 12px;
+    }
+
+    .video-not-found {
+        text-align: center;
+        padding: 100px 24px;
+    }
+
+    .video-not-found h1 {
+        font-size: 48px;
+        margin-bottom: 24px;
+    }
+
+    .video-not-found p {
+        color: var(--text-muted);
+        margin-bottom: 32px;
+    }
+
+    @media (max-width: 600px) {
+        .video-detail-container { padding: 100px 16px 60px; }
+        .video-title { font-size: 24px; }
+        .share-buttons { flex-direction: column; }
+        .share-btn { width: 100%; justify-content: center; }
+    }
+
+    /* Light mode overrides */
+    [data-theme="light"] .video-description {
+        color: var(--text-main);
+    }
+    [data-theme="light"] .video-meta {
+        border-bottom-color: var(--border);
+    }
+    [data-theme="light"] .share-section {
+        border-top-color: var(--border);
+    }
+    [data-theme="light"] .comments-section {
+        border-top-color: var(--border);
+    }
+    [data-theme="light"] .share-btn.copy {
+        background: rgba(0, 0, 0, 0.05);
+        border-color: var(--border);
+    }
+    [data-theme="light"] #disqus_thread {
+        background: rgba(0, 0, 0, 0.02);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="video-detail-container">
+    {% if video %}
+    <div class="reveal">
+        <a href="{{ url_for('youtube_list') }}" class="video-back-link">← Back to Videos</a>
+    </div>
+
+    <div class="video-player reveal">
+        <iframe 
+            src="https://www.youtube.com/embed/{{ video.video_id }}?rel=0" 
+            title="{{ video.title }}"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+            allowfullscreen>
+        </iframe>
+    </div>
+
+    <div class="reveal">
+        <h1 class="video-title">{{ video.title }}</h1>
+        <div class="video-meta">
+            <span><i class="ph ph-eye"></i> {{ video.views or 0 }} views</span>
+            <span><i class="ph ph-clock"></i> {{ video.duration or 'N/A' }}</span>
+            <span><i class="ph ph-calendar"></i> {{ video.created_at.strftime('%B %d, %Y') if video.created_at else 'Unknown' }}</span>
+        </div>
+    </div>
+
+    {% if video.description %}
+    <div class="video-description reveal">
+        {{ video.description }}
+    </div>
+    {% endif %}
+
+    <div class="share-section reveal">
+        <div class="share-title">Share this video</div>
+        <div class="share-buttons">
+            <a href="https://twitter.com/intent/tweet?text={{ video.title|urlencode }}&url=https://youtube.com/watch?v={{ video.video_id }}&via=Cryptasium" 
+               target="_blank" rel="noopener noreferrer" class="share-btn twitter">
+                <i class="ph ph-x-logo"></i> Twitter
+            </a>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://youtube.com/watch?v={{ video.video_id }}" 
+               target="_blank" rel="noopener noreferrer" class="share-btn facebook">
+                <i class="ph ph-facebook-logo"></i> Facebook
+            </a>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://youtube.com/watch?v={{ video.video_id }}&title={{ video.title|urlencode }}" 
+               target="_blank" rel="noopener noreferrer" class="share-btn linkedin">
+                <i class="ph ph-linkedin-logo"></i> LinkedIn
+            </a>
+            <a href="https://api.whatsapp.com/send?text={{ video.title|urlencode }}%20https://youtube.com/watch?v={{ video.video_id }}" 
+               target="_blank" rel="noopener noreferrer" class="share-btn whatsapp">
+                <i class="ph ph-whatsapp-logo"></i> WhatsApp
+            </a>
+            <button class="share-btn copy" onclick="copyLink()" aria-label="Copy link">
+                <i class="ph ph-copy"></i> <span id="copyText">Copy Link</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="comments-section reveal">
+        <h3 class="comments-title">Comments</h3>
+        <div id="disqus_thread"></div>
+    </div>
+
+    {% else %}
+    <div class="video-not-found reveal">
+        <h1>Video Not Found</h1>
+        <p>The video you're looking for doesn't exist or has been removed.</p>
+        <a href="{{ url_for('youtube_list') }}" class="btn btn-primary">Back to Videos</a>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+{% if video %}
+<script>
+    function copyLink() {
+        const url = 'https://youtube.com/watch?v={{ video.video_id }}';
+        navigator.clipboard.writeText(url).then(() => {
+            const copyText = document.getElementById('copyText');
+            copyText.textContent = 'Copied!';
+            setTimeout(() => { copyText.textContent = 'Copy Link'; }, 2000);
+        });
+    }
+
+    var disqus_config = function () {
+        this.page.url = '{{ url_for("video_detail", video_id=video.video_id, _external=True) }}';
+        this.page.identifier = 'video_{{ video.video_id }}';
+        this.page.title = '{{ video.title|e }}';
+    };
+
+    (function() {
+        var d = document, s = d.createElement('script');
+        s.src = 'https://cryptasium.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+{% endif %}
+{% endblock %}
+

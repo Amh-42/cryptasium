@@ -104,19 +104,19 @@
     </div>
 
     <div class="stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; text-align: left; padding: 0 24px;">
-        <div class="stat-card reveal" style="background: rgba(20,20,20,0.5); border: 1px solid var(--border); padding: 32px; border-radius: 16px;">
+        <div class="stat-card reveal">
             <h3 style="font-size: 18px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
                 <i class="ph ph-youtube-logo" style="color: var(--accent);"></i> Video Essays
             </h3>
             <p style="font-size: 14px; color: var(--text-muted); line-height: 1.5;">Cinematic deep dives into software history, system architecture, and AI breakthroughs available in 4K.</p>
         </div>
-        <div class="stat-card reveal" style="background: rgba(20,20,20,0.5); border: 1px solid var(--border); padding: 32px; border-radius: 16px;">
+        <div class="stat-card reveal">
             <h3 style="font-size: 18px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
                 <i class="ph ph-microphone" style="color: var(--accent);"></i> The Podcast
             </h3>
             <p style="font-size: 14px; color: var(--text-muted); line-height: 1.5;">Conversations with engineers, futurists, and creators about the ethics and philosophy of technology.</p>
         </div>
-        <div class="stat-card reveal" style="background: rgba(20,20,20,0.5); border: 1px solid var(--border); padding: 32px; border-radius: 16px;">
+        <div class="stat-card reveal">
             <h3 style="font-size: 18px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
                 <i class="ph ph-read-cv-logo" style="color: var(--accent);"></i> Technical Blog
             </h3>
@@ -150,6 +150,34 @@
         .stat-card {
             padding: 24px !important;
         }
+    }
+
+    /* Stat card styling */
+    .stat-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        padding: 32px;
+        border-radius: 16px;
+        transition: all 0.3s;
+    }
+    
+    .stat-card:hover {
+        border-color: var(--accent);
+        transform: translateY(-2px);
+    }
+    
+    .stat-card h3 {
+        color: var(--text-main);
+    }
+    
+    /* Light mode specific */
+    [data-theme="light"] .stat-card {
+        background: var(--bg-card);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    [data-theme="light"] .stat-card:hover {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     }
 </style>
 

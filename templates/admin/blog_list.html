@@ -116,6 +116,64 @@
             </tbody>
         </table>
     </div>
+
+    <!-- Mobile Cards View -->
+    <div class="mobile-cards-wrapper" id="mobileCards">
+        {% for post in posts %}
+        <div class="mobile-card" data-status="{% if post.published %}published{% else %}draft{% endif %}" data-title="{{ post.title|lower }}">
+            <div class="mobile-card-header">
+                <div class="mobile-card-thumbnail" style="display: flex; align-items: center; justify-content: center;">
+                    <i class="ph ph-article" style="font-size: 24px; color: var(--text-muted);"></i>
+                </div>
+                <div class="mobile-card-info">
+                    <div class="mobile-card-title">{{ post.title }}</div>
+                    <div class="mobile-card-meta">
+                        <span><i class="ph ph-user"></i> {{ post.author or 'Cryptasium Team' }}</span>
+                        <span><i class="ph ph-calendar"></i> {{ post.created_at.strftime('%b %d') if post.created_at else 'N/A' }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mobile-card-stats">
+                <div class="mobile-card-stat">
+                    <div class="mobile-card-stat-value">{{ post.views or 0 }}</div>
+                    <div class="mobile-card-stat-label">Views</div>
+                </div>
+                <div class="mobile-card-stat">
+                    <div class="mobile-card-stat-value">{% if post.published %}<i class="ph ph-check-circle" style="color: #22c55e;"></i>{% else %}<i class="ph ph-circle" style="color: #f59e0b;"></i>{% endif %}</div>
+                    <div class="mobile-card-stat-label">Status</div>
+                </div>
+            </div>
+            <div class="mobile-card-footer">
+                <div class="mobile-card-status">
+                    <span class="status-badge {% if post.published %}published{% else %}draft{% endif %}">
+                        <i class="ph ph-{% if post.published %}check-circle{% else %}circle{% endif %}"></i>
+                        {% if post.published %}Published{% else %}Draft{% endif %}
+                    </span>
+                </div>
+                <div class="mobile-card-actions">
+                    <button class="action-btn toggle" onclick="togglePublish({{ post.id }}, {{ 'true' if post.published else 'false' }})" title="Toggle Publish">
+                        <i class="ph ph-{% if post.published %}eye-slash{% else %}eye{% endif %}"></i>
+                    </button>
+                    <a href="{{ url_for('admin_blog_edit', id=post.id) }}" class="action-btn edit" title="Edit">
+                        <i class="ph ph-pencil"></i>
+                    </a>
+                    <form method="POST" action="{{ url_for('admin_blog_delete', id=post.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure?');">
+                        <button type="submit" class="action-btn delete" title="Delete">
+                            <i class="ph ph-trash"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="ph ph-article"></i>
+            <h3>No blog posts found</h3>
+            <p style="margin-bottom: 24px;">Get started by creating your first blog post.</p>
+            <a href="{{ url_for('admin_blog_new') }}" class="btn btn-primary">Create First Post</a>
+        </div>
+        {% endfor %}
+    </div>
 </div>
 {% endblock %}
 

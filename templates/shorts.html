@@ -53,15 +53,20 @@
                     <span class="placeholder-text">Short</span>
                 </div>
                 {% endif %}
-                <h3 style="margin-bottom: 12px; font-size: 16px;">{{ short.title }}</h3>
+                <h3 style="margin-bottom: 12px; font-size: 16px;"><a href="{{ url_for('short_detail', video_id=short.video_id) }}" onclick="event.stopPropagation();" style="color: inherit; text-decoration: none;">{{ short.title }}</a></h3>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
                     <span style="color: var(--text-muted); font-size: 12px; font-family: var(--font-mono);">{{ short.duration or '60s' }}</span>
                     <span style="color: var(--text-muted); font-size: 12px;">{{ short.views or 0 }} views</span>
                 </div>
                 {% if short.video_id %}
-                <button onclick="event.stopPropagation(); openVideoModal('{{ short.video_id }}', '{{ short.title|replace("'", "\\'") }}', '{{ short.duration }}', true)" class="btn btn-primary" style="width: 100%; margin-top: 16px; text-align: center; font-size: 12px; padding: 8px 16px;">
-                    <i class="ph ph-play"></i> Watch
-                </button>
+                <div style="display: flex; gap: 6px; margin-top: 12px;">
+                    <button onclick="event.stopPropagation(); openVideoModal('{{ short.video_id }}', '{{ short.title|replace("'", "\\'") }}', '{{ short.duration }}', true)" class="btn btn-primary" style="flex: 1; text-align: center; font-size: 11px; padding: 8px 12px;">
+                        <i class="ph ph-play"></i>
+                    </button>
+                    <a href="{{ url_for('short_detail', video_id=short.video_id) }}" onclick="event.stopPropagation();" class="btn btn-outline" style="flex: 1; text-align: center; font-size: 11px; padding: 8px 12px; text-decoration: none;">
+                        <i class="ph ph-chat-circle"></i>
+                    </a>
+                </div>
                 {% endif %}
             </div>
             {% endfor %}

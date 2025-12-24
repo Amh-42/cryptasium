@@ -212,8 +212,37 @@
 
     @media (max-width: 768px) {
         .glass-container {
-            padding: 48px 24px;
+            padding: 32px 16px;
             border-radius: 16px;
+        }
+        
+        /* Ensure content-grid displays properly on mobile */
+        .content-grid {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 20px !important;
+        }
+        
+        /* Force reveal elements to be visible on mobile as fallback */
+        .reveal {
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+        }
+        
+        /* Adjust card styling for mobile */
+        .content-card {
+            padding: 20px !important;
+        }
+        
+        /* Adjust section heading */
+        h2.text-5xl {
+            font-size: 28px !important;
+            margin-bottom: 24px !important;
+        }
+        
+        /* Fix video placeholder */
+        .video-placeholder {
+            height: 160px !important;
         }
     }
 
@@ -496,6 +525,52 @@
     #crystal-container:active { cursor: grabbing; }
     #crystal-container canvas { width: 100% !important; height: 100% !important; display: block; }
     @media (max-width: 768px) { #crystal-container { height: 200px; } }
+
+    /* ===== LIGHT MODE OVERRIDES ===== */
+    [data-theme="light"] .glass-container {
+        background: rgba(255, 255, 255, 0.8);
+        border-color: var(--border);
+    }
+    
+    [data-theme="light"] .glass-container::before {
+        background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.05) 50%, transparent);
+    }
+    
+    [data-theme="light"] .content-card {
+        background: var(--bg-card);
+        border-color: var(--border);
+    }
+    
+    [data-theme="light"] .content-card:hover {
+        border-color: var(--accent);
+        background: var(--bg-card-hover);
+    }
+    
+    [data-theme="light"] h2.text-5xl {
+        color: var(--text-main);
+    }
+    
+    [data-theme="light"] .video-placeholder {
+        background: rgba(0, 0, 0, 0.05);
+    }
+
+    /* Fix navbar glitch caused by backdrop-filter stacking context */
+    .glass-container {
+        isolation: isolate;
+    }
+    
+    .content-card {
+        isolation: isolate;
+    }
+    
+    .thermostat-demo-container {
+        isolation: isolate;
+    }
+    
+    /* Ensure particles don't affect navbar */
+    #particle-container {
+        pointer-events: none;
+    }
 </style>
 {% endblock %}
 

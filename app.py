@@ -69,6 +69,23 @@ def create_app(config_name=None):
             print(f"Markdown filter error: {str(e)}")
             return html.escape(str(text))
     
+    # Register number formatting filter for dashboard
+    @app.template_filter('format_number')
+    def format_number_filter(value):
+        """Format large numbers nicely (1.2M, 5K, etc.)"""
+        try:
+            num = int(value)
+            if num >= 1_000_000_000:
+                return f"{num / 1_000_000_000:.1f}B".rstrip('0').rstrip('.')
+            elif num >= 1_000_000:
+                return f"{num / 1_000_000:.1f}M".rstrip('0').rstrip('.')
+            elif num >= 1_000:
+                return f"{num / 1_000:.1f}K".rstrip('0').rstrip('.')
+            else:
+                return str(num)
+        except (ValueError, TypeError):
+            return str(value)
+    
     # ========== HELPER FUNCTIONS ==========
     
     # Track last sync time to avoid excessive API calls
@@ -455,6 +472,36 @@ def create_app(config_name=None):
         
         return render_template('post_detail.html', post=post)
     
+    # ========== BLOG LIKE API ==========
+    @app.route('/api/blog/<slug>/like', methods=['POST'])
+    def api_blog_like(slug):
+        """Like a blog post"""
+        from flask import jsonify
+        post = BlogPost.query.filter_by(slug=slug).first()
+        if not post:
+            return jsonify({'error': 'Post not found'}), 404
+        
+        if post.likes is None:
+            post.likes = 0
+        post.likes += 1
+        db.session.commit()
+        return jsonify({'success': True, 'likes': post.likes})
+    
+    @app.route('/api/blog/<slug>/unlike', methods=['POST'])
+    def api_blog_unlike(slug):
+        """Unlike a blog post"""
+        from flask import jsonify
+        post = BlogPost.query.filter_by(slug=slug).first()
+        if not post:
+            return jsonify({'error': 'Post not found'}), 404
+        
+        if post.likes is None:
+            post.likes = 0
+        if post.likes > 0:
+            post.likes -= 1
+        db.session.commit()
+        return jsonify({'success': True, 'likes': post.likes})
+    
     @app.route('/youtube')
     def youtube_list():
         """YouTube videos listing page"""
@@ -464,6 +511,19 @@ def create_app(config_name=None):
             .paginate(page=page, per_page=app.config['VIDEOS_PER_PAGE'], error_out=False)
         
         return render_template('youtube.html', videos=videos)
+    
+    @app.route('/youtube/<video_id>')
+    def video_detail(video_id):
+        """YouTube video detail page"""
+        video = YouTubeVideo.query.filter_by(video_id=video_id).first()
+        if not video or not video.published:
+            from flask import abort
+            abort(404)
+        
+        # Views and likes are fetched from YouTube API - no local increment
+        return render_template('video_detail.html', video=video)
+    
+    # Video likes/views are synced from YouTube API - no local API needed
     
     @app.route('/podcast')
     def podcast_list():
@@ -475,6 +535,47 @@ def create_app(config_name=None):
         
         return render_template('podcast.html', podcasts=podcasts)
     
+    @app.route('/podcast/<int:id>')
+    def podcast_detail(id):
+        """Podcast episode detail page"""
+        podcast = Podcast.query.get(id)
+        if not podcast or not podcast.published:
+            from flask import abort
+            abort(404)
+        
+        if podcast.views is None:
+            podcast.views = 0
+        podcast.views += 1
+        db.session.commit()
+        
+        return render_template('podcast_detail.html', podcast=podcast)
+    
+    # Podcast like API
+    @app.route('/api/podcast/<int:id>/like', methods=['POST'])
+    def api_podcast_like(id):
+        from flask import jsonify
+        podcast = Podcast.query.get(id)
+        if not podcast:
+            return jsonify({'error': 'Podcast not found'}), 404
+        if podcast.likes is None:
+            podcast.likes = 0
+        podcast.likes += 1
+        db.session.commit()
+        return jsonify({'success': True, 'likes': podcast.likes})
+    
+    @app.route('/api/podcast/<int:id>/unlike', methods=['POST'])
+    def api_podcast_unlike(id):
+        from flask import jsonify
+        podcast = Podcast.query.get(id)
+        if not podcast:
+            return jsonify({'error': 'Podcast not found'}), 404
+        if podcast.likes is None:
+            podcast.likes = 0
+        if podcast.likes > 0:
+            podcast.likes -= 1
+        db.session.commit()
+        return jsonify({'success': True, 'likes': podcast.likes})
+    
     @app.route('/shorts')
     def shorts_list():
         """Shorts listing page"""
@@ -484,6 +585,19 @@ def create_app(config_name=None):
             .paginate(page=page, per_page=app.config['SHORTS_PER_PAGE'], error_out=False)
         
         return render_template('shorts.html', shorts=shorts)
+    
+    @app.route('/shorts/<video_id>')
+    def short_detail(video_id):
+        """Short video detail page"""
+        short = Short.query.filter_by(video_id=video_id).first()
+        if not short or not short.published:
+            from flask import abort
+            abort(404)
+        
+        # Views and likes are fetched from YouTube API - no local increment
+        return render_template('short_detail.html', short=short)
+    
+    # Short likes/views are synced from YouTube API - no local API needed
     
     @app.route('/community')
     def community_list():

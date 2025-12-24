@@ -53,11 +53,11 @@
                     <span class="placeholder-text">Episode {{ podcast.episode_number or '' }}</span>
                 </div>
                 {% endif %}
-                <h3 style="margin-bottom: 12px;">{{ podcast.title }}</h3>
+                <h3 style="margin-bottom: 12px;"><a href="{{ url_for('podcast_detail', id=podcast.id) }}" style="color: inherit; text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='inherit'">{{ podcast.title }}</a></h3>
                 <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">{{ podcast.description[:150] if podcast.description else 'Listen to the full episode...' }}...</p>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
                     <span style="color: var(--text-muted); font-size: 12px; font-family: var(--font-mono);">{{ podcast.duration or '' }} • {{ podcast.created_at.strftime('%b %d') if podcast.created_at else '' }}</span>
-                    <span style="color: var(--text-muted); font-size: 12px;">{{ podcast.views }} views</span>
+                    <span style="color: var(--text-muted); font-size: 12px;">{{ podcast.views }} plays</span>
                 </div>
                 {% if podcast.audio_url %}
                 <audio controls style="width: 100%; margin-top: 16px;">
@@ -65,6 +65,9 @@
                     Your browser does not support the audio element.
                 </audio>
                 {% endif %}
+                <a href="{{ url_for('podcast_detail', id=podcast.id) }}" class="btn btn-outline" style="width: 100%; margin-top: 12px; text-align: center; text-decoration: none;">
+                    <i class="ph ph-chat-circle"></i> View Episode & Comments
+                </a>
             </div>
             {% endfor %}
         {% else %}

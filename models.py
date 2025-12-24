@@ -377,6 +377,7 @@ class BlogPost(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     views = db.Column(db.Integer, default=0)
+    likes = db.Column(db.Integer, default=0)
     
     def __repr__(self):
         return f'<BlogPost {self.title}>'
@@ -392,7 +393,8 @@ class BlogPost(db.Model):
             'author': self.author,
             'published': self.published,
             'created_at': self.created_at.isoformat() if self.created_at else None,
-            'views': self.views
+            'views': self.views,
+            'likes': self.likes
         }
 
 
@@ -445,6 +447,7 @@ class Podcast(db.Model):
     published = db.Column(db.Boolean, default=False, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     views = db.Column(db.Integer, default=0)
+    likes = db.Column(db.Integer, default=0)
     
     def __repr__(self):
         return f'<Podcast {self.title}>'

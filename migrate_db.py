@@ -29,6 +29,14 @@ def migrate():
         ("gamification_stats", "views_points", "INTEGER DEFAULT 0"),
         # Add daily_xp_points to gamification_stats
         ("gamification_stats", "daily_xp_points", "INTEGER DEFAULT 0"),
+        # Add likes to blog_posts
+        ("blog_posts", "likes", "INTEGER DEFAULT 0"),
+        # Add likes to youtube_videos
+        ("youtube_videos", "likes", "INTEGER DEFAULT 0"),
+        # Add likes to shorts
+        ("shorts", "likes", "INTEGER DEFAULT 0"),
+        # Add likes to podcasts
+        ("podcasts", "likes", "INTEGER DEFAULT 0"),
     ]
     
     for table, column, column_type in migrations:

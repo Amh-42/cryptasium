@@ -136,7 +136,7 @@
     .post-content {
         line-height: 1.58;
         font-size: 21px;
-        color: rgba(255, 255, 255, 0.9);
+        color: var(--text-main);
         font-weight: 400;
         letter-spacing: -0.003em;
     }
@@ -303,6 +303,243 @@
         opacity: 0.1 !important;
         filter: brightness(0.1) !important;
     }
+
+    /* ===== SOCIAL SHARING ===== */
+    .share-section {
+        margin-top: 48px;
+        padding-top: 32px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .share-title {
+        font-size: 14px;
+        color: var(--text-muted);
+        margin-bottom: 16px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .share-buttons {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .share-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+    }
+
+    .share-btn i {
+        font-size: 18px;
+    }
+
+    .share-btn.twitter {
+        background: rgba(29, 161, 242, 0.15);
+        color: #1DA1F2;
+        border-color: rgba(29, 161, 242, 0.3);
+    }
+    .share-btn.twitter:hover {
+        background: rgba(29, 161, 242, 0.25);
+        transform: translateY(-2px);
+    }
+
+    .share-btn.facebook {
+        background: rgba(66, 103, 178, 0.15);
+        color: #4267B2;
+        border-color: rgba(66, 103, 178, 0.3);
+    }
+    .share-btn.facebook:hover {
+        background: rgba(66, 103, 178, 0.25);
+        transform: translateY(-2px);
+    }
+
+    .share-btn.linkedin {
+        background: rgba(0, 119, 181, 0.15);
+        color: #0077B5;
+        border-color: rgba(0, 119, 181, 0.3);
+    }
+    .share-btn.linkedin:hover {
+        background: rgba(0, 119, 181, 0.25);
+        transform: translateY(-2px);
+    }
+
+    .share-btn.whatsapp {
+        background: rgba(37, 211, 102, 0.15);
+        color: #25D366;
+        border-color: rgba(37, 211, 102, 0.3);
+    }
+    .share-btn.whatsapp:hover {
+        background: rgba(37, 211, 102, 0.25);
+        transform: translateY(-2px);
+    }
+
+    .share-btn.copy {
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text-main);
+        border-color: rgba(255, 255, 255, 0.15);
+    }
+    .share-btn.copy:hover {
+        background: rgba(255, 255, 255, 0.12);
+        transform: translateY(-2px);
+    }
+
+    /* ===== DISQUS COMMENTS ===== */
+    .comments-section {
+        margin-top: 64px;
+        padding-top: 48px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .comments-title {
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 32px;
+        color: var(--text-main);
+    }
+
+    #disqus_thread {
+        background: rgba(255, 255, 255, 0.02);
+        padding: 24px;
+        border-radius: 12px;
+    }
+
+    /* ===== AUTHOR BIO ===== */
+    .author-section {
+        margin-top: 48px;
+        padding: 24px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        gap: 20px;
+        align-items: center;
+    }
+
+    .author-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), #ff6b6b);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: 700;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .author-info h4 {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    .author-info p {
+        font-size: 14px;
+        color: var(--text-muted);
+        line-height: 1.5;
+    }
+
+    /* ===== MOBILE RESPONSIVE ===== */
+    @media (max-width: 600px) {
+        .post-detail-container {
+            padding: 100px 16px 60px;
+        }
+        
+        .post-title {
+            font-size: 28px;
+        }
+        
+        .post-content, .post-content p {
+            font-size: 17px;
+        }
+        
+        .post-excerpt {
+            font-size: 17px;
+        }
+        
+        .share-buttons {
+            flex-direction: column;
+        }
+        
+        .share-btn {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .author-section {
+            flex-direction: column;
+            text-align: center;
+        }
+    }
+
+    /* ===== LIGHT MODE OVERRIDES ===== */
+    [data-theme="light"] .post-content {
+        color: var(--text-main);
+    }
+    
+    [data-theme="light"] .post-content code {
+        background: rgba(0, 0, 0, 0.06);
+        color: var(--accent);
+    }
+    
+    [data-theme="light"] .post-content pre {
+        background: rgba(0, 0, 0, 0.03);
+    }
+    
+    [data-theme="light"] .post-content pre code {
+        color: var(--text-main);
+    }
+    
+    [data-theme="light"] .post-content blockquote {
+        border-left-color: rgba(0, 0, 0, 0.15);
+        color: var(--text-muted);
+    }
+    
+    [data-theme="light"] .post-content table th {
+        background: rgba(0, 0, 0, 0.04);
+    }
+    
+    [data-theme="light"] .post-meta {
+        border-bottom-color: var(--border);
+    }
+    
+    [data-theme="light"] .share-section,
+    [data-theme="light"] .comments-section {
+        border-top-color: var(--border);
+    }
+    
+    [data-theme="light"] .share-btn.copy {
+        background: rgba(0, 0, 0, 0.05);
+        border-color: var(--border);
+    }
+    
+    [data-theme="light"] .share-btn.copy:hover {
+        background: rgba(0, 0, 0, 0.08);
+    }
+    
+    [data-theme="light"] #disqus_thread {
+        background: rgba(0, 0, 0, 0.02);
+    }
+    
+    [data-theme="light"] .author-section {
+        background: rgba(0, 0, 0, 0.02);
+        border-color: var(--border);
+    }
+    
+    [data-theme="light"] .post-excerpt {
+        color: var(--text-muted);
+    }
 </style>
 {% endblock %}
 
@@ -344,6 +581,53 @@
         <p>No content available for this post.</p>
     </div>
     {% endif %}
+
+    <!-- AUTHOR BIO -->
+    <div class="author-section reveal">
+        <div class="author-avatar">{{ (post.author or 'C')[0].upper() }}</div>
+        <div class="author-info">
+            <h4>{{ post.author or 'Cryptasium Team' }}</h4>
+            <p>Writing about technology, AI, and software engineering. Creating content that sparks curiosity.</p>
+        </div>
+    </div>
+
+    <!-- SHARE SECTION -->
+    <div class="share-section reveal">
+        <div class="share-title">Share this article</div>
+        <div class="share-buttons">
+            <a href="https://twitter.com/intent/tweet?text={{ post.title|urlencode }}&url={{ url_for('blog_detail', slug=post.slug, _external=True)|urlencode }}&via=Cryptasium" 
+               target="_blank" rel="noopener noreferrer" class="share-btn twitter">
+                <i class="ph ph-x-logo"></i>
+                <span>Twitter</span>
+            </a>
+            <a href="https://www.facebook.com/sharer/sharer.php?u={{ url_for('blog_detail', slug=post.slug, _external=True)|urlencode }}" 
+               target="_blank" rel="noopener noreferrer" class="share-btn facebook">
+                <i class="ph ph-facebook-logo"></i>
+                <span>Facebook</span>
+            </a>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url={{ url_for('blog_detail', slug=post.slug, _external=True)|urlencode }}&title={{ post.title|urlencode }}" 
+               target="_blank" rel="noopener noreferrer" class="share-btn linkedin">
+                <i class="ph ph-linkedin-logo"></i>
+                <span>LinkedIn</span>
+            </a>
+            <a href="https://api.whatsapp.com/send?text={{ post.title|urlencode }}%20{{ url_for('blog_detail', slug=post.slug, _external=True)|urlencode }}" 
+               target="_blank" rel="noopener noreferrer" class="share-btn whatsapp">
+                <i class="ph ph-whatsapp-logo"></i>
+                <span>WhatsApp</span>
+            </a>
+            <button class="share-btn copy" onclick="copyLink()" aria-label="Copy link">
+                <i class="ph ph-copy"></i>
+                <span id="copyText">Copy Link</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- DISQUS COMMENTS -->
+    <div class="comments-section reveal">
+        <h3 class="comments-title">Comments</h3>
+        <div id="disqus_thread"></div>
+    </div>
+
     {% else %}
     <div class="post-not-found reveal">
         <h1>Post Not Found</h1>
@@ -355,5 +639,36 @@
 {% endblock %}
 
 {% block extra_js %}
+{% if post %}
+<script>
+    // ========== COPY LINK ==========
+    function copyLink() {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url).then(() => {
+            const copyText = document.getElementById('copyText');
+            copyText.textContent = 'Copied!';
+            setTimeout(() => {
+                copyText.textContent = 'Copy Link';
+            }, 2000);
+        });
+    }
+
+    // ========== DISQUS COMMENTS ==========
+    var disqus_config = function () {
+        this.page.url = '{{ url_for("blog_detail", slug=post.slug, _external=True) }}';
+        this.page.identifier = '{{ post.slug }}';
+        this.page.title = '{{ post.title|e }}';
+    };
+
+    (function() {
+        var d = document, s = d.createElement('script');
+        // REPLACE 'YOUR-DISQUS-SHORTNAME' with your actual Disqus shortname
+        s.src = 'https://cryptasium.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+{% endif %}
 {% endblock %}
 
