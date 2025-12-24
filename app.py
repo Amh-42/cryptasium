@@ -964,6 +964,391 @@ def create_app(config_name=None):
         db.session.commit()
         return redirect(url_for('admin_progress'))
     
+    # ========== CONTENT CALENDAR ==========
+    
+    @app.route('/admin/calendar')
+    @admin_required
+    def admin_calendar():
+        """Content Calendar view with multiple views (day/week/month/schedule)"""
+        from datetime import date, timedelta, datetime
+        from calendar import monthrange
+        from models import ContentCalendarEntry, WeeklyPostingSchedule, WeeklyContentPlan
+        
+        # Get current dates
+        today = date.today()
+        
+        # Check for navigation parameters
+        nav_date = request.args.get('date')
+        nav_view = request.args.get('view', 'week')
+        
+        if nav_date:
+            try:
+                selected_date = datetime.strptime(nav_date, '%Y-%m-%d').date()
+            except:
+                selected_date = today
+        else:
+            selected_date = today
+        
+        # Calculate week start based on selected date
+        start_of_week = selected_date - timedelta(days=selected_date.weekday())
+        end_of_week = start_of_week + timedelta(days=6)
+        
+        # Get posting schedule
+        posting_schedule = WeeklyPostingSchedule.get_all_active()
+        
+        # Get weekly content plan (titles for each content type)
+        weekly_plan = WeeklyContentPlan.get_week_plan(start_of_week)
+        plan_dict = {p.content_type: p.to_dict() for p in weekly_plan}
+        
+        # Get calendar entries for this week
+        week_entries = ContentCalendarEntry.get_week_entries(start_of_week, end_of_week)
+        
+        # Build week calendar with days
+        week_days = []
+        for i in range(7):
+            day_date = start_of_week + timedelta(days=i)
+            day_entries = [e for e in week_entries if e.scheduled_date == day_date]
+            
+            # Get scheduled content type for this day with planned title
+            scheduled_type = None
+            for schedule in posting_schedule:
+                if schedule.day_of_week == i:
+                    sched_dict = schedule.to_dict()
+                    # Add planned title if exists
+                    if schedule.content_type in plan_dict and plan_dict[schedule.content_type]['title']:
+                        sched_dict['planned_title'] = plan_dict[schedule.content_type]['title']
+                        sched_dict['plan_id'] = plan_dict[schedule.content_type]['id']
+                        sched_dict['plan_status'] = plan_dict[schedule.content_type]['status']
+                    scheduled_type = sched_dict
+                    break
+            
+            week_days.append({
+                'date': day_date,
+                'date_iso': day_date.isoformat(),
+                'day_name': day_date.strftime('%A'),
+                'is_today': day_date == today,
+                'is_selected': day_date == selected_date,
+                'entries': [e.to_dict() for e in day_entries],
+                'scheduled_type': scheduled_type
+            })
+        
+        # Build month calendar
+        year = today.year
+        month = today.month
+        first_day_of_month = date(year, month, 1)
+        _, days_in_month = monthrange(year, month)
+        last_day_of_month = date(year, month, days_in_month)
+        
+        # Get starting day (Monday = 0)
+        start_padding = first_day_of_month.weekday()
+        end_padding = 6 - last_day_of_month.weekday()
+        
+        # Get month entries
+        month_start = first_day_of_month - timedelta(days=start_padding)
+        month_end = last_day_of_month + timedelta(days=end_padding)
+        month_entries = ContentCalendarEntry.get_week_entries(month_start, month_end)
+        
+        month_days = []
+        current_date = month_start
+        while current_date <= month_end:
+            day_entries = [e for e in month_entries if e.scheduled_date == current_date]
+            month_days.append({
+                'date': current_date,
+                'is_today': current_date == today,
+                'is_other_month': current_date.month != month,
+                'entries': [e.to_dict() for e in day_entries]
+            })
+            current_date += timedelta(days=1)
+        
+        # Prepare schedule data with planned titles
+        schedule_with_plans = []
+        for s in posting_schedule:
+            sched = s.to_dict()
+            if s.content_type in plan_dict and plan_dict[s.content_type]['title']:
+                sched['planned_title'] = plan_dict[s.content_type]['title']
+                sched['plan_id'] = plan_dict[s.content_type]['id']
+                sched['plan_status'] = plan_dict[s.content_type]['status']
+            schedule_with_plans.append(sched)
+        
+        # Calculate navigation dates
+        prev_week = (start_of_week - timedelta(days=7)).isoformat()
+        next_week = (start_of_week + timedelta(days=7)).isoformat()
+        
+        # Get entries specifically for the selected date (for day view)
+        selected_day_entries = [e.to_dict() for e in week_entries if e.scheduled_date == selected_date]
+        
+        # Month navigation
+        if month == 1:
+            prev_month_date = date(year - 1, 12, 1)
+        else:
+            prev_month_date = date(year, month - 1, 1)
+        
+        if month == 12:
+            next_month_date = date(year + 1, 1, 1)
+        else:
+            next_month_date = date(year, month + 1, 1)
+        
+        return render_template('admin/calendar.html',
+            week_days=week_days,
+            month_days=month_days,
+            posting_schedule=schedule_with_plans,
+            start_of_week=start_of_week,
+            end_of_week=end_of_week,
+            today=today,
+            selected_date=selected_date,
+            selected_day_entries=selected_day_entries,
+            current_view=nav_view,
+            prev_week=prev_week,
+            next_week=next_week,
+            prev_month=prev_month_date.isoformat(),
+            next_month=next_month_date.isoformat(),
+            current_month_name=date(year, month, 1).strftime('%B %Y')
+        )
+    
+    @app.route('/admin/calendar/api/entries')
+    @admin_required
+    def admin_calendar_api_entries():
+        """API endpoint to get calendar entries for a date range"""
+        from datetime import datetime
+        from flask import jsonify as json_response
+        from models import ContentCalendarEntry
+        
+        start = request.args.get('start')
+        end = request.args.get('end')
+        
+        if not start or not end:
+            return json_response({'error': 'Missing start or end date'}), 400
+        
+        try:
+            start_date = datetime.fromisoformat(start).date()
+            end_date = datetime.fromisoformat(end).date()
+        except:
+            return json_response({'error': 'Invalid date format'}), 400
+        
+        entries = ContentCalendarEntry.get_week_entries(start_date, end_date)
+        return json_response([e.to_dict() for e in entries])
+    
+    @app.route('/admin/calendar/entry/add', methods=['POST'])
+    @admin_required
+    def admin_calendar_add_entry():
+        """Add a new calendar entry"""
+        from datetime import datetime
+        from models import ContentCalendarEntry
+        
+        data = request.form
+        
+        scheduled_date = datetime.strptime(data.get('scheduled_date'), '%Y-%m-%d').date()
+        scheduled_time = None
+        if data.get('scheduled_time'):
+            scheduled_time = datetime.strptime(data.get('scheduled_time'), '%H:%M').time()
+        
+        entry = ContentCalendarEntry(
+            scheduled_date=scheduled_date,
+            scheduled_time=scheduled_time,
+            content_type=data.get('content_type', 'custom'),
+            title=data.get('title', 'Untitled'),
+            description=data.get('description'),
+            status=data.get('status', 'planned'),
+            color=data.get('color', '#0ea5e9'),
+            notes=data.get('notes')
+        )
+        
+        db.session.add(entry)
+        db.session.commit()
+        
+        flash('Calendar entry added!', 'success')
+        return redirect(url_for('admin_calendar'))
+    
+    @app.route('/admin/calendar/entry/<int:entry_id>/update', methods=['POST'])
+    @admin_required
+    def admin_calendar_update_entry(entry_id):
+        """Update a calendar entry"""
+        from datetime import datetime
+        from models import ContentCalendarEntry
+        
+        entry = ContentCalendarEntry.query.get_or_404(entry_id)
+        data = request.form
+        
+        if data.get('scheduled_date'):
+            entry.scheduled_date = datetime.strptime(data.get('scheduled_date'), '%Y-%m-%d').date()
+        if data.get('scheduled_time'):
+            entry.scheduled_time = datetime.strptime(data.get('scheduled_time'), '%H:%M').time()
+        if data.get('title'):
+            entry.title = data.get('title')
+        if data.get('content_type'):
+            entry.content_type = data.get('content_type')
+        if data.get('description'):
+            entry.description = data.get('description')
+        if data.get('status'):
+            entry.status = data.get('status')
+            if entry.status == 'completed':
+                entry.completed_at = datetime.utcnow()
+        if data.get('color'):
+            entry.color = data.get('color')
+        if data.get('notes') is not None:
+            entry.notes = data.get('notes')
+        
+        db.session.commit()
+        
+        flash('Calendar entry updated!', 'success')
+        return redirect(url_for('admin_calendar'))
+    
+    @app.route('/admin/calendar/entry/<int:entry_id>/delete', methods=['POST'])
+    @admin_required
+    def admin_calendar_delete_entry(entry_id):
+        """Delete a calendar entry"""
+        from models import ContentCalendarEntry
+        
+        entry = ContentCalendarEntry.query.get_or_404(entry_id)
+        db.session.delete(entry)
+        db.session.commit()
+        
+        flash('Calendar entry deleted!', 'success')
+        return redirect(url_for('admin_calendar'))
+    
+    @app.route('/admin/calendar/entry/<int:entry_id>/toggle-status', methods=['POST'])
+    @admin_required
+    def admin_calendar_toggle_status(entry_id):
+        """Toggle entry status between planned/completed"""
+        from datetime import datetime
+        from flask import jsonify as json_response
+        from models import ContentCalendarEntry
+        
+        entry = ContentCalendarEntry.query.get_or_404(entry_id)
+        
+        if entry.status == 'completed':
+            entry.status = 'planned'
+            entry.completed_at = None
+        else:
+            entry.status = 'completed'
+            entry.completed_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return json_response({'success': True, 'status': entry.status})
+    
+    @app.route('/admin/calendar/schedule/update', methods=['POST'])
+    @admin_required
+    def admin_calendar_update_schedule():
+        """Update the weekly posting schedule"""
+        from datetime import datetime
+        from models import WeeklyPostingSchedule
+        
+        schedule_id = request.form.get('schedule_id')
+        schedule = WeeklyPostingSchedule.query.get_or_404(schedule_id)
+        
+        if request.form.get('day_of_week'):
+            schedule.day_of_week = int(request.form.get('day_of_week'))
+        if request.form.get('preferred_time'):
+            schedule.preferred_time = datetime.strptime(request.form.get('preferred_time'), '%H:%M').time()
+        
+        db.session.commit()
+        
+        flash(f'{schedule.content_label} schedule updated!', 'success')
+        return redirect(url_for('admin_calendar'))
+    
+    @app.route('/admin/calendar/plan-week', methods=['POST'])
+    @admin_required
+    def admin_calendar_plan_week():
+        """Save weekly content plan (titles for the 5 content pieces)"""
+        from datetime import date, timedelta, datetime
+        from models import WeeklyContentPlan, WeeklyPostingSchedule, ContentCalendarEntry
+        
+        # Get the week start from the form or calculate from today
+        week_start_str = request.form.get('week_start')
+        if week_start_str:
+            try:
+                start_of_week = datetime.strptime(week_start_str, '%Y-%m-%d').date()
+            except:
+                today = date.today()
+                start_of_week = today - timedelta(days=today.weekday())
+        else:
+            today = date.today()
+            start_of_week = today - timedelta(days=today.weekday())
+        
+        # Get posting schedule for reference
+        schedules = {s.content_type: s for s in WeeklyPostingSchedule.get_all_active()}
+        
+        # Process each content type
+        for content_type in ['youtube', 'short1', 'short2', 'blog', 'podcast']:
+            title = request.form.get(f'title_{content_type}', '').strip()
+            
+            if title:
+                # Check if plan exists for this week/type
+                plan = WeeklyContentPlan.query.filter_by(
+                    week_start=start_of_week,
+                    content_type=content_type
+                ).first()
+                
+                if plan:
+                    plan.title = title
+                else:
+                    plan = WeeklyContentPlan(
+                        week_start=start_of_week,
+                        content_type=content_type,
+                        title=title,
+                        status='planned'
+                    )
+                    db.session.add(plan)
+                
+                # Also create/update calendar entry for this
+                if content_type in schedules:
+                    schedule = schedules[content_type]
+                    entry_date = start_of_week + timedelta(days=schedule.day_of_week)
+                    
+                    # Check if calendar entry already exists
+                    existing_entry = ContentCalendarEntry.query.filter_by(
+                        scheduled_date=entry_date,
+                        content_type=content_type
+                    ).first()
+                    
+                    if existing_entry:
+                        existing_entry.title = title
+                    else:
+                        entry = ContentCalendarEntry(
+                            scheduled_date=entry_date,
+                            scheduled_time=schedule.preferred_time,
+                            content_type=content_type,
+                            title=title,
+                            status='planned',
+                            color=schedule.color,
+                            is_recurring=False
+                        )
+                        db.session.add(entry)
+        
+        db.session.commit()
+        flash('Week planned! Your content is scheduled.', 'success')
+        return redirect(url_for('admin_calendar'))
+    
+    @app.route('/admin/calendar/entry/<int:entry_id>/move', methods=['POST'])
+    @admin_required
+    def admin_calendar_move_entry(entry_id):
+        """Move a calendar entry to a new date (for drag-drop)"""
+        from datetime import datetime
+        from flask import jsonify as json_response
+        from models import ContentCalendarEntry
+        
+        try:
+            entry = ContentCalendarEntry.query.get(entry_id)
+            if not entry:
+                return json_response({'success': False, 'error': f'Entry {entry_id} not found'}), 404
+            
+            # Get new_date from form data or JSON
+            new_date = request.form.get('new_date')
+            if not new_date and request.is_json:
+                new_date = request.json.get('new_date')
+            
+            if not new_date:
+                return json_response({'success': False, 'error': 'No date provided'}), 400
+            
+            entry.scheduled_date = datetime.strptime(new_date, '%Y-%m-%d').date()
+            db.session.commit()
+            return json_response({'success': True, 'new_date': entry.scheduled_date.isoformat()})
+            
+        except Exception as e:
+            db.session.rollback()
+            return json_response({'success': False, 'error': str(e)}), 400
+    
     # Blog management
     @app.route('/admin/blog')
     @admin_required

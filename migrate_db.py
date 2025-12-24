@@ -74,6 +74,70 @@ def migrate():
     """)
     print("[OK] Created/verified 'gamification_stats' table")
     
+    # Create content_calendar_entries table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS content_calendar_entries (
+            id INTEGER PRIMARY KEY,
+            scheduled_date DATE NOT NULL,
+            scheduled_time TIME,
+            content_type VARCHAR(50) NOT NULL,
+            title VARCHAR(300) NOT NULL,
+            description TEXT,
+            status VARCHAR(20) DEFAULT 'planned',
+            is_recurring BOOLEAN DEFAULT 0,
+            recurring_day INTEGER,
+            color VARCHAR(20) DEFAULT '#0ea5e9',
+            linked_content_id INTEGER,
+            linked_content_type VARCHAR(50),
+            notes TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            completed_at DATETIME
+        )
+    """)
+    print("[OK] Created/verified 'content_calendar_entries' table")
+    
+    # Create weekly_posting_schedule table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS weekly_posting_schedule (
+            id INTEGER PRIMARY KEY,
+            content_type VARCHAR(50) UNIQUE NOT NULL,
+            content_label VARCHAR(100) NOT NULL,
+            day_of_week INTEGER NOT NULL,
+            preferred_time TIME,
+            color VARCHAR(20) DEFAULT '#0ea5e9',
+            icon VARCHAR(50) DEFAULT 'ph-calendar',
+            is_active BOOLEAN DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    print("[OK] Created/verified 'weekly_posting_schedule' table")
+    
+    # Create weekly_content_plans table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS weekly_content_plans (
+            id INTEGER PRIMARY KEY,
+            week_start DATE NOT NULL,
+            content_type VARCHAR(50) NOT NULL,
+            title VARCHAR(300) NOT NULL,
+            notes TEXT,
+            status VARCHAR(20) DEFAULT 'planned',
+            calendar_entry_id INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (calendar_entry_id) REFERENCES content_calendar_entries(id)
+        )
+    """)
+    print("[OK] Created/verified 'weekly_content_plans' table")
+    
+    # Create index on week_start for faster lookups
+    try:
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_weekly_plans_week ON weekly_content_plans(week_start)")
+        print("[OK] Created index on 'weekly_content_plans.week_start'")
+    except Exception as e:
+        print(f"[--] Index may already exist: {e}")
+    
     conn.commit()
     conn.close()
     

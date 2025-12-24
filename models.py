@@ -1015,3 +1015,199 @@ class ArchitectRankProgress(db.Model):
     
     def __repr__(self):
         return f'<ArchitectRankProgress L{self.current_level}: {self.current_rank_code}>'
+
+
+# ========== CONTENT CALENDAR ==========
+
+class ContentCalendarEntry(db.Model):
+    """Content calendar entries for scheduling content"""
+    __tablename__ = 'content_calendar_entries'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Date and time
+    scheduled_date = db.Column(db.Date, nullable=False, index=True)
+    scheduled_time = db.Column(db.Time)  # Optional time
+    
+    # Content info
+    content_type = db.Column(db.String(50), nullable=False)  # youtube, short, blog, podcast, custom
+    title = db.Column(db.String(300), nullable=False)
+    description = db.Column(db.Text)
+    
+    # Status
+    status = db.Column(db.String(20), default='planned')  # planned, in_progress, completed, missed
+    is_recurring = db.Column(db.Boolean, default=False)  # For fixed weekly schedule
+    recurring_day = db.Column(db.Integer)  # 0=Monday, 6=Sunday (for recurring entries)
+    
+    # Color for UI
+    color = db.Column(db.String(20), default='#0ea5e9')
+    
+    # Link to actual content (optional)
+    linked_content_id = db.Column(db.Integer)  # ID of the actual blog/video/podcast when created
+    linked_content_type = db.Column(db.String(50))  # blog_post, youtube_video, short, podcast
+    
+    # Notes
+    notes = db.Column(db.Text)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    completed_at = db.Column(db.DateTime)
+    
+    @staticmethod
+    def get_week_entries(start_date, end_date):
+        """Get all calendar entries for a week"""
+        return ContentCalendarEntry.query.filter(
+            ContentCalendarEntry.scheduled_date >= start_date,
+            ContentCalendarEntry.scheduled_date <= end_date
+        ).order_by(ContentCalendarEntry.scheduled_date, ContentCalendarEntry.scheduled_time).all()
+    
+    @staticmethod
+    def get_month_entries(year, month):
+        """Get all calendar entries for a month"""
+        from calendar import monthrange
+        start_date = datetime(year, month, 1).date()
+        _, last_day = monthrange(year, month)
+        end_date = datetime(year, month, last_day).date()
+        
+        return ContentCalendarEntry.query.filter(
+            ContentCalendarEntry.scheduled_date >= start_date,
+            ContentCalendarEntry.scheduled_date <= end_date
+        ).order_by(ContentCalendarEntry.scheduled_date, ContentCalendarEntry.scheduled_time).all()
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'scheduled_date': self.scheduled_date.isoformat() if self.scheduled_date else None,
+            'scheduled_time': self.scheduled_time.strftime('%H:%M') if self.scheduled_time else None,
+            'content_type': self.content_type,
+            'title': self.title,
+            'description': self.description,
+            'status': self.status,
+            'is_recurring': self.is_recurring,
+            'recurring_day': self.recurring_day,
+            'color': self.color,
+            'notes': self.notes,
+            'linked_content_id': self.linked_content_id,
+            'linked_content_type': self.linked_content_type
+        }
+    
+    def __repr__(self):
+        return f'<ContentCalendarEntry {self.scheduled_date}: {self.title}>'
+
+
+class WeeklyPostingSchedule(db.Model):
+    """Default weekly posting schedule (fixed days for each content type)"""
+    __tablename__ = 'weekly_posting_schedule'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Content type: youtube, short1, short2, blog, podcast
+    content_type = db.Column(db.String(50), unique=True, nullable=False)
+    content_label = db.Column(db.String(100), nullable=False)  # Display label
+    
+    # Day of week (0=Monday, 6=Sunday)
+    day_of_week = db.Column(db.Integer, nullable=False)
+    
+    # Preferred time
+    preferred_time = db.Column(db.Time)
+    
+    # Color for UI
+    color = db.Column(db.String(20), default='#0ea5e9')
+    icon = db.Column(db.String(50), default='ph-calendar')
+    
+    # Active status
+    is_active = db.Column(db.Boolean, default=True)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    @staticmethod
+    def get_all_active():
+        """Get all active posting schedules"""
+        return WeeklyPostingSchedule.query.filter_by(is_active=True).order_by(WeeklyPostingSchedule.day_of_week).all()
+    
+    def to_dict(self):
+        days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        return {
+            'id': self.id,
+            'content_type': self.content_type,
+            'content_label': self.content_label,
+            'day_of_week': self.day_of_week,
+            'day_name': days[self.day_of_week] if 0 <= self.day_of_week <= 6 else 'Unknown',
+            'preferred_time': self.preferred_time.strftime('%H:%M') if self.preferred_time else None,
+            'color': self.color,
+            'icon': self.icon,
+            'is_active': self.is_active
+        }
+    
+    def __repr__(self):
+        return f'<WeeklyPostingSchedule {self.content_type} on day {self.day_of_week}>'
+
+
+class WeeklyContentPlan(db.Model):
+    """Weekly content plan - titles for the 5 pieces of content each week"""
+    __tablename__ = 'weekly_content_plans'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Week identifier (start of week date - Monday)
+    week_start = db.Column(db.Date, nullable=False, index=True)
+    
+    # Content type from WeeklyPostingSchedule
+    content_type = db.Column(db.String(50), nullable=False)
+    
+    # Planned title and notes
+    title = db.Column(db.String(300), nullable=False)
+    notes = db.Column(db.Text)
+    
+    # Status
+    status = db.Column(db.String(20), default='planned')  # planned, in_progress, completed
+    
+    # Link to calendar entry when created
+    calendar_entry_id = db.Column(db.Integer, db.ForeignKey('content_calendar_entries.id'))
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    @staticmethod
+    def get_week_plan(week_start):
+        """Get all planned content for a specific week"""
+        return WeeklyContentPlan.query.filter_by(week_start=week_start).all()
+    
+    @staticmethod
+    def get_or_create_week_plan(week_start):
+        """Get or create content plan entries for a week based on posting schedule"""
+        existing = WeeklyContentPlan.query.filter_by(week_start=week_start).all()
+        if existing:
+            return existing
+        
+        # Create empty slots for each scheduled content type
+        schedules = WeeklyPostingSchedule.get_all_active()
+        plans = []
+        for schedule in schedules:
+            plan = WeeklyContentPlan(
+                week_start=week_start,
+                content_type=schedule.content_type,
+                title='',  # Empty until planned
+                status='planned'
+            )
+            db.session.add(plan)
+            plans.append(plan)
+        
+        db.session.commit()
+        return plans
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'week_start': self.week_start.isoformat() if self.week_start else None,
+            'content_type': self.content_type,
+            'title': self.title,
+            'notes': self.notes,
+            'status': self.status,
+            'calendar_entry_id': self.calendar_entry_id
+        }
+    
+    def __repr__(self):
+        return f'<WeeklyContentPlan {self.week_start}: {self.content_type}>'

@@ -13,8 +13,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from app import create_app
 from models import (
     db, SystemSettings, Rank, ContentPointValue, 
-    DailyTask, WeeklyRequirement
+    DailyTask, WeeklyRequirement, WeeklyPostingSchedule
 )
+from datetime import time
 
 
 def check_if_seeded():
@@ -161,6 +162,71 @@ def seed_weekly_requirements():
     return True
 
 
+def seed_weekly_posting_schedule():
+    """Seed default weekly posting schedule with optimized posting days"""
+    if WeeklyPostingSchedule.query.first():
+        print("[SKIP] Weekly posting schedule already exists")
+        return False
+    
+    # Optimized posting schedule for maximum engagement
+    # Based on YouTube & blogging best practices
+    schedule = [
+        # YouTube Long Form - Saturday (high engagement day)
+        {
+            'content_type': 'youtube',
+            'content_label': 'YouTube Long Form',
+            'day_of_week': 5,  # Saturday
+            'preferred_time': time(14, 0),  # 2:00 PM
+            'color': '#ff0000',
+            'icon': 'ph-youtube-logo'
+        },
+        # Short 1 - Tuesday (mid-week boost)
+        {
+            'content_type': 'short1',
+            'content_label': 'YouTube Short #1',
+            'day_of_week': 1,  # Tuesday
+            'preferred_time': time(12, 0),  # 12:00 PM
+            'color': '#ff4444',
+            'icon': 'ph-video'
+        },
+        # Short 2 - Thursday (pre-weekend engagement)
+        {
+            'content_type': 'short2',
+            'content_label': 'YouTube Short #2',
+            'day_of_week': 3,  # Thursday
+            'preferred_time': time(18, 0),  # 6:00 PM
+            'color': '#ff4444',
+            'icon': 'ph-video'
+        },
+        # Blog - Wednesday (mid-week content)
+        {
+            'content_type': 'blog',
+            'content_label': 'Blog Post',
+            'day_of_week': 2,  # Wednesday
+            'preferred_time': time(9, 0),  # 9:00 AM
+            'color': '#0ea5e9',
+            'icon': 'ph-article'
+        },
+        # Podcast - Monday (start of week)
+        {
+            'content_type': 'podcast',
+            'content_label': 'Podcast Episode',
+            'day_of_week': 0,  # Monday
+            'preferred_time': time(8, 0),  # 8:00 AM
+            'color': '#a855f7',
+            'icon': 'ph-microphone'
+        },
+    ]
+    
+    for item in schedule:
+        entry = WeeklyPostingSchedule(**item)
+        db.session.add(entry)
+    
+    db.session.commit()
+    print("[OK] Seeded weekly posting schedule")
+    return True
+
+
 def seed_all():
     """Run all seeders"""
     print("\n=== Starting Database Seed ===\n")
@@ -171,6 +237,7 @@ def seed_all():
     seeded_any |= seed_content_point_values()
     seeded_any |= seed_daily_tasks()
     seeded_any |= seed_weekly_requirements()
+    seeded_any |= seed_weekly_posting_schedule()
     
     if seeded_any:
         print("\n=== Database Seed Complete ===\n")
