@@ -316,7 +316,7 @@ window.addEventListener('load', function() {
     spot1.intensity = 1;
     scene.add(spot1);
 
-    const point1 = new THREE.PointLight(0x0ea5e9);
+    const point1 = new THREE.PointLight(0xff2222);
     point1.position.set(-8, 4, 15);
     point1.intensity = 0.8;
     scene.add(point1);
@@ -326,7 +326,7 @@ window.addEventListener('load', function() {
     point2.intensity = 0.25;
     scene.add(point2);
 
-    const point3 = new THREE.PointLight(0x0ea5e9);
+    const point3 = new THREE.PointLight(0xff2222);
     point3.position.set(-2, 10, 10);
     point3.intensity = 0.42;
     scene.add(point3);
@@ -340,20 +340,6 @@ window.addEventListener('load', function() {
     const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
     scene.add(ambientLight);
 
-    // Color cycling for crystal glow
-    const colors = [0xff2222, 0x0ea5e9, 0x10b981, 0xa855f7, 0xf59e0b];
-    let colorIndex = 0;
-
-    // Click to change crystal color
-    container.addEventListener('click', () => {
-        colorIndex = (colorIndex + 1) % colors.length;
-        const newColor = colors[colorIndex];
-        crystalMat.color.setHex(newColor);
-        crystalMat.emissive.setHex(newColor);
-        point1.color.setHex(newColor);
-        point3.color.setHex(newColor);
-        crystalMat.needsUpdate = true;
-    });
 
     // Handle resize
     function onWindowResize() {
