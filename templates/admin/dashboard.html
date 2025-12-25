@@ -236,8 +236,8 @@
     }
 
     .subscribers-display {
-        background: rgba(14, 165, 233, 0.1);
-        border: 1px solid rgba(14, 165, 233, 0.3);
+        background: rgba(233, 14, 14, 0.1);
+        border: 1px solid rgba(233, 14, 14, 0.3);
         border-radius: 12px;
         padding: 16px 24px;
         display: flex;
@@ -336,7 +336,7 @@
         width: 40px;
         height: 40px;
         border-radius: 10px;
-        background: rgba(14, 165, 233, 0.1);
+        background: rgba(233, 14, 14, 0.1);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -598,7 +598,7 @@
         {% endif %}
 
         <div class="content-breakdown">
-            <div class="content-type-item" style="background: rgba(14, 165, 233, 0.1); border-color: rgba(14, 165, 233, 0.3);">
+            <div class="content-type-item" style="background: rgba(233, 14, 14, 0.1); border-color: rgba(233, 14, 14, 0.3);">
                 <div class="content-type-count"><i class="ph ph-lightning" style="font-size: 24px; color: var(--accent);"></i></div>
                 <div class="content-type-label">Daily XP</div>
                 <div class="content-type-points">+{{ (gamification.daily_xp_points|default(0))|format_number }} {{ points_name }}</div>
@@ -738,10 +738,10 @@
         YouTube Analytics
     </h2>
     <div class="stats-grid" style="margin-bottom: 0;">
-        <div class="stat-card" style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), transparent); border-color: rgba(14, 165, 233, 0.3);">
+        <div class="stat-card" style="background: linear-gradient(135deg, rgba(233, 14, 14, 0.1), transparent); border-color: rgba(233, 14, 14, 0.3);">
             <div class="stat-header">
                 <div class="stat-title">Total Views</div>
-                <div class="stat-icon" style="background: rgba(14, 165, 233, 0.2);">
+                <div class="stat-icon" style="background: rgba(233, 14, 14, 0.2);">
                     <i class="ph ph-eye"></i>
             </div>
             </div>
@@ -752,10 +752,10 @@
             </div>
         </div>
 
-        <div class="stat-card" style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), transparent); border-color: rgba(14, 165, 233, 0.3);">
+        <div class="stat-card" style="background: linear-gradient(135deg, rgba(233, 14, 14, 0.1), transparent); border-color: rgba(233, 14, 14, 0.3);">
             <div class="stat-header">
                 <div class="stat-title">Avg. Views per Video</div>
-                <div class="stat-icon" style="background: rgba(14, 165, 233, 0.2);">
+                <div class="stat-icon" style="background: rgba(233, 14, 14, 0.2);">
                     <i class="ph ph-trend-up"></i>
                 </div>
             </div>
@@ -773,16 +773,16 @@
         Quick Actions
     </h2>
     <div class="actions-grid">
-        <a href="{{ url_for('admin_progress') }}" class="quick-action-btn" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(14, 165, 233, 0.1)); border-color: rgba(168, 85, 247, 0.5);">
+        <a href="{{ url_for('admin_progress') }}" class="quick-action-btn" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(233, 14, 14, 0.1)); border-color: rgba(168, 85, 247, 0.5);">
             <i class="ph ph-game-controller"></i>
             <span>Daily XP</span>
         </a>
-        <a href="{{ url_for('admin_calendar') }}" class="quick-action-btn" style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(34, 197, 94, 0.1)); border-color: rgba(14, 165, 233, 0.5);">
+        <a href="{{ url_for('admin_calendar') }}" class="quick-action-btn" style="background: linear-gradient(135deg, rgba(233, 14, 14, 0.2), rgba(34, 197, 94, 0.1)); border-color: rgba(233, 14, 14, 0.5);">
             <i class="ph ph-calendar-blank"></i>
             <span>Calendar</span>
         </a>
         <form method="POST" action="{{ url_for('admin_youtube_sync') }}">
-            <button type="submit" class="quick-action-btn" style="background: rgba(14, 165, 233, 0.1); border-color: var(--accent);">
+            <button type="submit" class="quick-action-btn" style="background: rgba(233, 14, 14, 0.1); border-color: var(--accent);">
                 <i class="ph ph-arrows-clockwise"></i>
                 <span>Sync YouTube</span>
             </button>

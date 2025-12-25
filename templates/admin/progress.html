@@ -20,8 +20,8 @@
     }
 
     .hero-stat {
-        background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(14, 165, 233, 0.05));
-        border: 1px solid rgba(14, 165, 233, 0.3);
+        background: linear-gradient(135deg, rgba(233, 14, 14, 0.15), rgba(233, 14, 14, 0.05));
+        border: 1px solid rgba(233, 14, 14, 0.3);
         border-radius: 16px;
         padding: 20px;
         text-align: center;
@@ -191,7 +191,7 @@
         font-weight: 700;
         color: var(--accent);
         padding: 8px 16px;
-        background: rgba(14, 165, 233, 0.1);
+        background: rgba(233, 14, 14, 0.1);
         border-radius: 20px;
     }
 
@@ -354,8 +354,8 @@
     .rank-item.current {
         opacity: 1;
         border-color: var(--accent);
-        background: rgba(14, 165, 233, 0.1);
-        box-shadow: 0 0 20px rgba(14, 165, 233, 0.2);
+        background: rgba(233, 14, 14, 0.1);
+        box-shadow: 0 0 20px rgba(233, 14, 14, 0.2);
     }
 
     .rank-item.achieved {
@@ -444,7 +444,7 @@
 
     .milestone-btn:hover {
         border-color: var(--accent);
-        background: rgba(14, 165, 233, 0.1);
+        background: rgba(233, 14, 14, 0.1);
     }
 
     .milestone-btn.achieved {
@@ -569,7 +569,7 @@
 
     /* Animations */
     .current-rank-glow {
-        box-shadow: 0 0 20px rgba(14, 165, 233, 0.3);
+        box-shadow: 0 0 20px rgba(233, 14, 14, 0.3);
     }
 
     /* Streak Fire Animation */
@@ -736,7 +736,7 @@
                 {% endfor %}
             </div>
             
-            <div style="margin-top: 16px; padding: 12px 16px; background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 8px; font-size: 13px; color: var(--text-muted);">
+            <div style="margin-top: 16px; padding: 12px 16px; background: rgba(233, 14, 14, 0.1); border: 1px solid rgba(233, 14, 14, 0.3); border-radius: 8px; font-size: 13px; color: var(--text-muted);">
                 <i class="ph ph-info" style="color: var(--accent);"></i>
                 Auto-synced from your published content this week ({{ current_week.week_start.strftime('%b %d') }} - {{ current_week.week_end.strftime('%b %d') }})
             </div>
