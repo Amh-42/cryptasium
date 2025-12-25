@@ -185,15 +185,24 @@
     function filterTable() {
         const input = document.getElementById('searchInput');
         const filter = input.value.toLowerCase();
-        const rows = document.querySelectorAll('#tableBody tr');
         
+        // Filter table rows
+        const rows = document.querySelectorAll('#tableBody tr');
         rows.forEach(row => {
             const title = row.getAttribute('data-title') || '';
             const author = row.getAttribute('data-author') || '';
             const matchesSearch = title.includes(filter) || author.includes(filter);
             const matchesStatus = currentFilter === 'all' || row.getAttribute('data-status') === currentFilter;
-            
             row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
+        });
+        
+        // Filter mobile cards
+        const cards = document.querySelectorAll('#mobileCards .mobile-card');
+        cards.forEach(card => {
+            const title = card.getAttribute('data-title') || '';
+            const matchesSearch = title.includes(filter);
+            const matchesStatus = currentFilter === 'all' || card.getAttribute('data-status') === currentFilter;
+            card.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
         });
     }
 

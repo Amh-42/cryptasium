@@ -109,6 +109,61 @@
             </tbody>
         </table>
     </div>
+
+    <!-- Mobile Cards View -->
+    <div class="mobile-cards-wrapper" id="mobileCards">
+        {% for post in posts %}
+        <div class="mobile-card" data-status="{% if post.published %}published{% else %}draft{% endif %}" data-title="{{ post.title|lower }}">
+            <div class="mobile-card-header">
+                <div class="mobile-card-thumbnail" style="display: flex; align-items: center; justify-content: center;">
+                    <i class="ph ph-users" style="font-size: 24px; color: var(--text-muted);"></i>
+                </div>
+                <div class="mobile-card-info">
+                    <div class="mobile-card-title">{{ post.title }}</div>
+                    <div class="mobile-card-meta">
+                        <span><i class="ph ph-user"></i> {{ post.author or 'Community' }}</span>
+                        <span><i class="ph ph-tag"></i> {{ post.category or 'General' }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mobile-card-stats">
+                <div class="mobile-card-stat">
+                    <div class="mobile-card-stat-value">{{ post.created_at.strftime('%b %d') if post.created_at else 'N/A' }}</div>
+                    <div class="mobile-card-stat-label">Date</div>
+                </div>
+                <div class="mobile-card-stat">
+                    <div class="mobile-card-stat-value">{% if post.published %}<i class="ph ph-check-circle" style="color: #22c55e;"></i>{% else %}<i class="ph ph-circle" style="color: #f59e0b;"></i>{% endif %}</div>
+                    <div class="mobile-card-stat-label">Status</div>
+                </div>
+            </div>
+            <div class="mobile-card-footer">
+                <div class="mobile-card-status">
+                    <span class="status-badge {% if post.published %}published{% else %}draft{% endif %}">
+                        <i class="ph ph-{% if post.published %}check-circle{% else %}circle{% endif %}"></i>
+                        {% if post.published %}Published{% else %}Draft{% endif %}
+                    </span>
+                </div>
+                <div class="mobile-card-actions">
+                    <a href="{{ url_for('admin_community_edit', id=post.id) }}" class="action-btn edit" title="Edit">
+                        <i class="ph ph-pencil"></i>
+                    </a>
+                    <form method="POST" action="{{ url_for('admin_community_delete', id=post.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure?');">
+                        <button type="submit" class="action-btn delete" title="Delete">
+                            <i class="ph ph-trash"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="ph ph-users"></i>
+            <h3>No community posts found</h3>
+            <p style="margin-bottom: 24px;">Get started by creating your first community post.</p>
+            <a href="{{ url_for('admin_community_new') }}" class="btn btn-primary">Create First Post</a>
+        </div>
+        {% endfor %}
+    </div>
 </div>
 {% endblock %}
 
@@ -120,14 +175,23 @@
     function filterTable() {
         const input = document.getElementById('searchInput');
         const filter = input.value.toLowerCase();
-        const rows = document.querySelectorAll('#tableBody tr');
         
+        // Filter table rows
+        const rows = document.querySelectorAll('#tableBody tr');
         rows.forEach(row => {
             const title = row.getAttribute('data-title') || '';
             const matchesSearch = title.includes(filter);
             const matchesStatus = currentFilter === 'all' || row.getAttribute('data-status') === currentFilter;
-            
             row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
+        });
+        
+        // Filter mobile cards
+        const cards = document.querySelectorAll('#mobileCards .mobile-card');
+        cards.forEach(card => {
+            const title = card.getAttribute('data-title') || '';
+            const matchesSearch = title.includes(filter);
+            const matchesStatus = currentFilter === 'all' || card.getAttribute('data-status') === currentFilter;
+            card.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
         });
     }
 
