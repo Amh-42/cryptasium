@@ -329,12 +329,13 @@ class UserDailyTask(db.Model):
     target_count = db.Column(db.Integer, default=1)  # For count tasks: how many times to complete
     
     # Repeat Schedule
-    # 'daily', 'weekly', 'monthly', 'yearly', 'weekdays', 'weekends',
-    # 'custom' (every X days), 'ebbinghaus' (spaced repetition), 'once' (one-time task), 'unlimited'
+    # 'none', 'daily', 'weekly', 'monthly', 'yearly', 'weekdays', 'weekends',
+    # 'custom' (every X units), 'ebbinghaus' (spaced repetition), 'once' (one-time task), 'unlimited'
     repeat_type = db.Column(db.String(20), default='daily')
     
     # Custom repeat settings
-    repeat_interval = db.Column(db.Integer, default=1)  # For 'custom': every X days
+    repeat_interval = db.Column(db.Integer, default=1)  # For 'custom': every X units
+    repeat_unit = db.Column(db.String(10), default='day')  # 'day', 'week', 'month'
     repeat_days = db.Column(db.String(50))  # For 'weekly': JSON array like "[1,3,5]" for Mon/Wed/Fri
     repeat_day_of_month = db.Column(db.Integer)  # For 'monthly': which day (1-31)
     
@@ -386,6 +387,10 @@ class UserDailyTask(db.Model):
         """Check if this task is due today based on its repeat schedule"""
         today = today or date.today()
         
+        if self.repeat_type == 'none':
+            # No repeat - always show in task list but not in "due today"
+            return False
+        
         if self.repeat_type == 'once':
             # One-time task: due if not completed and due_date is today or past
             if self.completed_date:
@@ -416,11 +421,25 @@ class UserDailyTask(db.Model):
             return today.month == self.created_at.month and today.day == self.created_at.day
         
         if self.repeat_type == 'custom':
-            # Every X days from creation
+            # Every X units from creation (day, week, month)
             if not self.created_at:
                 return True
-            days_since = (today - self.created_at.date()).days
-            return days_since % (self.repeat_interval or 1) == 0
+            
+            unit = self.repeat_unit or 'day'
+            interval = self.repeat_interval or 1
+            
+            if unit == 'day':
+                days_since = (today - self.created_at.date()).days
+                return days_since % interval == 0
+            elif unit == 'week':
+                weeks_since = (today - self.created_at.date()).days // 7
+                # Also check if it's the same weekday
+                return weeks_since % interval == 0 and today.weekday() == self.created_at.weekday()
+            elif unit == 'month':
+                months_since = (today.year - self.created_at.year) * 12 + (today.month - self.created_at.month)
+                return months_since % interval == 0 and today.day == self.created_at.day
+            
+            return True
         
         if self.repeat_type == 'ebbinghaus':
             # Spaced repetition: due on next_due_date
@@ -930,14 +949,23 @@ def init_user_gamification(user_id):
         )
         db.session.add(trackable)
     
-    # Create default ranks
+    # Create default ranks (more comprehensive progression)
     default_ranks = [
-        {'level': 1, 'name': 'Novice', 'code': 'NV', 'min_xp': 0, 'color': '#6b7280'},
-        {'level': 2, 'name': 'Apprentice', 'code': 'AP', 'min_xp': 500, 'color': '#22c55e'},
-        {'level': 3, 'name': 'Journeyman', 'code': 'JM', 'min_xp': 2000, 'color': '#3b82f6'},
-        {'level': 4, 'name': 'Expert', 'code': 'EX', 'min_xp': 5000, 'color': '#a855f7'},
-        {'level': 5, 'name': 'Master', 'code': 'MS', 'min_xp': 10000, 'color': '#f59e0b'},
-        {'level': 6, 'name': 'Legend', 'code': 'LG', 'min_xp': 25000, 'color': '#ef4444', 'is_max_rank': True},
+        {'level': 1, 'name': 'Newcomer', 'code': 'NC', 'min_xp': 0, 'color': '#6b7280', 'icon': 'ph-user'},
+        {'level': 2, 'name': 'Beginner', 'code': 'BG', 'min_xp': 100, 'color': '#84cc16', 'icon': 'ph-plant'},
+        {'level': 3, 'name': 'Learner', 'code': 'LR', 'min_xp': 300, 'color': '#22c55e', 'icon': 'ph-book-open'},
+        {'level': 4, 'name': 'Apprentice', 'code': 'AP', 'min_xp': 750, 'color': '#14b8a6', 'icon': 'ph-graduation-cap'},
+        {'level': 5, 'name': 'Skilled', 'code': 'SK', 'min_xp': 1500, 'color': '#06b6d4', 'icon': 'ph-wrench'},
+        {'level': 6, 'name': 'Adept', 'code': 'AD', 'min_xp': 3000, 'color': '#0ea5e9', 'icon': 'ph-lightning'},
+        {'level': 7, 'name': 'Expert', 'code': 'EX', 'min_xp': 5000, 'color': '#3b82f6', 'icon': 'ph-star'},
+        {'level': 8, 'name': 'Specialist', 'code': 'SP', 'min_xp': 8000, 'color': '#6366f1', 'icon': 'ph-medal'},
+        {'level': 9, 'name': 'Professional', 'code': 'PR', 'min_xp': 12000, 'color': '#8b5cf6', 'icon': 'ph-briefcase'},
+        {'level': 10, 'name': 'Master', 'code': 'MS', 'min_xp': 18000, 'color': '#a855f7', 'icon': 'ph-crown'},
+        {'level': 11, 'name': 'Grandmaster', 'code': 'GM', 'min_xp': 25000, 'color': '#d946ef', 'icon': 'ph-diamond'},
+        {'level': 12, 'name': 'Champion', 'code': 'CH', 'min_xp': 35000, 'color': '#ec4899', 'icon': 'ph-trophy'},
+        {'level': 13, 'name': 'Legend', 'code': 'LG', 'min_xp': 50000, 'color': '#f43f5e', 'icon': 'ph-fire'},
+        {'level': 14, 'name': 'Mythic', 'code': 'MY', 'min_xp': 75000, 'color': '#ef4444', 'icon': 'ph-shooting-star'},
+        {'level': 15, 'name': 'Immortal', 'code': 'IM', 'min_xp': 100000, 'color': '#f59e0b', 'icon': 'ph-sun', 'is_max_rank': True},
     ]
     
     for r in default_ranks:
@@ -948,6 +976,7 @@ def init_user_gamification(user_id):
             code=r['code'],
             min_xp=r['min_xp'],
             color=r['color'],
+            icon=r.get('icon'),
             is_max_rank=r.get('is_max_rank', False)
         )
         db.session.add(rank)
@@ -980,5 +1009,113 @@ def init_user_gamification(user_id):
         longest_count=0
     )
     db.session.add(streak)
+    
+    # Create default achievements
+    default_achievements = [
+        # Getting Started
+        {
+            'name': 'First Step', 'slug': 'first_step', 'icon': 'ph-footprints',
+            'color': '#22c55e', 'xp_reward': 25,
+            'description': 'Complete your first task',
+            'criteria': json.dumps({'type': 'task_complete', 'count': 1})
+        },
+        {
+            'name': 'Early Bird', 'slug': 'early_bird', 'icon': 'ph-sun',
+            'color': '#f59e0b', 'xp_reward': 50,
+            'description': 'Log 5 entries before noon',
+            'criteria': json.dumps({'type': 'custom', 'condition': 'morning_entries', 'count': 5})
+        },
+        # Streaks
+        {
+            'name': 'Consistency', 'slug': 'streak_7', 'icon': 'ph-fire',
+            'color': '#ef4444', 'xp_reward': 100,
+            'description': 'Maintain a 7-day streak',
+            'criteria': json.dumps({'type': 'streak', 'min_days': 7})
+        },
+        {
+            'name': 'Dedication', 'slug': 'streak_30', 'icon': 'ph-flame',
+            'color': '#f97316', 'xp_reward': 500,
+            'description': 'Maintain a 30-day streak',
+            'criteria': json.dumps({'type': 'streak', 'min_days': 30})
+        },
+        {
+            'name': 'Unstoppable', 'slug': 'streak_100', 'icon': 'ph-lightning',
+            'color': '#eab308', 'xp_reward': 2000,
+            'description': 'Maintain a 100-day streak',
+            'criteria': json.dumps({'type': 'streak', 'min_days': 100})
+        },
+        # XP Milestones
+        {
+            'name': 'Rising Star', 'slug': 'xp_1000', 'icon': 'ph-star',
+            'color': '#3b82f6', 'xp_reward': 100,
+            'description': 'Earn 1,000 total XP',
+            'criteria': json.dumps({'type': 'xp_total', 'threshold': 1000})
+        },
+        {
+            'name': 'XP Hunter', 'slug': 'xp_10000', 'icon': 'ph-shooting-star',
+            'color': '#6366f1', 'xp_reward': 500,
+            'description': 'Earn 10,000 total XP',
+            'criteria': json.dumps({'type': 'xp_total', 'threshold': 10000})
+        },
+        {
+            'name': 'XP Legend', 'slug': 'xp_50000', 'icon': 'ph-sparkle',
+            'color': '#a855f7', 'xp_reward': 2500,
+            'description': 'Earn 50,000 total XP',
+            'criteria': json.dumps({'type': 'xp_total', 'threshold': 50000})
+        },
+        # Daily Goals
+        {
+            'name': 'Goal Getter', 'slug': 'daily_goal_7', 'icon': 'ph-target',
+            'color': '#14b8a6', 'xp_reward': 150,
+            'description': 'Hit your daily goal 7 times',
+            'criteria': json.dumps({'type': 'daily_goal', 'count': 7})
+        },
+        {
+            'name': 'Overachiever', 'slug': 'daily_goal_30', 'icon': 'ph-trophy',
+            'color': '#06b6d4', 'xp_reward': 750,
+            'description': 'Hit your daily goal 30 times',
+            'criteria': json.dumps({'type': 'daily_goal', 'count': 30})
+        },
+        # Content Creation (examples)
+        {
+            'name': 'Blogger', 'slug': 'blog_10', 'icon': 'ph-article',
+            'color': '#3b82f6', 'xp_reward': 200,
+            'description': 'Write 10 blog posts',
+            'criteria': json.dumps({'type': 'total_count', 'trackable_slug': 'blog_post', 'threshold': 10})
+        },
+        {
+            'name': 'YouTuber', 'slug': 'video_10', 'icon': 'ph-youtube-logo',
+            'color': '#ef4444', 'xp_reward': 300,
+            'description': 'Create 10 YouTube videos',
+            'criteria': json.dumps({'type': 'total_count', 'trackable_slug': 'youtube_video', 'threshold': 10})
+        },
+        # Perfect Week
+        {
+            'name': 'Perfect Week', 'slug': 'perfect_week', 'icon': 'ph-calendar-check',
+            'color': '#10b981', 'xp_reward': 250,
+            'description': 'Complete all daily tasks for 7 days straight',
+            'criteria': json.dumps({'type': 'perfect_week', 'count': 1})
+        },
+        # Exploration
+        {
+            'name': 'Explorer', 'slug': 'use_5_trackables', 'icon': 'ph-compass',
+            'color': '#0ea5e9', 'xp_reward': 100,
+            'description': 'Log entries in 5 different trackables',
+            'criteria': json.dumps({'type': 'trackable_variety', 'count': 5})
+        },
+    ]
+    
+    for a in default_achievements:
+        achievement = Achievement(
+            user_id=user_id,
+            name=a['name'],
+            slug=a['slug'],
+            icon=a['icon'],
+            color=a['color'],
+            xp_reward=a['xp_reward'],
+            description=a['description'],
+            criteria=a['criteria']
+        )
+        db.session.add(achievement)
     
     db.session.commit()

@@ -65,6 +65,7 @@ def migrate():
             ("ALTER TABLE user_daily_tasks ADD COLUMN emoji VARCHAR(10)", "user_daily_tasks.emoji"),
             ("ALTER TABLE user_daily_tasks ADD COLUMN is_pinned BOOLEAN DEFAULT 0", "user_daily_tasks.is_pinned"),
             ("ALTER TABLE user_daily_tasks ADD COLUMN category VARCHAR(50) DEFAULT 'general'", "user_daily_tasks.category"),
+            ("ALTER TABLE user_daily_tasks ADD COLUMN repeat_unit VARCHAR(10) DEFAULT 'day'", "user_daily_tasks.repeat_unit"),
         ]
         
         for sql, description in migrations:

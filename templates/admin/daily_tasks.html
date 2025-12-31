@@ -112,11 +112,17 @@
         letter-spacing: 0.5px;
     }
     
+    .task-badge.repeat-none { background: rgba(107, 114, 128, 0.15); color: #6b7280; }
     .task-badge.repeat-daily { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+    .task-badge.repeat-weekdays { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+    .task-badge.repeat-weekends { background: rgba(249, 115, 22, 0.15); color: #f97316; }
     .task-badge.repeat-weekly { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
     .task-badge.repeat-monthly { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+    .task-badge.repeat-yearly { background: rgba(217, 70, 239, 0.15); color: #d946ef; }
+    .task-badge.repeat-custom { background: rgba(20, 184, 166, 0.15); color: #14b8a6; }
     .task-badge.repeat-once { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
     .task-badge.repeat-ebbinghaus { background: rgba(236, 72, 153, 0.15); color: #ec4899; }
+    .task-badge.repeat-unlimited { background: rgba(99, 102, 241, 0.15); color: #6366f1; }
     .task-badge.type-count { background: rgba(6, 182, 212, 0.15); color: #06b6d4; }
     .task-badge.pinned { background: rgba(var(--accent-rgb), 0.2); color: var(--accent); }
     
@@ -191,8 +197,10 @@
     <button class="filter-tab active" data-filter="all">All</button>
     <button class="filter-tab" data-filter="daily">Daily</button>
     <button class="filter-tab" data-filter="weekly">Weekly</button>
+    <button class="filter-tab" data-filter="custom">Custom</button>
     <button class="filter-tab" data-filter="once">One-Time</button>
     <button class="filter-tab" data-filter="count">Count</button>
+    <button class="filter-tab" data-filter="none">No Schedule</button>
 </div>
 
 {% if tasks %}
@@ -217,13 +225,14 @@
                     {% endif %}
                     
                     <span class="task-badge repeat-{{ task.repeat_type }}">
-                        {% if task.repeat_type == 'daily' %}Daily
+                        {% if task.repeat_type == 'none' %}No Schedule
+                        {% elif task.repeat_type == 'daily' %}Daily
                         {% elif task.repeat_type == 'weekdays' %}Weekdays
                         {% elif task.repeat_type == 'weekends' %}Weekends
                         {% elif task.repeat_type == 'weekly' %}Weekly
                         {% elif task.repeat_type == 'monthly' %}Monthly
                         {% elif task.repeat_type == 'yearly' %}Yearly
-                        {% elif task.repeat_type == 'custom' %}Every {{ task.repeat_interval }}d
+                        {% elif task.repeat_type == 'custom' %}Every {{ task.repeat_interval }} {{ task.repeat_unit or 'day' }}{% if task.repeat_interval > 1 %}s{% endif %}
                         {% elif task.repeat_type == 'once' %}One-Time
                         {% elif task.repeat_type == 'ebbinghaus' %}Spaced
                         {% elif task.repeat_type == 'unlimited' %}Unlimited
