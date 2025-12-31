@@ -194,21 +194,24 @@
 </div>
 
 <div class="filter-tabs">
-    <button class="filter-tab active" data-filter="all">All</button>
+    <button class="filter-tab active" data-filter="all">Active</button>
     <button class="filter-tab" data-filter="daily">Daily</button>
     <button class="filter-tab" data-filter="weekly">Weekly</button>
     <button class="filter-tab" data-filter="custom">Custom</button>
     <button class="filter-tab" data-filter="once">One-Time</button>
     <button class="filter-tab" data-filter="count">Count</button>
-    <button class="filter-tab" data-filter="none">No Schedule</button>
+    <button class="filter-tab" data-filter="none">No Deadline</button>
+    <button class="filter-tab" data-filter="archived">Archived</button>
 </div>
 
 {% if tasks %}
 <div class="tasks-list">
     {% for task in tasks %}
-    <div class="task-row {% if not task.is_active %}inactive{% endif %} {% if task.is_pinned %}pinned{% endif %}"
-         data-repeat="{{ task.repeat_type }}" data-type="{{ task.task_type }}">
-        <div class="task-icon-box" style="background: {{ task.color }}20; color: {{ task.color }}">
+    {% set is_archived = task.completed_date and task.repeat_type in ('once', 'none') %}
+    <div class="task-row {% if not task.is_active %}inactive{% endif %} {% if task.is_pinned %}pinned{% endif %} {% if is_archived %}archived{% endif %}"
+         data-repeat="{{ task.repeat_type }}" data-type="{{ task.task_type }}" data-archived="{{ 'true' if is_archived else 'false' }}"
+         {% if is_archived %}style="opacity: 0.6;"{% endif %}>
+        <div class="task-icon-box" style="background: {{ task.color }}; color: {{ task.color }}">
             {% if task.emoji %}
             <span style="font-size: 28px;">{{ task.emoji }}</span>
             {% else %}
@@ -220,12 +223,16 @@
             <div class="task-name">
                 {{ task.name }}
                 <div class="task-badges">
-                    {% if task.is_pinned %}
+                    {% if is_archived %}
+                    <span class="task-badge" style="background: rgba(107, 114, 128, 0.2); color: #6b7280;"><i class="ph ph-archive"></i> Archived</span>
+                    {% endif %}
+                    
+                    {% if task.is_pinned and not is_archived %}
                     <span class="task-badge pinned"><i class="ph ph-push-pin"></i></span>
                     {% endif %}
                     
                     <span class="task-badge repeat-{{ task.repeat_type }}">
-                        {% if task.repeat_type == 'none' %}No Schedule
+                        {% if task.repeat_type == 'none' %}No Deadline
                         {% elif task.repeat_type == 'daily' %}Daily
                         {% elif task.repeat_type == 'weekdays' %}Weekdays
                         {% elif task.repeat_type == 'weekends' %}Weekends
@@ -267,7 +274,7 @@
                 <i class="ph ph-pencil"></i>
             </a>
             <form action="{{ url_for('admin_daily_task_delete', id=task.id) }}" method="post" 
-                  onsubmit="return confirm('Delete this task?');" style="display: inline;">
+                  onsubmit="return confirmDelete(this, 'Task')" style="display: inline;">
                 <button type="submit" class="action-btn delete" title="Delete">
                     <i class="ph ph-trash"></i>
                 </button>
@@ -294,23 +301,33 @@
     const filterTabs = document.querySelectorAll('.filter-tab');
     const taskRows = document.querySelectorAll('.task-row');
     
+    function applyFilter(filter) {
+        taskRows.forEach(row => {
+            const isArchived = row.dataset.archived === 'true';
+            
+            if (filter === 'all') {
+                // Show all active (non-archived) tasks
+                row.style.display = isArchived ? 'none' : '';
+            } else if (filter === 'archived') {
+                // Show only archived tasks
+                row.style.display = isArchived ? '' : 'none';
+            } else if (filter === 'count') {
+                row.style.display = (row.dataset.type === 'count' && !isArchived) ? '' : 'none';
+            } else {
+                row.style.display = (row.dataset.repeat === filter && !isArchived) ? '' : 'none';
+            }
+        });
+    }
+    
     filterTabs.forEach(tab => {
         tab.addEventListener('click', function() {
             filterTabs.forEach(t => t.classList.remove('active'));
             this.classList.add('active');
-            
-            const filter = this.dataset.filter;
-            
-            taskRows.forEach(row => {
-                if (filter === 'all') {
-                    row.style.display = '';
-                } else if (filter === 'count') {
-                    row.style.display = row.dataset.type === 'count' ? '' : 'none';
-                } else {
-                    row.style.display = row.dataset.repeat === filter ? '' : 'none';
-                }
-            });
+            applyFilter(this.dataset.filter);
         });
     });
+    
+    // Apply initial filter (hide archived by default)
+    applyFilter('all');
 </script>
 {% endblock %}

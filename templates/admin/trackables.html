@@ -212,7 +212,7 @@
                 <i class="ph ph-pencil"></i>
             </a>
             <form action="{{ url_for('admin_trackable_delete', id=trackable.id) }}" method="post" 
-                  onsubmit="return confirm('Delete this trackable and all its entries?');" style="display: inline;">
+                  onsubmit="return confirmDelete(this, 'Trackable')" style="display: inline;">
                 <button type="submit" class="action-btn delete" title="Delete">
                     <i class="ph ph-trash"></i>
                 </button>

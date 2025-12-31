@@ -130,7 +130,7 @@
                                 </button>
                             </form>
                             {% endif %}
-                            <form method="POST" action="{{ url_for('admin_ideas_delete', id=idea.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this idea?');">
+                            <form method="POST" action="{{ url_for('admin_ideas_delete', id=idea.id) }}" style="display: inline;" onsubmit="return confirmDelete(this, 'Idea')">
                                 <button type="submit" class="action-btn delete" title="Delete">
                                     <i class="ph ph-trash"></i>
                                 </button>
@@ -200,7 +200,7 @@
                     </button>
                 </form>
                 {% endif %}
-                <form method="POST" action="{{ url_for('admin_ideas_delete', id=idea.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this idea?');">
+                <form method="POST" action="{{ url_for('admin_ideas_delete', id=idea.id) }}" style="display: inline;" onsubmit="return confirmDelete(this, 'Idea')">
                     <button type="submit" class="action-btn delete" title="Delete">
                         <i class="ph ph-trash"></i>
                     </button>

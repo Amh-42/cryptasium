@@ -149,7 +149,7 @@
                 <i class="ph ph-pencil"></i>
             </a>
             <form action="{{ url_for('admin_rank_delete', id=rank.id) }}" method="post" 
-                  onsubmit="return confirm('Delete this rank?');" style="display: inline;">
+                  onsubmit="return confirmDelete(this, 'Rank')" style="display: inline;">
                 <button type="submit" class="action-btn delete" title="Delete">
                     <i class="ph ph-trash"></i>
                 </button>

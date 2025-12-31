@@ -100,7 +100,7 @@ def create_app(config_name=None):
         """Get comprehensive stats for the current user"""
         if not current_user.is_authenticated:
             return None
-        
+
         # Get trackable types and their totals
         trackables = TrackableType.query.filter_by(
             user_id=current_user.id, 
@@ -385,8 +385,8 @@ def create_app(config_name=None):
         unlocked_achievements = UserAchievement.query.filter_by(
             user_id=current_user.id
         ).all()
-        
-        return render_template('admin/dashboard.html',
+
+        return render_template('admin/dashboard.html', 
             stats=stats,
             weekly=weekly,
             daily_tasks=daily_tasks,
@@ -411,15 +411,15 @@ def create_app(config_name=None):
         if request.method == 'POST':
             name = request.form.get('name')
             trackable = TrackableType(
-                user_id=current_user.id,
-                name=name,
+            user_id=current_user.id,
+            name=name,
                 slug=name.lower().replace(' ', '_').replace('-', '_'),
                 description=request.form.get('description'),
                 category=request.form.get('category', 'content'),
                 xp_per_unit=int(request.form.get('xp_per_unit', 10)),
                 xp_mode=request.form.get('xp_mode', 'fixed'),
                 xp_multiplier=float(request.form.get('xp_multiplier', 1.0)),
-                icon=request.form.get('icon', 'ph-star'),
+            icon=request.form.get('icon', 'ph-star'),
                 color=request.form.get('color', '#0ea5e9'),
                 track_value=request.form.get('track_value') == 'on',
                 value_label=request.form.get('value_label', 'Value'),
@@ -514,8 +514,8 @@ def create_app(config_name=None):
             
             trackable = TrackableType.query.get(trackable_id)
             flash(f'+{entry.get_xp()} XP for {trackable.name}!', 'success')
-            return redirect(url_for('admin_dashboard'))
-        
+        return redirect(url_for('admin_dashboard'))
+
         return render_template('admin/log_entry.html', trackables=trackables, today=date.today())
     
     @app.route('/admin/quick-log/<int:trackable_id>', methods=['POST'])
@@ -541,7 +541,7 @@ def create_app(config_name=None):
         ).first()
         if streak:
             streak.update_streak(date.today())
-        
+            
         db.session.commit()
         
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -733,8 +733,8 @@ def create_app(config_name=None):
                 if task.repeat_type == 'ebbinghaus':
                     task.calculate_next_ebbinghaus_date()
                 
-                # Mark one-time tasks as completed
-                if task.repeat_type == 'once':
+                # Mark one-time and 'none' tasks as completed/archived
+                if task.repeat_type in ('once', 'none'):
                     task.completed_date = today
         
         # Update daily log for backward compatibility
@@ -1111,7 +1111,7 @@ def create_app(config_name=None):
             db.session.commit()
             return redirect(url_for('admin_youtube_list'))
         return render_template('admin/youtube_form.html')
-
+        
     @app.route('/admin/shorts')
     @admin_required
     def admin_shorts_list():

@@ -86,7 +86,7 @@
                             <a href="{{ url_for('admin_community_edit', id=post.id) }}" class="action-btn edit" title="Edit">
                                 <i class="ph ph-pencil"></i>
                             </a>
-                            <form method="POST" action="{{ url_for('admin_community_delete', id=post.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this post?');">
+                            <form method="POST" action="{{ url_for('admin_community_delete', id=post.id) }}" style="display: inline;" onsubmit="return confirmDelete(this, 'Post')">
                                 <button type="submit" class="action-btn delete" title="Delete">
                                     <i class="ph ph-trash"></i>
                                 </button>
@@ -147,7 +147,7 @@
                     <a href="{{ url_for('admin_community_edit', id=post.id) }}" class="action-btn edit" title="Edit">
                         <i class="ph ph-pencil"></i>
                     </a>
-                    <form method="POST" action="{{ url_for('admin_community_delete', id=post.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure?');">
+                    <form method="POST" action="{{ url_for('admin_community_delete', id=post.id) }}" style="display: inline;" onsubmit="return confirmDelete(this, 'Post')">
                         <button type="submit" class="action-btn delete" title="Delete">
                             <i class="ph ph-trash"></i>
                         </button>

@@ -94,7 +94,7 @@
                             <a href="{{ url_for('admin_podcast_edit', id=podcast.id) }}" class="action-btn edit" title="Edit">
                                 <i class="ph ph-pencil"></i>
                             </a>
-                            <form method="POST" action="{{ url_for('admin_podcast_delete', id=podcast.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this episode?');">
+                            <form method="POST" action="{{ url_for('admin_podcast_delete', id=podcast.id) }}" style="display: inline;" onsubmit="return confirmDelete(this, 'Episode')">
                                 <button type="submit" class="action-btn delete" title="Delete">
                                     <i class="ph ph-trash"></i>
                                 </button>
@@ -160,7 +160,7 @@
                     <a href="{{ url_for('admin_podcast_edit', id=podcast.id) }}" class="action-btn edit" title="Edit">
                         <i class="ph ph-pencil"></i>
                     </a>
-                    <form method="POST" action="{{ url_for('admin_podcast_delete', id=podcast.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure?');">
+                    <form method="POST" action="{{ url_for('admin_podcast_delete', id=podcast.id) }}" style="display: inline;" onsubmit="return confirmDelete(this, 'Episode')">
                         <button type="submit" class="action-btn delete" title="Delete">
                             <i class="ph ph-trash"></i>
                         </button>

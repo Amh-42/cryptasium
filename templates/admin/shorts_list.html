@@ -96,7 +96,7 @@
                                     <i class="ph ph-{% if short.published %}eye-slash{% else %}eye{% endif %}"></i>
                                 </button>
                             </form>
-                            <form method="POST" action="{{ url_for('admin_shorts_delete', id=short.id) }}" style="display: inline;" onsubmit="return confirm('Delete this short?');">
+                            <form method="POST" action="{{ url_for('admin_shorts_delete', id=short.id) }}" style="display: inline;" onsubmit="return confirmDelete(this, 'Short')">
                                 <button type="submit" class="action-btn delete" title="Delete">
                                     <i class="ph ph-trash"></i>
                                 </button>
@@ -168,7 +168,7 @@
                             <i class="ph ph-{% if short.published %}eye-slash{% else %}eye{% endif %}"></i>
                         </button>
                     </form>
-                    <form method="POST" action="{{ url_for('admin_shorts_delete', id=short.id) }}" style="display: inline;" onsubmit="return confirm('Delete this short?');">
+                    <form method="POST" action="{{ url_for('admin_shorts_delete', id=short.id) }}" style="display: inline;" onsubmit="return confirmDelete(this, 'Short')">
                         <button type="submit" class="action-btn delete" title="Delete">
                             <i class="ph ph-trash"></i>
                         </button>

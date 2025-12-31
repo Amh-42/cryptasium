@@ -101,7 +101,7 @@
                                     <i class="ph ph-{% if video.published %}eye-slash{% else %}eye{% endif %}"></i>
                                 </button>
                             </form>
-                            <form method="POST" action="{{ url_for('admin_youtube_delete', id=video.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this video?');">
+                            <form method="POST" action="{{ url_for('admin_youtube_delete', id=video.id) }}" style="display: inline;" onsubmit="return confirmDelete(this, 'Video')">
                                 <button type="submit" class="action-btn delete" title="Delete">
                                     <i class="ph ph-trash"></i>
                                 </button>
@@ -173,7 +173,7 @@
                             <i class="ph ph-{% if video.published %}eye-slash{% else %}eye{% endif %}"></i>
                         </button>
                     </form>
-                    <form method="POST" action="{{ url_for('admin_youtube_delete', id=video.id) }}" style="display: inline;" onsubmit="return confirm('Delete this video?');">
+                    <form method="POST" action="{{ url_for('admin_youtube_delete', id=video.id) }}" style="display: inline;" onsubmit="return confirmDelete(this, 'Video')">
                         <button type="submit" class="action-btn delete" title="Delete">
                             <i class="ph ph-trash"></i>
                         </button>

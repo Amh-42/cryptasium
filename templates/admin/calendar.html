@@ -1647,9 +1647,16 @@
     }
 
     function deleteEntry() {
-        if (confirm('Delete this entry?')) {
-            document.getElementById('deleteForm').submit();
-        }
+        showModal({
+            title: 'Delete Entry?',
+            message: 'This action cannot be undone. Are you sure you want to delete this entry?',
+            confirmText: 'Delete',
+            type: 'danger',
+            icon: 'trash',
+            onConfirm: function() {
+                document.getElementById('deleteForm').submit();
+            }
+        });
     }
 
     // Close on overlay click

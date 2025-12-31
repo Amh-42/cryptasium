@@ -388,8 +388,8 @@ class UserDailyTask(db.Model):
         today = today or date.today()
         
         if self.repeat_type == 'none':
-            # No repeat - always show in task list but not in "due today"
-            return False
+            # No deadline task - shows until completed, then archived
+            return not self.completed_date
         
         if self.repeat_type == 'once':
             # One-time task: due if not completed and due_date is today or past
