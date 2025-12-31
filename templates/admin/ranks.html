@@ -1,0 +1,172 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Manage Ranks | Cryptasium{% endblock %}
+{% block page_title %}Manage Ranks{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-intro {
+        margin-bottom: 24px;
+        color: var(--text-muted);
+        font-size: 14px;
+    }
+    
+    .ranks-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .rank-row {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        transition: all 0.2s;
+    }
+    
+    .rank-row:hover {
+        border-color: var(--accent);
+        background: rgba(255, 255, 255, 0.04);
+    }
+    
+    .rank-level {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+    
+    .rank-icon-box {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+    
+    .rank-info {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .rank-name {
+        font-weight: 600;
+        font-size: 15px;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .rank-meta {
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+    
+    .rank-xp {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-main);
+        min-width: 100px;
+        text-align: right;
+    }
+    
+    .rank-actions {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .badge-max {
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 10px;
+        font-weight: 600;
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+        text-transform: uppercase;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Rank System</h1>
+        <p class="page-intro">Define your progression ranks. As you earn XP, you'll unlock higher ranks!</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('admin_rank_add') }}" class="btn btn-primary">
+            <i class="ph ph-plus"></i> Add Rank
+        </a>
+    </div>
+</div>
+
+{% if ranks %}
+<div class="ranks-list">
+    {% for rank in ranks %}
+    <div class="rank-row">
+        <div class="rank-level" style="background: {{ rank.color }}20; color: {{ rank.color }}">
+            {{ rank.level }}
+        </div>
+        
+        <div class="rank-icon-box" style="background: {{ rank.color }}30; color: {{ rank.color }}">
+            {% if rank.icon %}
+            <i class="{{ rank.icon }}"></i>
+            {% else %}
+            {{ rank.code or 'L' ~ rank.level }}
+            {% endif %}
+        </div>
+        
+        <div class="rank-info">
+            <div class="rank-name">
+                {{ rank.name }}
+                {% if rank.is_max_rank %}
+                <span class="badge-max">MAX</span>
+                {% endif %}
+            </div>
+            <div class="rank-meta">
+                Code: {{ rank.code or '-' }} | Level {{ rank.level }}
+            </div>
+        </div>
+        
+        <div class="rank-xp">{{ rank.min_xp|format_number }} XP</div>
+        
+        <div class="rank-actions">
+            <a href="{{ url_for('admin_rank_edit', id=rank.id) }}" class="action-btn edit" title="Edit">
+                <i class="ph ph-pencil"></i>
+            </a>
+            <form action="{{ url_for('admin_rank_delete', id=rank.id) }}" method="post" 
+                  onsubmit="return confirm('Delete this rank?');" style="display: inline;">
+                <button type="submit" class="action-btn delete" title="Delete">
+                    <i class="ph ph-trash"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <i class="ph ph-crown"></i>
+    <h3>No Ranks Yet</h3>
+    <p>Create ranks to unlock as you earn XP!</p>
+    <a href="{{ url_for('admin_rank_add') }}" class="btn btn-primary" style="margin-top: 16px;">
+        <i class="ph ph-plus"></i> Create Rank
+    </a>
+</div>
+{% endif %}
+{% endblock %}
+

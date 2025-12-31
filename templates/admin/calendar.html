@@ -67,7 +67,7 @@
     }
 
     .today-btn.active {
-        background: rgba(233, 14, 14, 0.2);
+        background: rgba(var(--accent-rgb), 0.2);
         border-color: var(--accent);
         color: var(--accent);
     }
@@ -888,8 +888,8 @@
         }
         .day-cell.is-today {
             border-color: var(--accent) !important;
-            box-shadow: 0 0 20px rgba(233, 14, 14, 0.2);
-            background: rgba(14, 165, 233, 0.08);
+            box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.2);
+            background: rgba(var(--accent-rgb), 0.08);
         }
         
         /* Mobile day header inside card */
@@ -1312,7 +1312,7 @@
             <h3><i class="ph ph-calendar-plus" style="color: #a855f7;"></i> Plan Week: {{ start_of_week.strftime('%b %d') }} - {{ end_of_week.strftime('%b %d') }}</h3>
             <button class="modal-close" onclick="closeModal('planModal')"><i class="ph ph-x"></i></button>
         </div>
-        <form method="POST" action="{{ url_for('admin_calendar_plan_week') }}">
+        <form method="POST" action="{{ url_for('admin_calendar') }}" onsubmit="alert('Planning feature coming soon!'); return false;">
             <input type="hidden" name="week_start" value="{{ start_of_week.isoformat() }}">
             <div class="modal-body">
                 <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
@@ -1350,7 +1350,7 @@
             <h3><i class="ph ph-plus-circle"></i> New Entry</h3>
             <button class="modal-close" onclick="closeModal('addModal')"><i class="ph ph-x"></i></button>
         </div>
-        <form method="POST" action="{{ url_for('admin_calendar_add_entry') }}">
+        <form method="POST" action="{{ url_for('admin_calendar') }}" onsubmit="alert('Add entry feature coming soon!'); return false;">
             <div class="modal-body">
                 <div class="form-group">
                     <label>Title</label>

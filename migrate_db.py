@@ -1,156 +1,92 @@
 """
-Database migration script to add gamification columns
-Run this script once to update your existing database
+Database migration script for Cryptasium.
+Adds new columns and tables for the dynamic gamification system.
+Run: python migrate_db.py
 """
-import sqlite3
-import os
 
-# Path to database
-DB_PATH = os.path.join(os.path.dirname(__file__), 'instance', 'cryptasium.db')
+import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from app import create_app
+from models import db
 
 def migrate():
-    print(f"Migrating database at: {DB_PATH}")
+    """Run database migrations"""
+    print("\n=== Running Database Migrations ===\n")
     
-    if not os.path.exists(DB_PATH):
-        print("Database not found. It will be created when you run the app.")
-        return
+    app = create_app()
     
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    
-    migrations = [
-        # Add duration_seconds to youtube_videos
-        ("youtube_videos", "duration_seconds", "INTEGER DEFAULT 0"),
-        # Add content_type to youtube_videos  
-        ("youtube_videos", "content_type", "VARCHAR(20) DEFAULT 'longs'"),
-        # Add subscriber_points to gamification_stats
-        ("gamification_stats", "subscriber_points", "INTEGER DEFAULT 0"),
-        # Add views_points to gamification_stats
-        ("gamification_stats", "views_points", "INTEGER DEFAULT 0"),
-        # Add daily_xp_points to gamification_stats
-        ("gamification_stats", "daily_xp_points", "INTEGER DEFAULT 0"),
-        # Add likes to blog_posts
-        ("blog_posts", "likes", "INTEGER DEFAULT 0"),
-        # Add likes to youtube_videos
-        ("youtube_videos", "likes", "INTEGER DEFAULT 0"),
-        # Add likes to shorts
-        ("shorts", "likes", "INTEGER DEFAULT 0"),
-        # Add likes to podcasts
-        ("podcasts", "likes", "INTEGER DEFAULT 0"),
-    ]
-    
-    for table, column, column_type in migrations:
-        try:
-            cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {column_type}")
-            print(f"[OK] Added column '{column}' to '{table}'")
-        except sqlite3.OperationalError as e:
-            if "duplicate column name" in str(e).lower():
-                print(f"[--] Column '{column}' already exists in '{table}'")
-            else:
-                print(f"[ERROR] Error adding '{column}' to '{table}': {e}")
-    
-    # Create gamification_stats table if it doesn't exist
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS gamification_stats (
-            id INTEGER PRIMARY KEY,
-            subscriber_count INTEGER DEFAULT 0,
-            total_channel_views INTEGER DEFAULT 0,
-            total_points INTEGER DEFAULT 0,
-            total_content_count INTEGER DEFAULT 0,
-            total_views INTEGER DEFAULT 0,
-            current_rank_code VARCHAR(10) DEFAULT 'UNRANKED',
-            current_rank_name VARCHAR(50) DEFAULT 'Unranked',
-            blog_count INTEGER DEFAULT 0,
-            shorts_count INTEGER DEFAULT 0,
-            short_longs_count INTEGER DEFAULT 0,
-            podcast_count INTEGER DEFAULT 0,
-            mid_longs_count INTEGER DEFAULT 0,
-            longs_count INTEGER DEFAULT 0,
-            blog_points INTEGER DEFAULT 0,
-            shorts_points INTEGER DEFAULT 0,
-            short_longs_points INTEGER DEFAULT 0,
-            podcast_points INTEGER DEFAULT 0,
-            mid_longs_points INTEGER DEFAULT 0,
-            longs_points INTEGER DEFAULT 0,
-            subscriber_points INTEGER DEFAULT 0,
-            views_points INTEGER DEFAULT 0,
-            daily_xp_points INTEGER DEFAULT 0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            last_sync_at DATETIME
-        )
-    """)
-    print("[OK] Created/verified 'gamification_stats' table")
-    
-    # Create content_calendar_entries table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS content_calendar_entries (
-            id INTEGER PRIMARY KEY,
-            scheduled_date DATE NOT NULL,
-            scheduled_time TIME,
-            content_type VARCHAR(50) NOT NULL,
-            title VARCHAR(300) NOT NULL,
-            description TEXT,
-            status VARCHAR(20) DEFAULT 'planned',
-            is_recurring BOOLEAN DEFAULT 0,
-            recurring_day INTEGER,
-            color VARCHAR(20) DEFAULT '#0ea5e9',
-            linked_content_id INTEGER,
-            linked_content_type VARCHAR(50),
-            notes TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            completed_at DATETIME
-        )
-    """)
-    print("[OK] Created/verified 'content_calendar_entries' table")
-    
-    # Create weekly_posting_schedule table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS weekly_posting_schedule (
-            id INTEGER PRIMARY KEY,
-            content_type VARCHAR(50) UNIQUE NOT NULL,
-            content_label VARCHAR(100) NOT NULL,
-            day_of_week INTEGER NOT NULL,
-            preferred_time TIME,
-            color VARCHAR(20) DEFAULT '#0ea5e9',
-            icon VARCHAR(50) DEFAULT 'ph-calendar',
-            is_active BOOLEAN DEFAULT 1,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    print("[OK] Created/verified 'weekly_posting_schedule' table")
-    
-    # Create weekly_content_plans table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS weekly_content_plans (
-            id INTEGER PRIMARY KEY,
-            week_start DATE NOT NULL,
-            content_type VARCHAR(50) NOT NULL,
-            title VARCHAR(300) NOT NULL,
-            notes TEXT,
-            status VARCHAR(20) DEFAULT 'planned',
-            calendar_entry_id INTEGER,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (calendar_entry_id) REFERENCES content_calendar_entries(id)
-        )
-    """)
-    print("[OK] Created/verified 'weekly_content_plans' table")
-    
-    # Create index on week_start for faster lookups
-    try:
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_weekly_plans_week ON weekly_content_plans(week_start)")
-        print("[OK] Created index on 'weekly_content_plans.week_start'")
-    except Exception as e:
-        print(f"[--] Index may already exist: {e}")
-    
-    conn.commit()
-    conn.close()
-    
-    print("\n=== Migration complete! ===")
+    with app.app_context():
+        # Get raw connection for executing ALTER TABLE
+        connection = db.engine.raw_connection()
+        cursor = connection.cursor()
+        
+        migrations = [
+            # User table new columns
+            ("ALTER TABLE users ADD COLUMN avatar_url VARCHAR(500)", "users.avatar_url"),
+            ("ALTER TABLE users ADD COLUMN display_name VARCHAR(100)", "users.display_name"),
+            ("ALTER TABLE users ADD COLUMN timezone VARCHAR(50) DEFAULT 'UTC'", "users.timezone"),
+            
+            # Content calendar user_id
+            ("ALTER TABLE content_calendar_entries ADD COLUMN user_id INTEGER", "content_calendar_entries.user_id"),
+            
+            # TrackableType new columns for value tracking
+            ("ALTER TABLE trackable_types ADD COLUMN xp_mode VARCHAR(20) DEFAULT 'fixed'", "trackable_types.xp_mode"),
+            ("ALTER TABLE trackable_types ADD COLUMN xp_multiplier FLOAT DEFAULT 1.0", "trackable_types.xp_multiplier"),
+            ("ALTER TABLE trackable_types ADD COLUMN tiers_config TEXT", "trackable_types.tiers_config"),
+            ("ALTER TABLE trackable_types ADD COLUMN track_value BOOLEAN DEFAULT 0", "trackable_types.track_value"),
+            ("ALTER TABLE trackable_types ADD COLUMN value_label VARCHAR(50) DEFAULT 'Value'", "trackable_types.value_label"),
+            ("ALTER TABLE trackable_types ADD COLUMN value_prefix VARCHAR(10) DEFAULT '$'", "trackable_types.value_prefix"),
+            ("ALTER TABLE trackable_types ADD COLUMN value_suffix VARCHAR(10) DEFAULT ''", "trackable_types.value_suffix"),
+            ("ALTER TABLE trackable_types ADD COLUMN allows_negative BOOLEAN DEFAULT 0", "trackable_types.allows_negative"),
+            ("ALTER TABLE trackable_types ADD COLUMN value_goal FLOAT DEFAULT 0", "trackable_types.value_goal"),
+            
+            # TrackableEntry new columns
+            ("ALTER TABLE trackable_entries ADD COLUMN value FLOAT DEFAULT 0", "trackable_entries.value"),
+            ("ALTER TABLE trackable_entries ADD COLUMN tier_name VARCHAR(50)", "trackable_entries.tier_name"),
+            
+            # UserSettings new columns
+            ("ALTER TABLE user_settings ADD COLUMN accent_color VARCHAR(20) DEFAULT '#e90e0e'", "user_settings.accent_color"),
+            
+            # UserDailyTask new columns for flexible scheduling and count tasks
+            ("ALTER TABLE user_daily_tasks ADD COLUMN task_type VARCHAR(20) DEFAULT 'normal'", "user_daily_tasks.task_type"),
+            ("ALTER TABLE user_daily_tasks ADD COLUMN target_count INTEGER DEFAULT 1", "user_daily_tasks.target_count"),
+            ("ALTER TABLE user_daily_tasks ADD COLUMN repeat_type VARCHAR(20) DEFAULT 'daily'", "user_daily_tasks.repeat_type"),
+            ("ALTER TABLE user_daily_tasks ADD COLUMN repeat_interval INTEGER DEFAULT 1", "user_daily_tasks.repeat_interval"),
+            ("ALTER TABLE user_daily_tasks ADD COLUMN repeat_days VARCHAR(50)", "user_daily_tasks.repeat_days"),
+            ("ALTER TABLE user_daily_tasks ADD COLUMN repeat_day_of_month INTEGER", "user_daily_tasks.repeat_day_of_month"),
+            ("ALTER TABLE user_daily_tasks ADD COLUMN due_date DATE", "user_daily_tasks.due_date"),
+            ("ALTER TABLE user_daily_tasks ADD COLUMN completed_date DATE", "user_daily_tasks.completed_date"),
+            ("ALTER TABLE user_daily_tasks ADD COLUMN ebbinghaus_level INTEGER DEFAULT 0", "user_daily_tasks.ebbinghaus_level"),
+            ("ALTER TABLE user_daily_tasks ADD COLUMN next_due_date DATE", "user_daily_tasks.next_due_date"),
+            ("ALTER TABLE user_daily_tasks ADD COLUMN xp_per_count INTEGER DEFAULT 0", "user_daily_tasks.xp_per_count"),
+            ("ALTER TABLE user_daily_tasks ADD COLUMN streak_bonus BOOLEAN DEFAULT 1", "user_daily_tasks.streak_bonus"),
+            ("ALTER TABLE user_daily_tasks ADD COLUMN emoji VARCHAR(10)", "user_daily_tasks.emoji"),
+            ("ALTER TABLE user_daily_tasks ADD COLUMN is_pinned BOOLEAN DEFAULT 0", "user_daily_tasks.is_pinned"),
+            ("ALTER TABLE user_daily_tasks ADD COLUMN category VARCHAR(50) DEFAULT 'general'", "user_daily_tasks.category"),
+        ]
+        
+        for sql, description in migrations:
+            try:
+                cursor.execute(sql)
+                connection.commit()
+                print(f"[OK] Added {description}")
+            except Exception as e:
+                if "duplicate column" in str(e).lower() or "already exists" in str(e).lower():
+                    print(f"[SKIP] {description} already exists")
+                else:
+                    print(f"[SKIP] {description}: {str(e)[:50]}")
+        
+        # Create new tables if they don't exist
+        print("\n[INFO] Creating new tables if they don't exist...")
+        db.create_all()
+        print("[OK] All tables created/verified")
+        
+        cursor.close()
+        connection.close()
+        
+        print("\n=== Migration Complete ===\n")
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     migrate()
-

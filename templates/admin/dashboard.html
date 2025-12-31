@@ -1,852 +1,1161 @@
 {% extends "admin/base.html" %}
 
-{% block title %}Admin Dashboard | Cryptasium{% endblock %}
-
-{% block page_title %}Dashboard{% endblock %}
+{% block title %}Dashboard | Cryptasium{% endblock %}
+{% block page_title %}Gamification Dashboard{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* ========== GAMIFICATION STYLES ========== */
-    .gamification-section {
-        margin-bottom: 40px;
+    /* ========== DASHBOARD GRID ========== */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1fr 320px;
+        gap: 24px;
+    }
+    
+    .dashboard-main {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+    
+    .dashboard-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
     }
 
-    .rank-card {
-        background: linear-gradient(135deg, rgba(20, 20, 20, 0.95), rgba(10, 10, 10, 0.98));
-        border: 2px solid var(--rank-color, var(--border));
-        border-radius: 20px;
-        padding: 32px;
+    /* ========== XP HEADER ========== */
+    .xp-header {
+        background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.15) 0%, rgba(0,0,0,0) 60%);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 28px;
         position: relative;
         overflow: hidden;
     }
-
-    .rank-card::before {
+    
+    .xp-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(var(--accent-rgb), 0.1) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    
+    .xp-header-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .xp-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .xp-label {
+        font-size: 13px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+    }
+    
+    .xp-value {
+        font-size: 48px;
+        font-weight: 800;
+        background: linear-gradient(135deg, #fff 0%, #e90e0e 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1;
+    }
+    
+    .xp-value span {
+        font-size: 24px;
+        font-weight: 600;
+    }
+    
+    .rank-badge {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 20px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+    }
+    
+    .rank-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+    
+    .rank-details {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    
+    .rank-level {
+        font-size: 11px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .rank-name {
+        font-size: 18px;
+        font-weight: 700;
+    }
+    
+    /* Progress bar */
+    .xp-progress-section {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .xp-progress-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+    
+    .xp-progress-bar {
+        height: 12px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .xp-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #e90e0e, #ff4444);
+        border-radius: 6px;
+        transition: width 0.5s ease;
+        position: relative;
+    }
+    
+    .xp-progress-fill::after {
         content: '';
         position: absolute;
         top: 0;
         left: 0;
         right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, var(--rank-color, var(--accent)), transparent);
+        bottom: 0;
+        background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
+        animation: shimmer 2s infinite;
+    }
+    
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
     }
 
-    .rank-card::after {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 100%;
-        height: 100%;
-        background: radial-gradient(circle, var(--rank-color, var(--accent)) 0%, transparent 70%);
-        opacity: 0.05;
-        pointer-events: none;
-    }
-
-    .rank-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 24px;
-        position: relative;
-        z-index: 1;
-    }
-
-    .rank-info {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-    }
-
-    .rank-badge {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, var(--rank-color, #666), rgba(var(--rank-color, 102), 0.3));
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 40px;
-        box-shadow: 0 0 20px rgba(var(--rank-color-rgb, 102, 102, 102), 0.2);
-    }
-
-    .rank-details h2 {
-        font-size: 28px;
-        font-weight: 700;
-        color: var(--rank-color, var(--text-main));
-        margin-bottom: 4px;
-    }
-
-    .rank-code {
-        font-family: var(--font-mono);
-        font-size: 14px;
-        color: var(--text-muted);
-        background: rgba(255, 255, 255, 0.05);
-        padding: 4px 12px;
-        border-radius: 4px;
-        display: inline-block;
-    }
-
-    .points-display {
-        text-align: right;
-    }
-
-    .points-value {
-        font-size: 42px;
-        font-weight: 800;
-        background: linear-gradient(180deg, var(--rank-color, #fff) 0%, rgba(255,255,255,0.7) 100%);
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-        line-height: 1;
-    }
-
-    .points-label {
-        font-size: 14px;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 2px;
-    }
-
-    .progress-section {
-        position: relative;
-        z-index: 1;
-    }
-
-    .next-rank-label {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 16px;
-        font-size: 14px;
-        color: var(--text-muted);
-    }
-
-    .next-rank-name {
-        color: var(--text-main);
-        font-weight: 600;
-    }
-
-    .progress-bars {
+    /* ========== STREAK & STATS BAR ========== */
+    .stats-bar {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
         gap: 16px;
     }
-
-    .progress-item {
-        background: rgba(255, 255, 255, 0.03);
+    
+    .stat-card {
+        background: rgba(255, 255, 255, 0.02);
         border: 1px solid var(--border);
         border-radius: 12px;
         padding: 16px;
-    }
-
-    .progress-item-header {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        margin-bottom: 12px;
-    }
-
-    .progress-item-label {
-        font-size: 11px;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    .progress-item-value {
-        font-size: 18px;
-        color: var(--text-main);
-        font-weight: 700;
-        font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
-        letter-spacing: -0.5px;
-    }
-    
-    .progress-item-value .separator {
-        color: var(--text-muted);
-        font-weight: 400;
-        margin: 0 2px;
-    }
-    
-    .progress-item-value .target {
-        color: var(--text-muted);
-        font-weight: 500;
-        font-size: 14px;
-    }
-
-    .progress-bar-container {
-        height: 8px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 4px;
-        overflow: hidden;
-    }
-
-    .progress-bar-fill {
-        height: 100%;
-        background: linear-gradient(90deg, var(--accent), var(--rank-color, var(--accent)));
-        border-radius: 4px;
-        transition: width 1s ease;
-    }
-
-    .progress-bar-fill.complete {
-        background: linear-gradient(90deg, #22c55e, #16a34a);
-    }
-
-    .content-breakdown {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 12px;
-        margin-top: 24px;
-        padding-top: 24px;
-        border-top: 1px solid var(--border);
-        position: relative;
-        z-index: 1;
-    }
-
-    .content-type-item {
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 12px;
         text-align: center;
         transition: all 0.2s;
     }
-
-    .content-type-item:hover {
+    
+    .stat-card:hover {
         border-color: var(--accent);
         background: rgba(255, 255, 255, 0.04);
     }
-
-    .content-type-count {
-        font-size: 24px;
-        font-weight: 700;
-        color: var(--text-main);
-    }
-
-    .content-type-label {
-        font-size: 11px;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    .content-type-points {
-        font-size: 12px;
-        color: var(--accent);
-        margin-top: 4px;
-    }
-
-    .subscribers-display {
-        background: rgba(233, 14, 14, 0.1);
-        border: 1px solid rgba(233, 14, 14, 0.3);
-        border-radius: 12px;
-        padding: 16px 24px;
+    
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        margin: 0 auto 10px;
+        border-radius: 10px;
         display: flex;
         align-items: center;
-        gap: 12px;
-        margin-top: 20px;
+        justify-content: center;
+        font-size: 20px;
     }
-
-    .subscribers-display i {
+    
+    .stat-value {
         font-size: 24px;
-        color: #0ea5e9;
-    }
-
-    .subscribers-count {
-        font-size: 28px;
         font-weight: 700;
-        color: var(--text-main);
+        margin-bottom: 4px;
     }
-
-    .subscribers-label {
+    
+    .stat-label {
         font-size: 12px;
         color: var(--text-muted);
         text-transform: uppercase;
+        letter-spacing: 0.3px;
     }
 
-    .max-rank-achieved {
-        background: linear-gradient(135deg, rgba(255, 34, 34, 0.2), rgba(255, 215, 0, 0.1));
-        border: 2px solid var(--accent);
-        border-radius: 12px;
-        padding: 20px;
-        text-align: center;
-        margin-top: 20px;
-    }
-
-    .max-rank-achieved h3 {
-        font-size: 24px;
-        color: var(--accent);
-        margin-bottom: 8px;
-    }
-
-    @media (max-width: 768px) {
-        .rank-header {
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .points-display {
-            text-align: left;
-        }
-
-        .progress-bars {
-            grid-template-columns: repeat(2, 1fr);
-        }
-
-        .content-breakdown {
-            grid-template-columns: repeat(3, 1fr);
-        }
-    }
-
-    /* ========== EXISTING STYLES ========== */
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 24px;
-        margin-bottom: 40px;
-    }
-
-    .stat-card {
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 24px;
-        transition: all 0.3s;
-    }
-
-    .stat-card:hover {
-        border-color: var(--accent);
-        background: rgba(255,255,255,0.04);
-        transform: translateY(-2px);
-    }
-
-    .stat-header {
+    /* ========== DAILY TASKS ========== */
+    .section-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 16px;
     }
-
-    .stat-title {
-        font-size: 14px;
-        color: var(--text-muted);
-        font-weight: 500;
+    
+    .section-title {
+        font-size: 18px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
-
-    .stat-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
-        background: rgba(233, 14, 14, 0.1);
+    
+    .section-title i {
+        color: var(--accent);
+    }
+    
+    .daily-tasks-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+    }
+    
+    .daily-task {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .daily-task:hover {
+        border-color: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.04);
+    }
+    
+    .daily-task.completed {
+        border-color: rgba(16, 185, 129, 0.4);
+        background: rgba(16, 185, 129, 0.1);
+    }
+    
+    .task-checkbox {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        border: 2px solid var(--border);
         display: flex;
         align-items: center;
         justify-content: center;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+    
+    .daily-task.completed .task-checkbox {
+        background: #10b981;
+        border-color: #10b981;
+    }
+    
+    .task-checkbox i {
+        font-size: 14px;
+        color: #fff;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    
+    .daily-task.completed .task-checkbox i {
+        opacity: 1;
+    }
+    
+    .task-info {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .task-name {
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 2px;
+    }
+    
+    .task-xp {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+    
+    .task-xp span {
         color: var(--accent);
-        font-size: 20px;
+        font-weight: 600;
     }
 
-    .stat-value {
-        font-size: 36px;
+    /* ========== TRACKABLES GRID ========== */
+    .trackables-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+    }
+    
+    .trackable-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.2s;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .trackable-card:hover {
+        border-color: var(--accent);
+        background: rgba(255, 255, 255, 0.04);
+        transform: translateY(-2px);
+    }
+    
+    .trackable-icon {
+        width: 56px;
+        height: 56px;
+        margin: 0 auto 14px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+    }
+    
+    .trackable-name {
+        font-weight: 600;
+        font-size: 15px;
+        margin-bottom: 6px;
+    }
+    
+    .trackable-count {
+        font-size: 28px;
+        font-weight: 800;
+        margin-bottom: 4px;
+    }
+    
+    .trackable-xp {
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+    
+    .trackable-xp span {
+        color: var(--accent);
+        font-weight: 600;
+    }
+    
+    .trackable-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 14px;
+        justify-content: center;
+    }
+    
+    .trackable-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .trackable-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: rgba(var(--accent-rgb), 0.1);
+    }
+    
+    .trackable-btn.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+    }
+    
+    .trackable-btn.primary:hover {
+        background: var(--accent-hover);
+    }
+
+    /* ========== SIDEBAR PANELS ========== */
+    .sidebar-panel {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 20px;
+    }
+    
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+    
+    .panel-title {
+        font-size: 15px;
         font-weight: 700;
-        color: var(--text-main);
-        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .panel-title i {
+        color: var(--accent);
     }
 
-    .stat-label {
+    /* Today's XP Goal */
+    .goal-circle {
+        width: 140px;
+        height: 140px;
+        margin: 0 auto 16px;
+        position: relative;
+    }
+    
+    .goal-circle svg {
+        transform: rotate(-90deg);
+    }
+    
+    .goal-circle-bg {
+        fill: none;
+        stroke: rgba(255, 255, 255, 0.1);
+        stroke-width: 10;
+    }
+    
+    .goal-circle-progress {
+        fill: none;
+        stroke: var(--accent);
+        stroke-width: 10;
+        stroke-linecap: round;
+        transition: stroke-dashoffset 0.5s ease;
+    }
+    
+    .goal-center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+    }
+    
+    .goal-value {
+        font-size: 28px;
+        font-weight: 800;
+    }
+    
+    .goal-label {
+        font-size: 11px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .goal-footer {
+        text-align: center;
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+    
+    .goal-footer span {
+        color: var(--accent);
+        font-weight: 600;
+    }
+
+    /* Streak Display */
+    .streak-display {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, transparent 100%);
+        border-radius: 12px;
+        margin-bottom: 16px;
+    }
+    
+    .streak-fire {
+        font-size: 42px;
+    }
+    
+    .streak-info {
+        flex: 1;
+    }
+    
+    .streak-count {
+        font-size: 32px;
+        font-weight: 800;
+        color: #f59e0b;
+    }
+    
+    .streak-count span {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+    
+    .streak-best {
         font-size: 12px;
         color: var(--text-muted);
     }
 
-    .stat-actions {
-        margin-top: 16px;
-    }
-
-    .quick-actions {
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 32px;
-        margin-bottom: 32px;
-    }
-
-    .quick-actions h2 {
-        font-size: 20px;
-        font-weight: 600;
-        margin-bottom: 24px;
+    /* Rank Progress */
+    .ranks-list {
         display: flex;
-        align-items: center;
+        flex-direction: column;
         gap: 10px;
     }
-
-    .actions-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-        gap: 12px;
-    }
-
-    .actions-grid form {
-        display: contents;
-    }
-
-    .quick-action-btn {
-        padding: 16px 24px;
-        background: rgba(255,255,255,0.05);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        color: var(--text-main);
-        text-decoration: none;
+    
+    .rank-item {
         display: flex;
         align-items: center;
-        justify-content: center;
         gap: 12px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.02);
         transition: all 0.2s;
-        font-size: 14px;
-        font-weight: 500;
-        min-height: 56px;
-        width: 100%;
-        cursor: pointer;
     }
-
-    .quick-action-btn:hover {
-        background: var(--accent);
-        border-color: var(--accent);
-        color: white;
-        transform: translateY(-2px);
+    
+    .rank-item.current {
+        background: rgba(var(--accent-rgb), 0.1);
+        border: 1px solid rgba(var(--accent-rgb), 0.3);
     }
-
-    .quick-action-btn i {
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
+    
+    .rank-item.locked {
+        opacity: 0.5;
+    }
+    
+    .rank-item-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
+        font-size: 14px;
+        font-weight: 700;
     }
-
-    .quick-action-btn span {
-        white-space: nowrap;
-    }
-
-    .settings-panel {
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 32px;
-    }
-
-    .settings-panel h2 {
-        font-size: 20px;
-        font-weight: 600;
-        margin-bottom: 24px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .setting-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 16px 0;
-        border-bottom: 1px solid var(--border);
-    }
-
-    .setting-item:last-child {
-        border-bottom: none;
-    }
-
-    .setting-info {
+    
+    .rank-item-info {
         flex: 1;
+        min-width: 0;
     }
-
-    .setting-title {
-        font-size: 15px;
-        font-weight: 500;
-        margin-bottom: 4px;
-        color: var(--text-main);
-    }
-
-    .setting-desc {
+    
+    .rank-item-name {
+        font-weight: 600;
         font-size: 13px;
+    }
+    
+    .rank-item-xp {
+        font-size: 11px;
         color: var(--text-muted);
     }
+    
+    .rank-item-check {
+        color: #10b981;
+        font-size: 16px;
+    }
 
-    .toggle-switch {
-        position: relative;
-        width: 52px;
-        height: 28px;
-        background: rgba(255,255,255,0.1);
-        border-radius: 14px;
-        cursor: pointer;
-        transition: background 0.3s;
+    /* Recent Activity */
+    .activity-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .activity-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+    
+    .activity-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+    }
+    
+    .activity-info {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .activity-title {
+        font-size: 13px;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .activity-time {
+        font-size: 11px;
+        color: var(--text-muted);
+    }
+    
+    .activity-xp {
+        font-size: 13px;
+        font-weight: 600;
+        color: #10b981;
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    
+    .quick-action {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 16px 12px;
+        background: rgba(255, 255, 255, 0.03);
         border: 1px solid var(--border);
+        border-radius: 12px;
+        text-decoration: none;
+        color: var(--text-main);
+        transition: all 0.2s;
     }
-
-    .toggle-switch.active {
-        background: var(--accent);
+    
+    .quick-action:hover {
         border-color: var(--accent);
+        background: rgba(var(--accent-rgb), 0.1);
+    }
+    
+    .quick-action i {
+        font-size: 24px;
+        color: var(--accent);
+    }
+    
+    .quick-action span {
+        font-size: 12px;
+        font-weight: 500;
     }
 
-    .toggle-switch::after {
-        content: '';
-        position: absolute;
-        width: 22px;
-        height: 22px;
-        background: white;
-        border-radius: 50%;
-        top: 2px;
-        left: 2px;
-        transition: transform 0.3s;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    /* Add Button */
+    .add-card {
+        background: transparent;
+        border: 2px dashed var(--border);
+        border-radius: 14px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        color: var(--text-muted);
+        min-height: 180px;
+    }
+    
+    .add-card:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: rgba(var(--accent-rgb), 0.05);
+    }
+    
+    .add-card i {
+        font-size: 32px;
+    }
+    
+    .add-card span {
+        font-size: 13px;
+        font-weight: 500;
     }
 
-    .toggle-switch.active::after {
-        transform: translateX(24px);
-    }
-
-    @media (max-width: 768px) {
-        .stats-grid {
+    /* ========== RESPONSIVE ========== */
+    @media (max-width: 1200px) {
+        .dashboard-grid {
             grid-template-columns: 1fr;
         }
-
-        .actions-grid {
+        
+        .dashboard-sidebar {
+            display: grid;
             grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .xp-header {
+            padding: 20px;
+        }
+        
+        .xp-header-top {
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .xp-value {
+            font-size: 36px;
+        }
+        
+        .rank-badge {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .stats-bar {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .dashboard-sidebar {
+            grid-template-columns: 1fr;
+        }
+        
+        .trackables-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .daily-tasks-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .trackables-grid {
+            grid-template-columns: 1fr;
         }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-{% if sync_message %}
-<div class="alert-message success" style="margin-bottom: 24px;">
-    <i class="ph ph-arrows-clockwise"></i>
-    {{ sync_message }}
-</div>
-{% endif %}
-
-<!-- GAMIFICATION SECTION -->
-<div class="gamification-section">
-    <div class="rank-card" style="--rank-color: {{ current_rank.color if current_rank else '#666' }};">
-        <div class="rank-header">
-            <div class="rank-info">
+<div class="dashboard-grid">
+    <!-- Main Content -->
+    <div class="dashboard-main">
+        <!-- XP Header -->
+        <div class="xp-header">
+            <div class="xp-header-top">
+                <div class="xp-info">
+                    <div class="xp-label">Total {{ stats.settings.points_name if stats.settings else 'XP' }}</div>
+                    <div class="xp-value">{{ stats.total_xp|format_number }}<span> {{ stats.settings.points_name if stats.settings else 'XP' }}</span></div>
+                </div>
+                
+                {% if stats.current_rank %}
                 <div class="rank-badge">
-                    <img src="{{ url_for('static', filename='badges/' ~ (current_rank.icon if current_rank else 'PNG/UN.png')) }}" alt="{{ current_rank.code if current_rank else 'UN' }}" style="width: 60px; height: 60px;">
+                    <div class="rank-icon" style="background: {{ stats.current_rank.color }}20; color: {{ stats.current_rank.color }}">
+                        {% if stats.current_rank.icon %}
+                        <i class="{{ stats.current_rank.icon }}"></i>
+                        {% else %}
+                        {{ stats.current_rank.code or 'L' ~ stats.current_rank.level }}
+                        {% endif %}
+                    </div>
+                    <div class="rank-details">
+                        <div class="rank-level">Level {{ stats.current_rank.level }}</div>
+                        <div class="rank-name" style="color: {{ stats.current_rank.color }}">{{ stats.current_rank.name }}</div>
+                    </div>
                 </div>
-                <div class="rank-details">
-                    <h2>{{ current_rank.name if current_rank else 'Unranked' }}</h2>
-                    <span class="rank-code">{{ current_rank.code if current_rank else 'UN' }}</span>
-                </div>
+                {% else %}
+                <a href="{{ url_for('admin_ranks') }}" class="rank-badge" style="text-decoration: none;">
+                    <div class="rank-icon" style="background: rgba(255,255,255,0.1)">
+                        <i class="ph ph-plus"></i>
+                    </div>
+                    <div class="rank-details">
+                        <div class="rank-level">No Ranks</div>
+                        <div class="rank-name">Create Ranks</div>
+                    </div>
+                </a>
+                {% endif %}
             </div>
-            <div class="points-display">
-                <div class="points-value">{{ "{:,}".format(gamification.total_points) }}</div>
-                <div class="points-label">Total {{ points_name }}</div>
+            
+            <div class="xp-progress-section">
+                <div class="xp-progress-labels">
+                    <span>{% if stats.current_rank %}{{ stats.current_rank.name }}{% else %}Start{% endif %}</span>
+                    <span>{% if stats.next_rank %}{{ stats.next_rank.name }} ({{ stats.next_rank.min_xp|format_number }} XP){% elif stats.current_rank and stats.current_rank.is_max_rank %}MAX RANK{% else %}???{% endif %}</span>
+                </div>
+                <div class="xp-progress-bar">
+                    <div class="xp-progress-fill" style="width: {{ stats.progress_percent }}%"></div>
+                </div>
             </div>
         </div>
 
-        {% if progress and next_rank %}
-        <div class="progress-section">
-            <div class="next-rank-label">
-                <span>Progress to next rank</span>
-                <span class="next-rank-name" style="display: flex; align-items: center; gap: 8px;">
-                    <img src="{{ url_for('static', filename='badges/' ~ next_rank.icon) }}" alt="{{ next_rank.code }}" style="width: 24px; height: 24px;">
-                    {{ next_rank.name }} ({{ next_rank.code }})
-                </span>
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+                    <i class="ph ph-fire"></i>
+                </div>
+                <div class="stat-value">{{ stats.streak.current_count if stats.streak else 0 }}</div>
+                <div class="stat-label">Day Streak</div>
             </div>
-            <div class="progress-bars">
-                <div class="progress-item">
-                    <div class="progress-item-header">
-                        <span class="progress-item-label">Points</span>
-                        <span class="progress-item-value">{{ gamification.total_points|format_number }}<span class="separator">/</span><span class="target">{{ next_rank.points|format_number }}</span></span>
-                    </div>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill {% if progress.points >= 100 %}complete{% endif %}" style="width: {{ progress.points|default(0) }}%;"></div>
-                    </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                    <i class="ph ph-check-circle"></i>
                 </div>
-                <div class="progress-item">
-                    <div class="progress-item-header">
-                        <span class="progress-item-label">Subscribers</span>
-                        <span class="progress-item-value">{{ gamification.subscriber_count|format_number }}<span class="separator">/</span><span class="target">{{ next_rank.subscribers|format_number }}</span></span>
-                    </div>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill {% if progress.subscribers >= 100 %}complete{% endif %}" style="width: {{ progress.subscribers|default(0) }}%;"></div>
-                    </div>
+                <div class="stat-value">{{ weekly.days_with_goal_met if weekly else 0 }}/7</div>
+                <div class="stat-label">This Week</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">
+                    <i class="ph ph-package"></i>
                 </div>
-                <div class="progress-item">
-                    <div class="progress-item-header">
-                        <span class="progress-item-label">Views</span>
-                        <span class="progress-item-value">{{ gamification.total_views|format_number }}<span class="separator">/</span><span class="target">{{ next_rank.views|format_number }}</span></span>
-                    </div>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill {% if progress.views >= 100 %}complete{% endif %}" style="width: {{ progress.views|default(0) }}%;"></div>
-                    </div>
+                <div class="stat-value">{{ pinned_trackables|length }}</div>
+                <div class="stat-label">Trackables</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(168, 85, 247, 0.15); color: #a855f7;">
+                    <i class="ph ph-trophy"></i>
                 </div>
-                <div class="progress-item">
-                    <div class="progress-item-header">
-                        <span class="progress-item-label">Content</span>
-                        <span class="progress-item-value">{{ gamification.total_content_count|format_number }}<span class="separator">/</span><span class="target">{{ next_rank.content|format_number }}</span></span>
-                    </div>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill {% if progress.content >= 100 %}complete{% endif %}" style="width: {{ progress.content|default(0) }}%;"></div>
-                    </div>
-                </div>
+                <div class="stat-value">{{ unlocked_achievements|length }}</div>
+                <div class="stat-label">Achievements</div>
             </div>
         </div>
-        {% elif current_rank and current_rank.code == 'AL' %}
-        <div class="max-rank-achieved">
-            <h3><i class="ph ph-crown"></i> APEX LEGEND ACHIEVED!</h3>
-            <p style="color: var(--text-muted);">You have reached the maximum rank. Legendary status unlocked!</p>
+
+        <!-- Today's Tasks -->
+        <div class="section">
+            <div class="section-header">
+                <h2 class="section-title"><i class="ph ph-check-square"></i> Today's Tasks</h2>
+                <a href="{{ url_for('admin_daily_tasks') }}" class="btn btn-sm btn-outline">
+                    <i class="ph ph-gear"></i> Manage
+                </a>
+            </div>
+            
+            {% if daily_tasks %}
+            <div class="daily-tasks-grid">
+                {% for task in daily_tasks %}
+                {% set is_completed = task.is_completed_today() %}
+                {% set current_count = task.get_today_completion_count() if task.task_type == 'count' else 0 %}
+                <form action="{{ url_for('admin_toggle_daily_task', slug=task.slug) }}" method="post" class="daily-task-form">
+                    <div class="daily-task {% if is_completed %}completed{% endif %}" onclick="this.parentElement.submit()">
+                        <div class="task-checkbox" style="border-color: {{ task.color }}">
+                            {% if task.task_type == 'count' and not is_completed %}
+                            <span style="font-size: 12px; font-weight: 700;">{{ current_count }}</span>
+                            {% else %}
+                            <i class="ph ph-check"></i>
+                            {% endif %}
+                        </div>
+                        <div class="task-info">
+                            <div class="task-name">
+                                {% if task.emoji %}{{ task.emoji }} {% endif %}{{ task.name }}
+                                {% if task.task_type == 'count' %}
+                                <span style="font-size: 11px; color: var(--text-muted); font-weight: 400;">({{ current_count }}/{{ task.target_count }})</span>
+                                {% endif %}
+                            </div>
+                            <div class="task-xp"><span>+{{ task.xp_value }}</span> {{ stats.settings.points_name if stats.settings else 'XP' }}</div>
+                        </div>
+                        <i class="{{ task.icon }}" style="font-size: 20px; color: {{ task.color }}"></i>
+                    </div>
+                </form>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="text-align: center; padding: 24px; color: var(--text-muted);">
+                <p>No tasks due today.</p>
+                <a href="{{ url_for('admin_daily_task_add') }}" class="btn btn-primary btn-sm" style="margin-top: 12px;">
+                    <i class="ph ph-plus"></i> Add Task
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Pinned Trackables -->
+        <div class="section">
+            <div class="section-header">
+                <h2 class="section-title"><i class="ph ph-push-pin"></i> Pinned Trackables</h2>
+                <a href="{{ url_for('admin_trackables') }}" class="btn btn-sm btn-outline">
+                    <i class="ph ph-gear"></i> Manage All
+                </a>
+            </div>
+            
+            <div class="trackables-grid">
+                {% for trackable in pinned_trackables %}
+                <div class="trackable-card">
+                    <div class="trackable-icon" style="background: {{ trackable.color }}20; color: {{ trackable.color }}">
+                        <i class="{{ trackable.icon }}"></i>
+                    </div>
+                    <div class="trackable-name">{{ trackable.name }}</div>
+                    <div class="trackable-count">{{ trackable.get_total_count() }}</div>
+                    
+                    {% if trackable.track_value %}
+                    <div style="font-size: 14px; color: #22c55e; font-weight: 600; margin-bottom: 4px;">
+                        {{ trackable.value_prefix }}{{ trackable.get_total_value()|format_number }}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="trackable-xp"><span>{{ trackable.get_total_xp()|format_number }}</span> {{ stats.settings.points_name if stats.settings else 'XP' }}</div>
+                    
+                    {% if trackable.weekly_goal > 0 %}
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">
+                        {% set week_count = weekly.by_type.get(trackable.slug, {}).get('count', 0) if weekly else 0 %}
+                        {{ week_count }}/{{ trackable.weekly_goal }} this week
+                    </div>
+                    {% endif %}
+                    
+                    <div class="trackable-actions">
+                        {% if trackable.track_value %}
+                        <a href="{{ url_for('admin_log_entry') }}?trackable={{ trackable.id }}" class="trackable-btn primary" title="Log with value">
+                            <i class="ph ph-plus"></i>
+                        </a>
+                        {% else %}
+                        <form action="{{ url_for('admin_quick_log', trackable_id=trackable.id) }}" method="post" style="display: inline;">
+                            <button type="submit" class="trackable-btn primary" title="Quick +1">
+                                <i class="ph ph-plus"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                        <a href="{{ url_for('admin_log_entry') }}?trackable={{ trackable.id }}" class="trackable-btn" title="Log with details">
+                            <i class="ph ph-note-pencil"></i>
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <!-- Add New Card -->
+                <a href="{{ url_for('admin_trackable_add') }}" class="add-card">
+                    <i class="ph ph-plus-circle"></i>
+                    <span>Add Trackable</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="dashboard-sidebar">
+        <!-- Today's XP Goal -->
+        <div class="sidebar-panel">
+            <div class="panel-header">
+                <h3 class="panel-title"><i class="ph ph-target"></i> Today's Goal</h3>
+            </div>
+            
+            {% set daily_goal = stats.settings.daily_xp_goal if stats.settings else 50 %}
+            {% set today_xp = stats.today_log.total_xp if stats.today_log else 0 %}
+            {% set goal_progress = ((today_xp / daily_goal) * 100) if daily_goal > 0 else 0 %}
+            {% set goal_progress = [goal_progress, 100]|min %}
+            
+            <div class="goal-circle">
+                <svg width="140" height="140" viewBox="0 0 140 140">
+                    <circle cx="70" cy="70" r="60" class="goal-circle-bg"/>
+                    <circle cx="70" cy="70" r="60" class="goal-circle-progress" 
+                            stroke-dasharray="377" 
+                            stroke-dashoffset="{{ 377 - (377 * goal_progress / 100) }}"/>
+                </svg>
+                <div class="goal-center">
+                    <div class="goal-value">{{ today_xp }}</div>
+                    <div class="goal-label">/ {{ daily_goal }} {{ stats.settings.points_name if stats.settings else 'XP' }}</div>
+                </div>
+            </div>
+            
+            <div class="goal-footer">
+                {% if goal_progress >= 100 %}
+                <span>🎉 Goal Complete!</span>
+                {% else %}
+                <span>{{ daily_goal - today_xp }}</span> XP to go
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Streak -->
+        {% if stats.streak %}
+        <div class="sidebar-panel">
+            <div class="streak-display">
+                <div class="streak-fire">🔥</div>
+                <div class="streak-info">
+                    <div class="streak-count">{{ stats.streak.current_count }} <span>days</span></div>
+                    <div class="streak-best">Best: {{ stats.streak.longest_count }} days</div>
+                </div>
+            </div>
+            
+            {% if stats.settings and stats.settings.streak_bonus_per_day > 0 %}
+            <div style="text-align: center; font-size: 13px; color: var(--text-muted);">
+                +{{ stats.streak.current_count * stats.settings.streak_bonus_per_day }} bonus XP from streak
+            </div>
+            {% endif %}
         </div>
         {% endif %}
 
-        <div class="content-breakdown">
-            <div class="content-type-item" style="background: rgba(233, 14, 14, 0.1); border-color: rgba(233, 14, 14, 0.3);">
-                <div class="content-type-count"><i class="ph ph-lightning" style="font-size: 24px; color: var(--accent);"></i></div>
-                <div class="content-type-label">Daily XP</div>
-                <div class="content-type-points">+{{ (gamification.daily_xp_points|default(0))|format_number }} {{ points_name }}</div>
+        <!-- Quick Actions -->
+        <div class="sidebar-panel">
+            <div class="panel-header">
+                <h3 class="panel-title"><i class="ph ph-lightning"></i> Quick Actions</h3>
             </div>
-            <div class="content-type-item">
-                <div class="content-type-count">{{ gamification.blog_count|format_number }}</div>
-                <div class="content-type-label">Blog</div>
-                <div class="content-type-points">+{{ gamification.blog_points|format_number }} {{ points_name }}</div>
-            </div>
-            <div class="content-type-item">
-                <div class="content-type-count">{{ gamification.shorts_count|format_number }}</div>
-                <div class="content-type-label">Shorts</div>
-                <div class="content-type-points">+{{ gamification.shorts_points|format_number }} {{ points_name }}</div>
-            </div>
-            <div class="content-type-item">
-                <div class="content-type-count">{{ gamification.short_longs_count|format_number }}</div>
-                <div class="content-type-label">Short Longs</div>
-                <div class="content-type-points">+{{ gamification.short_longs_points|format_number }} {{ points_name }}</div>
-            </div>
-            <div class="content-type-item">
-                <div class="content-type-count">{{ gamification.podcast_count|format_number }}</div>
-                <div class="content-type-label">Podcast</div>
-                <div class="content-type-points">+{{ gamification.podcast_points|format_number }} {{ points_name }}</div>
-            </div>
-            <div class="content-type-item">
-                <div class="content-type-count">{{ gamification.mid_longs_count|format_number }}</div>
-                <div class="content-type-label">Mid Longs</div>
-                <div class="content-type-points">+{{ gamification.mid_longs_points|format_number }} {{ points_name }}</div>
-            </div>
-            <div class="content-type-item">
-                <div class="content-type-count">{{ gamification.longs_count|format_number }}</div>
-                <div class="content-type-label">Longs</div>
-                <div class="content-type-points">+{{ gamification.longs_points|format_number }} {{ points_name }}</div>
-            </div>
-            <div class="content-type-item">
-                <div class="content-type-count">{{ gamification.subscriber_count|format_number }}</div>
-                <div class="content-type-label">Subscribers</div>
-                <div class="content-type-points">+{{ (gamification.subscriber_points|default(0))|format_number }} {{ points_name }}</div>
-            </div>
-            <div class="content-type-item">
-                <div class="content-type-count">{{ gamification.total_views|format_number }}</div>
-                <div class="content-type-label">Views</div>
-                <div class="content-type-points">+{{ (gamification.views_points|default(0))|format_number }} {{ points_name }}</div>
+            
+            <div class="quick-actions">
+                <a href="{{ url_for('admin_log_entry') }}" class="quick-action">
+                    <i class="ph ph-plus-circle"></i>
+                    <span>Log Entry</span>
+                </a>
+                <a href="{{ url_for('admin_trackables') }}" class="quick-action">
+                    <i class="ph ph-package"></i>
+                    <span>Trackables</span>
+                </a>
+                <a href="{{ url_for('admin_ranks') }}" class="quick-action">
+                    <i class="ph ph-crown"></i>
+                    <span>Ranks</span>
+                </a>
+                <a href="{{ url_for('admin_settings') }}" class="quick-action">
+                    <i class="ph ph-gear"></i>
+                    <span>Settings</span>
+                </a>
             </div>
         </div>
 
-        <div class="subscribers-display">
-            <i class="ph ph-youtube-logo"></i>
-            <div>
-                <div class="subscribers-count">{{ gamification.subscriber_count|format_number }}</div>
-                <div class="subscribers-label">YouTube Subscribers</div>
+        <!-- Rank Progress -->
+        {% if stats.ranks %}
+        <div class="sidebar-panel">
+            <div class="panel-header">
+                <h3 class="panel-title"><i class="ph ph-crown"></i> Rank Progress</h3>
             </div>
-            <div style="margin-left: auto; text-align: right;">
-                <div style="font-size: 14px; color: var(--text-muted);">Last synced</div>
-                <div style="font-size: 12px; color: var(--text-main);">{{ gamification.last_sync_at.strftime('%b %d, %Y %H:%M') if gamification.last_sync_at else 'Never' }}</div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-header">
-            <div class="stat-title">Blog Posts</div>
-            <div class="stat-icon">
-                <i class="ph ph-article"></i>
-            </div>
-        </div>
-        <div class="stat-value">{{ stats.published_blog }}</div>
-        <div class="stat-label">Published / {{ stats.blog_posts }} Total</div>
-        <div class="stat-actions">
-            <a href="{{ url_for('admin_blog_list') }}" class="btn btn-primary" style="width: 100%; font-size: 13px; padding: 8px;">Manage</a>
-        </div>
-    </div>
-
-    <div class="stat-card">
-        <div class="stat-header">
-            <div class="stat-title">YouTube Videos</div>
-            <div class="stat-icon">
-                <i class="ph ph-youtube-logo"></i>
-            </div>
-        </div>
-        <div class="stat-value">{{ stats.published_videos }}</div>
-        <div class="stat-label">Published / {{ stats.youtube_videos }} Total</div>
-        <div class="stat-actions">
-            <a href="{{ url_for('admin_youtube_list') }}" class="btn btn-primary" style="width: 100%; font-size: 13px; padding: 8px;">Manage</a>
-        </div>
-    </div>
-
-    <div class="stat-card">
-        <div class="stat-header">
-            <div class="stat-title">Podcasts</div>
-            <div class="stat-icon">
-                <i class="ph ph-microphone"></i>
-            </div>
-        </div>
-        <div class="stat-value">{{ stats.published_podcasts }}</div>
-        <div class="stat-label">Published / {{ stats.podcasts }} Total</div>
-        <div class="stat-actions">
-            <a href="{{ url_for('admin_podcast_list') }}" class="btn btn-primary" style="width: 100%; font-size: 13px; padding: 8px;">Manage</a>
-        </div>
-        </div>
-
-    <div class="stat-card">
-        <div class="stat-header">
-            <div class="stat-title">Shorts</div>
-            <div class="stat-icon">
-                <i class="ph ph-video"></i>
-            </div>
-        </div>
-        <div class="stat-value">{{ stats.published_shorts }}</div>
-        <div class="stat-label">Published / {{ stats.shorts }} Total</div>
-        <div class="stat-actions">
-            <a href="{{ url_for('admin_shorts_list') }}" class="btn btn-primary" style="width: 100%; font-size: 13px; padding: 8px;">Manage</a>
-        </div>
+            
+            <div class="ranks-list">
+                {% for rank in stats.ranks %}
+                <div class="rank-item {% if stats.current_rank and rank.id == stats.current_rank.id %}current{% elif stats.total_xp < rank.min_xp %}locked{% endif %}">
+                    <div class="rank-item-icon" style="background: {{ rank.color }}20; color: {{ rank.color }}">
+                        {{ rank.code or 'L' ~ rank.level }}
+                    </div>
+                    <div class="rank-item-info">
+                        <div class="rank-item-name">{{ rank.name }}</div>
+                        <div class="rank-item-xp">{{ rank.min_xp|format_number }} XP</div>
+                    </div>
+                    {% if stats.total_xp >= rank.min_xp %}
+                    <i class="ph ph-check-circle rank-item-check"></i>
+                    {% elif stats.next_rank and rank.id == stats.next_rank.id %}
+                    <i class="ph ph-arrow-right" style="color: var(--accent);"></i>
+                    {% else %}
+                    <i class="ph ph-lock" style="color: var(--text-muted); opacity: 0.5;"></i>
+                    {% endif %}
                 </div>
-
-    <div class="stat-card">
-        <div class="stat-header">
-            <div class="stat-title">Community</div>
-            <div class="stat-icon">
-                <i class="ph ph-users"></i>
+                {% endfor %}
             </div>
         </div>
-        <div class="stat-value">{{ stats.published_community }}</div>
-        <div class="stat-label">Published / {{ stats.community_posts }} Total</div>
-        <div class="stat-actions">
-            <a href="{{ url_for('admin_community_list') }}" class="btn btn-primary" style="width: 100%; font-size: 13px; padding: 8px;">Manage</a>
-        </div>
-            </div>
-            </div>
+        {% endif %}
 
-<!-- YouTube Analytics Section -->
-<div class="youtube-analytics" style="margin-bottom: 40px;">
-    <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-        <i class="ph ph-chart-line-up" style="color: var(--accent);"></i>
-        YouTube Analytics
-    </h2>
-    <div class="stats-grid" style="margin-bottom: 0;">
-        <div class="stat-card" style="background: linear-gradient(135deg, rgba(233, 14, 14, 0.1), transparent); border-color: rgba(233, 14, 14, 0.3);">
-            <div class="stat-header">
-                <div class="stat-title">Total Views</div>
-                <div class="stat-icon" style="background: rgba(233, 14, 14, 0.2);">
-                    <i class="ph ph-eye"></i>
+        <!-- Recent Activity -->
+        {% if recent_entries %}
+        <div class="sidebar-panel">
+            <div class="panel-header">
+                <h3 class="panel-title"><i class="ph ph-clock-counter-clockwise"></i> Recent</h3>
             </div>
-            </div>
-            <div class="stat-value">{{ stats.total_views|format_number }}</div>
-            <div class="stat-label">
-                <span style="color: var(--accent);">{{ stats.total_video_views|format_number }}</span> videos • 
-                <span style="color: var(--accent);">{{ stats.total_shorts_views|format_number }}</span> shorts
-            </div>
-        </div>
-
-        <div class="stat-card" style="background: linear-gradient(135deg, rgba(233, 14, 14, 0.1), transparent); border-color: rgba(233, 14, 14, 0.3);">
-            <div class="stat-header">
-                <div class="stat-title">Avg. Views per Video</div>
-                <div class="stat-icon" style="background: rgba(233, 14, 14, 0.2);">
-                    <i class="ph ph-trend-up"></i>
+            
+            <div class="activity-list">
+                {% for entry in recent_entries[:5] %}
+                <div class="activity-item">
+                    <div class="activity-icon" style="background: {{ entry.trackable_type.color if entry.trackable_type else '#666' }}20; color: {{ entry.trackable_type.color if entry.trackable_type else '#666' }}">
+                        <i class="{{ entry.trackable_type.icon if entry.trackable_type else 'ph-star' }}"></i>
+                    </div>
+                    <div class="activity-info">
+                        <div class="activity-title">{{ entry.title or entry.trackable_type.name if entry.trackable_type else 'Entry' }}</div>
+                        <div class="activity-time">{{ entry.date.strftime('%b %d') }}</div>
+                    </div>
+                    <div class="activity-xp">+{{ entry.get_xp() }}</div>
                 </div>
-            </div>
-            {% set total_content = stats.youtube_videos + stats.shorts %}
-            {% set avg_views = (stats.total_views // total_content) if total_content > 0 else 0 %}
-            <div class="stat-value">{{ avg_views|format_number }}</div>
-            <div class="stat-label">Across {{ total_content|format_number }} videos & shorts</div>
+                {% endfor %}
             </div>
         </div>
-</div>
-
-<div class="quick-actions">
-    <h2>
-        <i class="ph ph-lightning"></i>
-        Quick Actions
-    </h2>
-    <div class="actions-grid">
-        <a href="{{ url_for('admin_progress') }}" class="quick-action-btn" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(233, 14, 14, 0.1)); border-color: rgba(168, 85, 247, 0.5);">
-            <i class="ph ph-game-controller"></i>
-            <span>Daily XP</span>
-        </a>
-        <a href="{{ url_for('admin_calendar') }}" class="quick-action-btn" style="background: linear-gradient(135deg, rgba(233, 14, 14, 0.2), rgba(34, 197, 94, 0.1)); border-color: rgba(233, 14, 14, 0.5);">
-            <i class="ph ph-calendar-blank"></i>
-            <span>Calendar</span>
-        </a>
-        <form method="POST" action="{{ url_for('admin_youtube_sync') }}">
-            <button type="submit" class="quick-action-btn" style="background: rgba(233, 14, 14, 0.1); border-color: var(--accent);">
-                <i class="ph ph-arrows-clockwise"></i>
-                <span>Sync YouTube</span>
-            </button>
-        </form>
-        <a href="{{ url_for('admin_blog_new') }}" class="quick-action-btn">
-            <i class="ph ph-plus"></i>
-            <span>New Blog</span>
-        </a>
-        <a href="{{ url_for('admin_podcast_new') }}" class="quick-action-btn">
-            <i class="ph ph-plus"></i>
-            <span>New Podcast</span>
-        </a>
-        <a href="{{ url_for('admin_community_new') }}" class="quick-action-btn">
-            <i class="ph ph-plus"></i>
-            <span>New Post</span>
-        </a>
-    </div>
-</div>
-
-<div class="settings-panel">
-    <h2>
-        <i class="ph ph-gear"></i>
-        Dashboard Settings
-    </h2>
-    <div class="setting-item">
-        <div class="setting-info">
-            <div class="setting-title">Auto-refresh Stats</div>
-            <div class="setting-desc">Automatically refresh dashboard statistics</div>
-        </div>
-        <div class="toggle-switch active" data-toggle="auto-refresh"></div>
-    </div>
-    <div class="setting-item">
-        <div class="setting-info">
-            <div class="setting-title">Email Notifications</div>
-            <div class="setting-desc">Receive email alerts for new submissions</div>
-        </div>
-        <div class="toggle-switch" data-toggle="email-notifications"></div>
-    </div>
-    <div class="setting-item">
-        <div class="setting-info">
-            <div class="setting-title">Compact View</div>
-            <div class="setting-desc">Use compact layout for better space usage</div>
-        </div>
-        <div class="toggle-switch" data-toggle="compact-view"></div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    // Toggle switches
-    document.querySelectorAll('.toggle-switch').forEach(toggle => {
-        toggle.addEventListener('click', function() {
-            this.classList.toggle('active');
-            const setting = this.getAttribute('data-toggle');
-            localStorage.setItem(`setting-${setting}`, this.classList.contains('active'));
-        });
+// Prevent form resubmission on page refresh
+if (window.history.replaceState) {
+    window.history.replaceState(null, null, window.location.href);
+}
 
-        // Load saved settings
-        const setting = toggle.getAttribute('data-toggle');
-        const saved = localStorage.getItem(`setting-${setting}`);
-        if (saved === 'true') {
-            toggle.classList.add('active');
-        }
+// AJAX for quick log
+document.querySelectorAll('.trackable-btn.primary').forEach(btn => {
+    btn.closest('form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const form = this;
+        
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Show XP popup
+                const popup = document.createElement('div');
+                popup.className = 'xp-popup';
+                popup.textContent = '+' + data.xp + ' XP';
+                popup.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: var(--accent);
+                    color: white;
+                    padding: 16px 32px;
+                    border-radius: 12px;
+                    font-size: 24px;
+                    font-weight: 700;
+                    z-index: 9999;
+                    animation: popIn 0.3s ease, popOut 0.3s ease 0.8s forwards;
+                `;
+                document.body.appendChild(popup);
+                
+                setTimeout(() => popup.remove(), 1200);
+                
+                // Update count on card
+                const card = btn.closest('.trackable-card');
+                if (card) {
+                    const countEl = card.querySelector('.trackable-count');
+                    const xpEl = card.querySelector('.trackable-xp span');
+                    if (countEl) countEl.textContent = data.total_count;
+                    if (xpEl) xpEl.textContent = data.total_xp.toLocaleString();
+                }
+            }
+        })
+        .catch(() => form.submit());
     });
+});
+
+// Add CSS animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes popIn {
+        0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+        100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+    @keyframes popOut {
+        0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        100% { opacity: 0; transform: translate(-50%, -80%) scale(0.8); }
+    }
+`;
+document.head.appendChild(style);
 </script>
 {% endblock %}

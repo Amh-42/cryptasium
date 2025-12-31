@@ -1,0 +1,307 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Tasks | Cryptasium{% endblock %}
+{% block page_title %}Tasks{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-intro {
+        margin-bottom: 24px;
+        color: var(--text-muted);
+        font-size: 14px;
+    }
+    
+    .filter-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+    
+    .filter-tab {
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.02);
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 13px;
+        transition: all 0.2s;
+    }
+    
+    .filter-tab:hover {
+        border-color: rgba(255, 255, 255, 0.2);
+        color: var(--text-main);
+    }
+    
+    .filter-tab.active {
+        border-color: var(--accent);
+        background: rgba(var(--accent-rgb), 0.1);
+        color: var(--accent);
+    }
+    
+    .tasks-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .task-row {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        transition: all 0.2s;
+    }
+    
+    .task-row:hover {
+        border-color: var(--accent);
+        background: rgba(255, 255, 255, 0.04);
+    }
+    
+    .task-row.inactive {
+        opacity: 0.5;
+    }
+    
+    .task-row.pinned {
+        border-color: var(--accent);
+    }
+    
+    .task-icon-box {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        flex-shrink: 0;
+    }
+    
+    .task-info {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .task-name {
+        font-weight: 600;
+        font-size: 15px;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .task-badges {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+    
+    .task-badge {
+        font-size: 10px;
+        padding: 2px 8px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .task-badge.repeat-daily { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+    .task-badge.repeat-weekly { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+    .task-badge.repeat-monthly { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+    .task-badge.repeat-once { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+    .task-badge.repeat-ebbinghaus { background: rgba(236, 72, 153, 0.15); color: #ec4899; }
+    .task-badge.type-count { background: rgba(6, 182, 212, 0.15); color: #06b6d4; }
+    .task-badge.pinned { background: rgba(var(--accent-rgb), 0.2); color: var(--accent); }
+    
+    .task-description {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+    
+    .task-meta {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+    }
+    
+    .task-xp {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--accent);
+        padding: 8px 14px;
+        background: rgba(var(--accent-rgb), 0.1);
+        border-radius: 8px;
+        white-space: nowrap;
+    }
+    
+    .task-category {
+        font-size: 12px;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .task-actions {
+        display: flex;
+        gap: 8px;
+    }
+    
+    @media (max-width: 768px) {
+        .task-row {
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        .task-meta {
+            width: 100%;
+            justify-content: space-between;
+        }
+        
+        .task-actions {
+            width: 100%;
+            justify-content: flex-end;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Tasks</h1>
+        <p class="page-intro">Create tasks with different schedules. Complete them to earn XP!</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('admin_daily_task_add') }}" class="btn btn-primary">
+            <i class="ph ph-plus"></i> Add Task
+        </a>
+    </div>
+</div>
+
+<div class="filter-tabs">
+    <button class="filter-tab active" data-filter="all">All</button>
+    <button class="filter-tab" data-filter="daily">Daily</button>
+    <button class="filter-tab" data-filter="weekly">Weekly</button>
+    <button class="filter-tab" data-filter="once">One-Time</button>
+    <button class="filter-tab" data-filter="count">Count</button>
+</div>
+
+{% if tasks %}
+<div class="tasks-list">
+    {% for task in tasks %}
+    <div class="task-row {% if not task.is_active %}inactive{% endif %} {% if task.is_pinned %}pinned{% endif %}"
+         data-repeat="{{ task.repeat_type }}" data-type="{{ task.task_type }}">
+        <div class="task-icon-box" style="background: {{ task.color }}20; color: {{ task.color }}">
+            {% if task.emoji %}
+            <span style="font-size: 28px;">{{ task.emoji }}</span>
+            {% else %}
+            <i class="{{ task.icon }}"></i>
+            {% endif %}
+        </div>
+        
+        <div class="task-info">
+            <div class="task-name">
+                {{ task.name }}
+                <div class="task-badges">
+                    {% if task.is_pinned %}
+                    <span class="task-badge pinned"><i class="ph ph-push-pin"></i></span>
+                    {% endif %}
+                    
+                    <span class="task-badge repeat-{{ task.repeat_type }}">
+                        {% if task.repeat_type == 'daily' %}Daily
+                        {% elif task.repeat_type == 'weekdays' %}Weekdays
+                        {% elif task.repeat_type == 'weekends' %}Weekends
+                        {% elif task.repeat_type == 'weekly' %}Weekly
+                        {% elif task.repeat_type == 'monthly' %}Monthly
+                        {% elif task.repeat_type == 'yearly' %}Yearly
+                        {% elif task.repeat_type == 'custom' %}Every {{ task.repeat_interval }}d
+                        {% elif task.repeat_type == 'once' %}One-Time
+                        {% elif task.repeat_type == 'ebbinghaus' %}Spaced
+                        {% elif task.repeat_type == 'unlimited' %}Unlimited
+                        {% else %}{{ task.repeat_type|capitalize }}
+                        {% endif %}
+                    </span>
+                    
+                    {% if task.task_type == 'count' %}
+                    <span class="task-badge type-count">×{{ task.target_count }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% if task.description %}
+            <div class="task-description">{{ task.description }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="task-meta">
+            <span class="task-category">
+                <i class="ph ph-folder"></i> {{ task.category|capitalize }}
+            </span>
+            <div class="task-xp">
+                +{{ task.xp_value }} XP
+                {% if task.task_type == 'count' and task.xp_per_count > 0 %}
+                <span style="font-size: 11px; font-weight: 400; opacity: 0.7;">(+{{ task.xp_per_count }}/ea)</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="task-actions">
+            <a href="{{ url_for('admin_daily_task_edit', id=task.id) }}" class="action-btn edit" title="Edit">
+                <i class="ph ph-pencil"></i>
+            </a>
+            <form action="{{ url_for('admin_daily_task_delete', id=task.id) }}" method="post" 
+                  onsubmit="return confirm('Delete this task?');" style="display: inline;">
+                <button type="submit" class="action-btn delete" title="Delete">
+                    <i class="ph ph-trash"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <i class="ph ph-check-square"></i>
+    <h3>No Tasks Yet</h3>
+    <p>Create tasks to build habits and earn XP!</p>
+    <a href="{{ url_for('admin_daily_task_add') }}" class="btn btn-primary" style="margin-top: 16px;">
+        <i class="ph ph-plus"></i> Create Task
+    </a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Filter tabs
+    const filterTabs = document.querySelectorAll('.filter-tab');
+    const taskRows = document.querySelectorAll('.task-row');
+    
+    filterTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            filterTabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            
+            const filter = this.dataset.filter;
+            
+            taskRows.forEach(row => {
+                if (filter === 'all') {
+                    row.style.display = '';
+                } else if (filter === 'count') {
+                    row.style.display = row.dataset.type === 'count' ? '' : 'none';
+                } else {
+                    row.style.display = row.dataset.repeat === filter ? '' : 'none';
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

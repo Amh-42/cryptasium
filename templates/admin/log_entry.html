@@ -1,0 +1,243 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Log Entry | Cryptasium{% endblock %}
+{% block page_title %}Log Entry{% endblock %}
+
+{% block extra_css %}
+<style>
+    .log-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .log-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 28px;
+    }
+    
+    .trackable-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+    
+    .trackable-option {
+        background: rgba(255, 255, 255, 0.02);
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .trackable-option:hover {
+        border-color: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.04);
+    }
+    
+    .trackable-option.selected {
+        border-color: var(--accent);
+        background: rgba(var(--accent-rgb), 0.1);
+    }
+    
+    .trackable-option input {
+        display: none;
+    }
+    
+    .trackable-option-icon {
+        font-size: 28px;
+        margin-bottom: 8px;
+    }
+    
+    .trackable-option-name {
+        font-weight: 600;
+        font-size: 13px;
+        margin-bottom: 4px;
+    }
+    
+    .trackable-option-xp {
+        font-size: 11px;
+        color: var(--accent);
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+    }
+    
+    @media (max-width: 480px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .trackable-selector {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="log-container">
+    <form method="post" class="log-card">
+        <div class="form-group">
+            <label>What did you complete?</label>
+            <div class="trackable-selector">
+                {% for t in trackables %}
+                <label class="trackable-option" onclick="selectTrackable({{ t.id }})">
+                    <input type="radio" name="trackable_id" value="{{ t.id }}" 
+                           {% if request.args.get('trackable')|int == t.id %}checked{% endif %}>
+                    <div class="trackable-option-icon" style="color: {{ t.color }}">
+                        <i class="{{ t.icon }}"></i>
+                    </div>
+                    <div class="trackable-option-name">{{ t.name }}</div>
+                    <div class="trackable-option-xp">+{{ t.xp_per_unit }} XP</div>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label><i class="ph ph-calendar"></i> Date</label>
+                <input type="date" name="date" value="{{ today if today else '' }}">
+            </div>
+            
+            <div class="form-group">
+                <label><i class="ph ph-hash"></i> Count</label>
+                <input type="number" name="count" value="1" min="1">
+            </div>
+        </div>
+        
+        <div class="form-group" id="valueGroup" style="display: none;">
+            <label><i class="ph ph-currency-dollar"></i> <span id="valueLabel">Value</span></label>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span id="valuePrefix" style="font-size: 18px; color: var(--text-muted);">$</span>
+                <input type="number" name="value" id="valueInput" value="0" min="0" step="0.01" style="flex: 1;">
+            </div>
+            <div class="help-text" id="xpPreview" style="margin-top: 8px;"></div>
+        </div>
+        
+        <div class="form-group">
+            <label><i class="ph ph-text-aa"></i> Title (Optional)</label>
+            <input type="text" name="title" placeholder="e.g., Blog post about AI trends, Sale to Client X">
+        </div>
+        
+        <div class="form-group">
+            <label><i class="ph ph-link"></i> URL (Optional)</label>
+            <input type="url" name="url" placeholder="https://...">
+        </div>
+        
+        <div class="form-group">
+            <label><i class="ph ph-note"></i> Notes (Optional)</label>
+            <textarea name="notes" rows="3" placeholder="Any additional notes..."></textarea>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="ph ph-plus"></i> Log Entry
+            </button>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Trackable data for dynamic form updates
+    const trackables = {
+        {% for t in trackables %}
+        {{ t.id }}: {
+            name: "{{ t.name }}",
+            track_value: {{ 'true' if t.track_value else 'false' }},
+            value_label: "{{ t.value_label or 'Value' }}",
+            value_prefix: "{{ t.value_prefix or '$' }}",
+            xp_per_unit: {{ t.xp_per_unit }},
+            xp_mode: "{{ t.xp_mode or 'fixed' }}",
+            xp_multiplier: {{ t.xp_multiplier or 1.0 }}
+        },
+        {% endfor %}
+    };
+    
+    // Highlight selected trackable and update form
+    function selectTrackable(id) {
+        document.querySelectorAll('.trackable-option').forEach(el => {
+            el.classList.remove('selected');
+        });
+        event.currentTarget.classList.add('selected');
+        
+        // Update value field visibility
+        const t = trackables[id];
+        if (t) {
+            const valueGroup = document.getElementById('valueGroup');
+            if (t.track_value) {
+                valueGroup.style.display = 'block';
+                document.getElementById('valueLabel').textContent = t.value_label;
+                document.getElementById('valuePrefix').textContent = t.value_prefix;
+                updateXpPreview();
+            } else {
+                valueGroup.style.display = 'none';
+            }
+        }
+    }
+    
+    // Update XP preview based on value
+    function updateXpPreview() {
+        const selectedRadio = document.querySelector('.trackable-option input:checked');
+        if (!selectedRadio) return;
+        
+        const t = trackables[selectedRadio.value];
+        if (!t) return;
+        
+        const valueInput = document.getElementById('valueInput');
+        const countInput = document.querySelector('input[name="count"]');
+        const preview = document.getElementById('xpPreview');
+        
+        let xp = 0;
+        const count = parseInt(countInput.value) || 1;
+        const value = parseFloat(valueInput.value) || 0;
+        
+        if (t.xp_mode === 'value_based' && t.track_value) {
+            xp = Math.round(value * t.xp_multiplier);
+        } else {
+            xp = count * t.xp_per_unit;
+        }
+        
+        preview.innerHTML = `Estimated XP: <span style="color: var(--accent); font-weight: 700;">+${xp} XP</span>`;
+    }
+    
+    // Pre-select if URL param
+    document.querySelectorAll('.trackable-option input:checked').forEach(input => {
+        input.closest('.trackable-option').classList.add('selected');
+        selectTrackable(parseInt(input.value));
+    });
+    
+    // Set today's date
+    if (!document.querySelector('input[name="date"]').value) {
+        document.querySelector('input[name="date"]').valueAsDate = new Date();
+    }
+    
+    // Listen for value changes
+    document.getElementById('valueInput').addEventListener('input', updateXpPreview);
+    document.querySelector('input[name="count"]').addEventListener('input', updateXpPreview);
+</script>
+{% endblock %}
+

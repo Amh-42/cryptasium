@@ -1,0 +1,614 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ 'Edit' if task else 'Add' }} Task | Cryptasium{% endblock %}
+{% block page_title %}{{ 'Edit' if task else 'Add' }} Task{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 640px;
+    }
+    
+    .form-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 28px;
+    }
+    
+    .form-section {
+        margin-bottom: 28px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid var(--border);
+    }
+    
+    .form-section:last-of-type {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    
+    .section-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .form-group {
+        margin-bottom: 16px;
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+    
+    .form-row-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 16px;
+    }
+    
+    .color-input-wrapper {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+    
+    .color-preview {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        border: 2px solid var(--border);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .color-preview input {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+    
+    .icon-grid {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 8px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+    }
+    
+    .icon-option {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+        font-size: 18px;
+        color: var(--text-muted);
+    }
+    
+    .icon-option:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-main);
+    }
+    
+    .icon-option.selected {
+        background: rgba(var(--accent-rgb), 0.15);
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+    
+    .type-options {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+    
+    .type-option {
+        background: rgba(255, 255, 255, 0.02);
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+    }
+    
+    .type-option:hover {
+        border-color: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.04);
+    }
+    
+    .type-option.selected {
+        border-color: var(--accent);
+        background: rgba(var(--accent-rgb), 0.1);
+    }
+    
+    .type-option i {
+        font-size: 28px;
+        margin-bottom: 8px;
+        display: block;
+    }
+    
+    .type-option .type-name {
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+    
+    .type-option .type-desc {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+    
+    .type-option input { display: none; }
+    
+    .repeat-options {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+    }
+    
+    .repeat-option {
+        background: rgba(255, 255, 255, 0.02);
+        border: 2px solid var(--border);
+        border-radius: 10px;
+        padding: 12px 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+        font-size: 12px;
+    }
+    
+    .repeat-option:hover {
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .repeat-option.selected {
+        border-color: var(--accent);
+        background: rgba(var(--accent-rgb), 0.1);
+    }
+    
+    .repeat-option i {
+        font-size: 20px;
+        display: block;
+        margin-bottom: 6px;
+    }
+    
+    .repeat-option input { display: none; }
+    
+    .weekday-picker {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    
+    .weekday-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 2px solid var(--border);
+        background: rgba(255, 255, 255, 0.02);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-muted);
+        transition: all 0.2s;
+    }
+    
+    .weekday-btn:hover {
+        border-color: rgba(255, 255, 255, 0.2);
+        color: var(--text-main);
+    }
+    
+    .weekday-btn.selected {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: #fff;
+    }
+    
+    .conditional-field {
+        display: none;
+        animation: fadeIn 0.2s;
+    }
+    
+    .conditional-field.show {
+        display: block;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+    }
+    
+    .category-pills {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    
+    .category-pill {
+        padding: 8px 16px;
+        border-radius: 20px;
+        border: 2px solid var(--border);
+        background: rgba(255, 255, 255, 0.02);
+        cursor: pointer;
+        font-size: 13px;
+        transition: all 0.2s;
+    }
+    
+    .category-pill:hover {
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .category-pill.selected {
+        border-color: var(--accent);
+        background: rgba(var(--accent-rgb), 0.1);
+        color: var(--accent);
+    }
+    
+    .category-pill input { display: none; }
+    
+    @media (max-width: 640px) {
+        .form-row, .form-row-3 {
+            grid-template-columns: 1fr;
+        }
+        .repeat-options {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .type-options {
+            grid-template-columns: 1fr;
+        }
+        .icon-grid {
+            grid-template-columns: repeat(6, 1fr);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <form method="post" class="form-card" id="taskForm">
+        <!-- Basic Info -->
+        <div class="form-section">
+            <div class="section-title"><i class="ph ph-info"></i> Basic Info</div>
+            
+            <div class="form-group">
+                <label><i class="ph ph-text-aa"></i> Task Name</label>
+                <input type="text" name="name" value="{{ task.name if task else '' }}" required 
+                       placeholder="e.g., Drink Water, Exercise, Read">
+            </div>
+            
+            <div class="form-group">
+                <label><i class="ph ph-text-align-left"></i> Description (Optional)</label>
+                <input type="text" name="description" value="{{ task.description if task else '' }}" 
+                       placeholder="Brief description of the task">
+            </div>
+            
+            <div class="form-group">
+                <label><i class="ph ph-folder"></i> Category</label>
+                <div class="category-pills">
+                    {% set categories = [('general', 'General', 'ph-star'), ('health', 'Health', 'ph-heart'), 
+                                         ('work', 'Work', 'ph-briefcase'), ('learning', 'Learning', 'ph-book-open'),
+                                         ('habits', 'Habits', 'ph-repeat')] %}
+                    {% for value, label, icon in categories %}
+                    <label class="category-pill {% if (task and task.category == value) or (not task and value == 'general') %}selected{% endif %}" data-value="{{ value }}">
+                        <input type="radio" name="category" value="{{ value }}" 
+                               {% if (task and task.category == value) or (not task and value == 'general') %}checked{% endif %}>
+                        <i class="ph {{ icon }}"></i> {{ label }}
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Task Type -->
+        <div class="form-section">
+            <div class="section-title"><i class="ph ph-list-checks"></i> Task Type</div>
+            
+            <div class="type-options">
+                <label class="type-option {% if not task or task.task_type == 'normal' %}selected{% endif %}" data-type="normal">
+                    <input type="radio" name="task_type" value="normal" 
+                           {% if not task or task.task_type == 'normal' %}checked{% endif %}>
+                    <i class="ph ph-check-circle"></i>
+                    <div class="type-name">Normal Task</div>
+                    <div class="type-desc">Complete once per period</div>
+                </label>
+                <label class="type-option {% if task and task.task_type == 'count' %}selected{% endif %}" data-type="count">
+                    <input type="radio" name="task_type" value="count"
+                           {% if task and task.task_type == 'count' %}checked{% endif %}>
+                    <i class="ph ph-stack"></i>
+                    <div class="type-name">Count Task</div>
+                    <div class="type-desc">Complete X times (e.g., drink 5 cups)</div>
+                </label>
+            </div>
+            
+            <div class="form-group conditional-field" id="countFields" style="margin-top: 16px;">
+                <div class="form-row">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label><i class="ph ph-hash"></i> Target Count</label>
+                        <input type="number" name="target_count" value="{{ task.target_count if task else 5 }}" min="1">
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">How many times to complete</div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label><i class="ph ph-lightning"></i> XP Per Count (Optional)</label>
+                        <input type="number" name="xp_per_count" value="{{ task.xp_per_count if task else 0 }}" min="0">
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">0 = XP only on full completion</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Repeat Schedule -->
+        <div class="form-section">
+            <div class="section-title"><i class="ph ph-clock-clockwise"></i> Repeat Schedule</div>
+            
+            <div class="repeat-options">
+                {% set repeats = [
+                    ('daily', 'Daily', 'ph-sun'),
+                    ('weekdays', 'Weekdays', 'ph-calendar-blank'),
+                    ('weekly', 'Weekly', 'ph-calendar'),
+                    ('monthly', 'Monthly', 'ph-calendar-check'),
+                    ('custom', 'Custom', 'ph-sliders'),
+                    ('ebbinghaus', 'Spaced', 'ph-brain'),
+                    ('once', 'One Time', 'ph-number-circle-one'),
+                    ('unlimited', 'Unlimited', 'ph-infinity')
+                ] %}
+                {% for value, label, icon in repeats %}
+                <label class="repeat-option {% if (task and task.repeat_type == value) or (not task and value == 'daily') %}selected{% endif %}" data-repeat="{{ value }}">
+                    <input type="radio" name="repeat_type" value="{{ value }}"
+                           {% if (task and task.repeat_type == value) or (not task and value == 'daily') %}checked{% endif %}>
+                    <i class="ph {{ icon }}"></i>
+                    {{ label }}
+                </label>
+                {% endfor %}
+            </div>
+            
+            <!-- Conditional fields for different repeat types -->
+            <div class="conditional-field" id="weeklyFields" style="margin-top: 16px;">
+                <label><i class="ph ph-calendar-dots"></i> Repeat on these days</label>
+                <div class="weekday-picker" style="margin-top: 8px;">
+                    {% set weekdays = [('0', 'M'), ('1', 'T'), ('2', 'W'), ('3', 'T'), ('4', 'F'), ('5', 'S'), ('6', 'S')] %}
+                    {% set selected_days = task.get_repeat_days() if task else [] %}
+                    {% for value, label in weekdays %}
+                    <button type="button" class="weekday-btn {% if value|int in selected_days %}selected{% endif %}" data-day="{{ value }}">{{ label }}</button>
+                    {% endfor %}
+                </div>
+                <input type="hidden" name="repeat_days" id="repeatDaysInput" value="{{ task.repeat_days if task else '[]' }}">
+            </div>
+            
+            <div class="conditional-field" id="monthlyFields" style="margin-top: 16px;">
+                <label><i class="ph ph-calendar-check"></i> Day of Month</label>
+                <input type="number" name="repeat_day_of_month" value="{{ task.repeat_day_of_month if task else 1 }}" min="1" max="31">
+            </div>
+            
+            <div class="conditional-field" id="customFields" style="margin-top: 16px;">
+                <label><i class="ph ph-sliders"></i> Repeat every X days</label>
+                <input type="number" name="repeat_interval" value="{{ task.repeat_interval if task else 2 }}" min="1">
+            </div>
+            
+            <div class="conditional-field" id="onceFields" style="margin-top: 16px;">
+                <label><i class="ph ph-calendar"></i> Due Date</label>
+                <input type="date" name="due_date" value="{{ task.due_date.isoformat() if task and task.due_date else '' }}">
+            </div>
+            
+            <div class="conditional-field" id="ebbinghausInfo" style="margin-top: 16px;">
+                <div style="padding: 12px; background: rgba(255, 255, 255, 0.03); border-radius: 10px; font-size: 13px; color: var(--text-muted);">
+                    <i class="ph ph-info"></i> <strong>Spaced Repetition</strong><br>
+                    Uses Ebbinghaus intervals: 1, 2, 4, 7, 15, 30, 60, 120 days. Great for learning and memory tasks.
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gamification -->
+        <div class="form-section">
+            <div class="section-title"><i class="ph ph-game-controller"></i> Gamification</div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label><i class="ph ph-lightning"></i> XP Value</label>
+                    <input type="number" name="xp_value" value="{{ task.xp_value if task else 10 }}" min="1" required>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">XP earned on completion</div>
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-item" style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 28px;">
+                        <input type="checkbox" name="streak_bonus" {% if not task or task.streak_bonus %}checked{% endif %} 
+                               style="width: 20px; height: 20px; accent-color: var(--accent);">
+                        <span>Eligible for streak bonus</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Appearance -->
+        <div class="form-section">
+            <div class="section-title"><i class="ph ph-paint-brush"></i> Appearance</div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label><i class="ph ph-palette"></i> Color</label>
+                    <div class="color-input-wrapper">
+                        <div class="color-preview" id="colorPreview" style="background: {{ task.color if task else '#10b981' }}">
+                            <input type="color" name="color" id="colorInput" value="{{ task.color if task else '#10b981' }}">
+                        </div>
+                        <input type="text" id="colorText" value="{{ task.color if task else '#10b981' }}" style="width: 100px;" readonly>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label><i class="ph ph-smiley"></i> Emoji (Optional)</label>
+                    <input type="text" name="emoji" value="{{ task.emoji if task else '' }}" placeholder="💧" maxlength="4" style="width: 80px; text-align: center; font-size: 20px;">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label><i class="ph ph-shapes"></i> Icon</label>
+                <input type="hidden" name="icon" id="iconInput" value="{{ task.icon if task else 'ph-check-circle' }}">
+                <div class="icon-grid">
+                    {% set icons = ['ph-check-circle', 'ph-magnifying-glass', 'ph-pencil-line', 'ph-book-open', 'ph-chat-circle', 
+                                    'ph-trend-up', 'ph-video-camera', 'ph-microphone', 'ph-code', 'ph-brain', 'ph-dumbbell', 
+                                    'ph-heart', 'ph-star', 'ph-lightning', 'ph-fire', 'ph-rocket', 'ph-drop', 'ph-apple-logo',
+                                    'ph-sun', 'ph-moon', 'ph-bed', 'ph-pill', 'ph-tooth', 'ph-shower-head'] %}
+                    {% for icon in icons %}
+                    <div class="icon-option {% if (task and task.icon == icon) or (not task and icon == 'ph-check-circle') %}selected{% endif %}" 
+                         data-icon="{{ icon }}" onclick="selectIcon('{{ icon }}')">
+                        <i class="ph {{ icon }}"></i>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        {% if task %}
+        <div class="form-section">
+            <div class="section-title"><i class="ph ph-gear"></i> Status</div>
+            
+            <div class="form-row">
+                <label class="checkbox-item" style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" name="is_active" {% if task.is_active %}checked{% endif %} 
+                           style="width: 20px; height: 20px; accent-color: var(--accent);">
+                    <span>Active</span>
+                </label>
+                <label class="checkbox-item" style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" name="is_pinned" {% if task.is_pinned %}checked{% endif %} 
+                           style="width: 20px; height: 20px; accent-color: var(--accent);">
+                    <span>Pinned to top</span>
+                </label>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="ph ph-check"></i> {{ 'Save Changes' if task else 'Create Task' }}
+            </button>
+            <a href="{{ url_for('admin_daily_tasks') }}" class="btn btn-outline">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Color picker
+    const colorInput = document.getElementById('colorInput');
+    const colorPreview = document.getElementById('colorPreview');
+    const colorText = document.getElementById('colorText');
+    
+    colorInput.addEventListener('input', function() {
+        colorPreview.style.background = this.value;
+        colorText.value = this.value;
+    });
+    
+    // Icon selector
+    function selectIcon(icon) {
+        document.getElementById('iconInput').value = icon;
+        document.querySelectorAll('.icon-option').forEach(el => el.classList.remove('selected'));
+        document.querySelector(`.icon-option[data-icon="${icon}"]`).classList.add('selected');
+    }
+    
+    // Type options
+    document.querySelectorAll('.type-option').forEach(opt => {
+        opt.addEventListener('click', function() {
+            document.querySelectorAll('.type-option').forEach(o => o.classList.remove('selected'));
+            this.classList.add('selected');
+            this.querySelector('input').checked = true;
+            updateConditionalFields();
+        });
+    });
+    
+    // Repeat options
+    document.querySelectorAll('.repeat-option').forEach(opt => {
+        opt.addEventListener('click', function() {
+            document.querySelectorAll('.repeat-option').forEach(o => o.classList.remove('selected'));
+            this.classList.add('selected');
+            this.querySelector('input').checked = true;
+            updateConditionalFields();
+        });
+    });
+    
+    // Category pills
+    document.querySelectorAll('.category-pill').forEach(pill => {
+        pill.addEventListener('click', function() {
+            document.querySelectorAll('.category-pill').forEach(p => p.classList.remove('selected'));
+            this.classList.add('selected');
+        });
+    });
+    
+    // Weekday picker
+    const weekdayBtns = document.querySelectorAll('.weekday-btn');
+    const repeatDaysInput = document.getElementById('repeatDaysInput');
+    
+    weekdayBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            this.classList.toggle('selected');
+            updateRepeatDays();
+        });
+    });
+    
+    function updateRepeatDays() {
+        const selected = [];
+        weekdayBtns.forEach(btn => {
+            if (btn.classList.contains('selected')) {
+                selected.push(parseInt(btn.dataset.day));
+            }
+        });
+        repeatDaysInput.value = JSON.stringify(selected);
+    }
+    
+    // Conditional fields visibility
+    function updateConditionalFields() {
+        // Hide all conditional fields
+        document.querySelectorAll('.conditional-field').forEach(f => f.classList.remove('show'));
+        
+        // Task type fields
+        const taskType = document.querySelector('input[name="task_type"]:checked')?.value;
+        if (taskType === 'count') {
+            document.getElementById('countFields').classList.add('show');
+        }
+        
+        // Repeat type fields
+        const repeatType = document.querySelector('input[name="repeat_type"]:checked')?.value;
+        if (repeatType === 'weekly') {
+            document.getElementById('weeklyFields').classList.add('show');
+        } else if (repeatType === 'monthly') {
+            document.getElementById('monthlyFields').classList.add('show');
+        } else if (repeatType === 'custom') {
+            document.getElementById('customFields').classList.add('show');
+        } else if (repeatType === 'once') {
+            document.getElementById('onceFields').classList.add('show');
+        } else if (repeatType === 'ebbinghaus') {
+            document.getElementById('ebbinghausInfo').classList.add('show');
+        }
+    }
+    
+    // Initialize
+    updateConditionalFields();
+</script>
+{% endblock %}

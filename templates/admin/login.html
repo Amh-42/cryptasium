@@ -5,8 +5,9 @@
 {% block auth_content %}
 <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 36px;">
     <h2 style="font-size: 28px; margin-bottom: 8px; text-align: center;">Admin Login</h2>
-    <p style="color: var(--text-muted); text-align: center; margin-bottom: 24px;">Access the content management system</p>
-    
+    <p style="color: var(--text-muted); text-align: center; margin-bottom: 24px;">Access the content management system
+    </p>
+
     <form method="POST" action="{{ url_for('admin_login') }}">
         <div style="margin-bottom: 20px;">
             <label>Username</label>
@@ -14,12 +15,15 @@
         </div>
         <div style="margin-bottom: 24px;">
             <label>Password</label>
-            <input type="password" name="password" required autocomplete="current-password" placeholder="Enter password">
+            <input type="password" name="password" required autocomplete="current-password"
+                placeholder="Enter password">
         </div>
         <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
     </form>
-    
+
     <div style="text-align: center; margin-top: 20px;">
+        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 8px;">New here? <a
+                href="{{ url_for('admin_signup') }}" style="color: var(--accent);">Create an account</a></p>
         <a href="{{ url_for('index') }}" style="color: var(--text-muted); font-size: 14px;">← Back to Home</a>
     </div>
 </div>

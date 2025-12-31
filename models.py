@@ -1,13 +1,800 @@
 """
 Database models for Cryptasium application
+Fully Dynamic Gamification System - All configuration stored in database
 """
-from datetime import datetime
+from datetime import datetime, date
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
+import json
 
 db = SQLAlchemy()
 
 
-# ========== GAMIFICATION SYSTEM (DATABASE-DRIVEN) ==========
+# ========== USER MODEL ==========
+
+class User(UserMixin, db.Model):
+    """User model for authentication and multi-tenancy"""
+    __tablename__ = 'users'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True, nullable=False, index=True)
+    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.String(200), nullable=False)
+    role = db.Column(db.String(20), default='user')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Profile customization
+    avatar_url = db.Column(db.String(500))
+    display_name = db.Column(db.String(100))
+    timezone = db.Column(db.String(50), default='UTC')
+    
+    # Relationships - Dynamic Gamification
+    trackable_types = db.relationship('TrackableType', backref='user', lazy=True, cascade='all, delete-orphan')
+    trackable_entries = db.relationship('TrackableEntry', backref='user', lazy=True, cascade='all, delete-orphan')
+    custom_ranks = db.relationship('CustomRank', backref='user', lazy=True, cascade='all, delete-orphan')
+    daily_tasks = db.relationship('UserDailyTask', backref='user', lazy=True, cascade='all, delete-orphan')
+    task_completions = db.relationship('TaskCompletion', backref='user', lazy=True, cascade='all, delete-orphan')
+    achievements = db.relationship('Achievement', backref='user', lazy=True, cascade='all, delete-orphan')
+    user_achievements = db.relationship('UserAchievement', backref='user', lazy=True, cascade='all, delete-orphan')
+    streaks = db.relationship('Streak', backref='user', lazy=True, cascade='all, delete-orphan')
+    daily_logs = db.relationship('DailyLog', backref='user', lazy=True, cascade='all, delete-orphan')
+    user_settings = db.relationship('UserSettings', backref='user', lazy=True, uselist=False, cascade='all, delete-orphan')
+    
+    # Legacy relationships (kept for backward compatibility)
+    blog_posts = db.relationship('BlogPost', backref='user', lazy=True)
+    videos = db.relationship('YouTubeVideo', backref='user', lazy=True)
+    shorts = db.relationship('Short', backref='user', lazy=True)
+    podcasts = db.relationship('Podcast', backref='user', lazy=True)
+    
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+        
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+        
+    def get_total_xp(self):
+        """Calculate total XP from all trackable entries"""
+        total = 0
+        for entry in self.trackable_entries:
+            if entry.trackable_type:
+                total += entry.count * entry.trackable_type.xp_per_unit
+        # Add daily task XP
+        for log in self.daily_logs:
+            total += log.total_xp or 0
+        return total
+    
+    def get_current_rank(self):
+        """Get user's current rank based on XP"""
+        total_xp = self.get_total_xp()
+        ranks = CustomRank.query.filter_by(user_id=self.id).order_by(CustomRank.min_xp.desc()).all()
+        for rank in ranks:
+            if total_xp >= rank.min_xp:
+                return rank
+        # Return a default if no ranks defined
+        return None
+    
+    def __repr__(self):
+        return f'<User {self.username}>'
+
+
+# ========== DYNAMIC GAMIFICATION SYSTEM ==========
+
+class TrackableType(db.Model):
+    """
+    User-defined trackable types. Each user can create their own types.
+    Examples: "Blog Posts", "YouTube Videos", "Shorts", "Blue Package", "Client Call", "Sales", etc.
+    """
+    __tablename__ = 'trackable_types'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    
+    # Definition
+    name = db.Column(db.String(100), nullable=False)  # "Blog Post", "YouTube Short", "Sale", etc.
+    slug = db.Column(db.String(100), nullable=False)  # "blog_post", "youtube_short", "sale"
+    description = db.Column(db.String(500))
+    category = db.Column(db.String(50), default='content')  # 'content', 'task', 'metric', 'sales', 'finance'
+    
+    # Gamification - XP calculation modes
+    xp_per_unit = db.Column(db.Integer, default=10)  # Base XP earned per item
+    xp_mode = db.Column(db.String(20), default='fixed')  # 'fixed', 'value_based', 'tiered'
+    # For 'value_based': XP = value * xp_multiplier (e.g., $100 sale * 0.5 = 50 XP)
+    xp_multiplier = db.Column(db.Float, default=1.0)
+    # For 'tiered': Different XP for different tiers (stored in tiers_config JSON)
+    tiers_config = db.Column(db.Text)  # JSON: [{"name": "Bronze", "min": 0, "xp": 10}, {"name": "Silver", "min": 100, "xp": 50}]
+    
+    # Value tracking (for sales, income, expenses)
+    track_value = db.Column(db.Boolean, default=False)  # Track monetary/numeric value?
+    value_label = db.Column(db.String(50), default='Value')  # "Price", "Amount", "Revenue", etc.
+    value_prefix = db.Column(db.String(10), default='$')  # Currency symbol or unit
+    value_suffix = db.Column(db.String(10), default='')  # e.g., "hrs", "units"
+    
+    # Visual
+    icon = db.Column(db.String(50), default='ph-star')  # Phosphor icon name
+    color = db.Column(db.String(20), default='#0ea5e9')  # Hex color
+    emoji = db.Column(db.String(10))  # Optional emoji
+    
+    # Behavior
+    is_countable = db.Column(db.Boolean, default=True)  # Can you count multiple?
+    track_duration = db.Column(db.Boolean, default=False)  # Track time/duration?
+    track_views = db.Column(db.Boolean, default=False)  # Track views?
+    allows_negative = db.Column(db.Boolean, default=False)  # Allow negative values (for expenses)?
+    
+    # Goals
+    daily_goal = db.Column(db.Integer, default=0)  # Daily target (0 = no goal)
+    weekly_goal = db.Column(db.Integer, default=0)  # Weekly target
+    monthly_goal = db.Column(db.Integer, default=0)  # Monthly target
+    value_goal = db.Column(db.Float, default=0)  # Value-based goal (e.g., $1000 in sales)
+    
+    # Ordering & Status
+    display_order = db.Column(db.Integer, default=0)
+    is_active = db.Column(db.Boolean, default=True)
+    is_pinned = db.Column(db.Boolean, default=False)  # Show on dashboard
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    entries = db.relationship('TrackableEntry', backref='trackable_type', lazy=True, cascade='all, delete-orphan')
+    
+    def get_tiers(self):
+        """Get tier configuration"""
+        try:
+            return json.loads(self.tiers_config or '[]')
+        except:
+            return []
+    
+    def set_tiers(self, tiers_list):
+        """Set tier configuration"""
+        self.tiers_config = json.dumps(tiers_list)
+    
+    def get_total_count(self):
+        """Get total count of all entries for this type"""
+        return sum(e.count for e in self.entries)
+    
+    def get_total_value(self):
+        """Get total value of all entries (for sales/income/expense tracking)"""
+        return sum(e.value or 0 for e in self.entries)
+    
+    def get_count_for_period(self, start_date, end_date):
+        """Get count for a specific date range"""
+        return sum(
+            e.count for e in self.entries 
+            if e.date >= start_date and e.date <= end_date
+        )
+    
+    def get_value_for_period(self, start_date, end_date):
+        """Get total value for a specific date range"""
+        return sum(
+            e.value or 0 for e in self.entries 
+            if e.date >= start_date and e.date <= end_date
+        )
+    
+    def calculate_xp_for_entry(self, count=1, value=0):
+        """Calculate XP for an entry based on the XP mode"""
+        if self.xp_mode == 'fixed':
+            return count * self.xp_per_unit
+        elif self.xp_mode == 'value_based' and value:
+            # XP based on the value (e.g., sales amount)
+            return int(abs(value) * (self.xp_multiplier or 1.0))
+        elif self.xp_mode == 'tiered' and value:
+            # XP based on value tiers
+            tiers = self.get_tiers()
+            xp = self.xp_per_unit  # Default
+            for tier in sorted(tiers, key=lambda t: t.get('min', 0), reverse=True):
+                if abs(value) >= tier.get('min', 0):
+                    xp = tier.get('xp', self.xp_per_unit)
+                    break
+            return xp * count
+        return count * self.xp_per_unit
+    
+    def get_total_xp(self):
+        """Calculate total XP earned from this type"""
+        return sum(e.get_xp() for e in self.entries)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'slug': self.slug,
+            'description': self.description,
+            'category': self.category,
+            'xp_per_unit': self.xp_per_unit,
+            'icon': self.icon,
+            'color': self.color,
+            'emoji': self.emoji,
+            'daily_goal': self.daily_goal,
+            'weekly_goal': self.weekly_goal,
+            'monthly_goal': self.monthly_goal,
+            'is_pinned': self.is_pinned,
+            'total_count': self.get_total_count(),
+            'total_xp': self.get_total_xp()
+        }
+    
+    def __repr__(self):
+        return f'<TrackableType {self.name}>'
+
+
+class TrackableEntry(db.Model):
+    """
+    Individual entries for tracked items.
+    Each time a user completes a trackable, an entry is created.
+    """
+    __tablename__ = 'trackable_entries'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    trackable_type_id = db.Column(db.Integer, db.ForeignKey('trackable_types.id'), nullable=False, index=True)
+    
+    # Entry details
+    date = db.Column(db.Date, nullable=False, default=date.today, index=True)
+    count = db.Column(db.Integer, default=1)  # How many (usually 1)
+    
+    # Value tracking (for sales, income, expenses)
+    value = db.Column(db.Float, default=0)  # Monetary or numeric value
+    
+    # Optional metadata
+    title = db.Column(db.String(300))  # Optional title/description
+    notes = db.Column(db.Text)
+    url = db.Column(db.String(500))  # Link to the content
+    
+    # Extended tracking (if enabled on type)
+    duration_minutes = db.Column(db.Integer, default=0)
+    views = db.Column(db.Integer, default=0)
+    
+    # For tiered/categorized entries (e.g., "Bronze Package", "Gold Package")
+    tier_name = db.Column(db.String(50))
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def get_xp(self):
+        """Calculate XP for this entry based on the trackable type's XP mode"""
+        if self.trackable_type:
+            return self.trackable_type.calculate_xp_for_entry(self.count, self.value)
+        return 0
+    
+    def __repr__(self):
+        return f'<TrackableEntry {self.trackable_type.name if self.trackable_type else "?"} x{self.count}>'
+
+
+class CustomRank(db.Model):
+    """
+    User-defined rank/level system.
+    Users can create their own ranks with custom names, XP thresholds, and visuals.
+    """
+    __tablename__ = 'custom_ranks'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    
+    # Rank definition
+    level = db.Column(db.Integer, nullable=False, default=1)  # Numeric level
+    name = db.Column(db.String(100), nullable=False)  # "Beginner", "Expert", etc.
+    code = db.Column(db.String(10))  # Short code like "BT", "MS"
+    description = db.Column(db.String(500))
+    
+    # Requirements
+    min_xp = db.Column(db.Integer, default=0)  # XP needed to reach this rank
+    
+    # Visuals
+    icon = db.Column(db.String(100))  # Icon path or phosphor icon
+    color = db.Column(db.String(20), default='#666666')
+    badge_image = db.Column(db.String(500))  # Path to badge image
+    
+    # Special flags
+    is_max_rank = db.Column(db.Boolean, default=False)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'level': self.level,
+            'name': self.name,
+            'code': self.code,
+            'min_xp': self.min_xp,
+            'icon': self.icon,
+            'color': self.color,
+            'badge_image': self.badge_image,
+            'is_max_rank': self.is_max_rank
+        }
+    
+    def __repr__(self):
+        return f'<CustomRank L{self.level}: {self.name}>'
+
+
+class UserDailyTask(db.Model):
+    """
+    User-defined tasks for XP with flexible repeat schedules and task types.
+    Supports: repeating tasks, one-time tasks, count-based tasks, and spaced repetition.
+    """
+    __tablename__ = 'user_daily_tasks'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    
+    # Task definition
+    name = db.Column(db.String(100), nullable=False)
+    slug = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(500))
+    
+    # Task Type: 'normal' (complete once per period), 'count' (complete X times)
+    task_type = db.Column(db.String(20), default='normal')  # 'normal', 'count'
+    target_count = db.Column(db.Integer, default=1)  # For count tasks: how many times to complete
+    
+    # Repeat Schedule
+    # 'daily', 'weekly', 'monthly', 'yearly', 'weekdays', 'weekends',
+    # 'custom' (every X days), 'ebbinghaus' (spaced repetition), 'once' (one-time task), 'unlimited'
+    repeat_type = db.Column(db.String(20), default='daily')
+    
+    # Custom repeat settings
+    repeat_interval = db.Column(db.Integer, default=1)  # For 'custom': every X days
+    repeat_days = db.Column(db.String(50))  # For 'weekly': JSON array like "[1,3,5]" for Mon/Wed/Fri
+    repeat_day_of_month = db.Column(db.Integer)  # For 'monthly': which day (1-31)
+    
+    # One-time task settings
+    due_date = db.Column(db.Date)  # For 'once' tasks: when it's due
+    completed_date = db.Column(db.Date)  # For 'once' tasks: when completed
+    
+    # Ebbinghaus spaced repetition settings
+    ebbinghaus_level = db.Column(db.Integer, default=0)  # Current level in spaced repetition
+    next_due_date = db.Column(db.Date)  # When the task is next due
+    
+    # Gamification
+    xp_value = db.Column(db.Integer, default=10)
+    xp_per_count = db.Column(db.Integer, default=0)  # For count tasks: XP per completion (0 = only on full completion)
+    streak_bonus = db.Column(db.Boolean, default=True)  # Eligible for streak bonuses
+    
+    # Visual
+    icon = db.Column(db.String(50), default='ph-check-circle')
+    color = db.Column(db.String(20), default='#10b981')
+    emoji = db.Column(db.String(10))
+    
+    # Ordering & Status
+    display_order = db.Column(db.Integer, default=0)
+    is_active = db.Column(db.Boolean, default=True)
+    is_pinned = db.Column(db.Boolean, default=False)
+    
+    # Category for organization
+    category = db.Column(db.String(50), default='general')  # 'health', 'work', 'learning', 'habits', 'general'
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationship to task completions
+    completions = db.relationship('TaskCompletion', backref='task', lazy=True, cascade='all, delete-orphan')
+    
+    def get_repeat_days(self):
+        """Get repeat days as a list"""
+        try:
+            return json.loads(self.repeat_days or '[]')
+        except:
+            return []
+    
+    def set_repeat_days(self, days):
+        """Set repeat days from a list"""
+        self.repeat_days = json.dumps(days)
+    
+    def is_due_today(self, today=None):
+        """Check if this task is due today based on its repeat schedule"""
+        today = today or date.today()
+        
+        if self.repeat_type == 'once':
+            # One-time task: due if not completed and due_date is today or past
+            if self.completed_date:
+                return False
+            return self.due_date is None or self.due_date <= today
+        
+        if self.repeat_type == 'daily':
+            return True
+        
+        if self.repeat_type == 'unlimited':
+            return True
+        
+        if self.repeat_type == 'weekdays':
+            return today.weekday() < 5  # Mon=0 to Fri=4
+        
+        if self.repeat_type == 'weekends':
+            return today.weekday() >= 5  # Sat=5, Sun=6
+        
+        if self.repeat_type == 'weekly':
+            days = self.get_repeat_days()
+            return today.weekday() in days
+        
+        if self.repeat_type == 'monthly':
+            return today.day == (self.repeat_day_of_month or 1)
+        
+        if self.repeat_type == 'yearly':
+            # Check if today matches the original creation date's month/day
+            return today.month == self.created_at.month and today.day == self.created_at.day
+        
+        if self.repeat_type == 'custom':
+            # Every X days from creation
+            if not self.created_at:
+                return True
+            days_since = (today - self.created_at.date()).days
+            return days_since % (self.repeat_interval or 1) == 0
+        
+        if self.repeat_type == 'ebbinghaus':
+            # Spaced repetition: due on next_due_date
+            return self.next_due_date is None or self.next_due_date <= today
+        
+        return True
+    
+    def calculate_next_ebbinghaus_date(self):
+        """Calculate next due date using Ebbinghaus spaced repetition intervals"""
+        # Standard Ebbinghaus intervals: 1, 2, 4, 7, 15, 30, 60, 120 days
+        intervals = [1, 2, 4, 7, 15, 30, 60, 120]
+        level = min(self.ebbinghaus_level, len(intervals) - 1)
+        self.next_due_date = date.today() + timedelta(days=intervals[level])
+        self.ebbinghaus_level += 1
+    
+    def get_today_completion_count(self, today=None):
+        """Get how many times this task was completed today"""
+        today = today or date.today()
+        return TaskCompletion.query.filter_by(
+            task_id=self.id,
+            date=today
+        ).count()
+    
+    def is_completed_today(self, today=None):
+        """Check if task is completed for today"""
+        today = today or date.today()
+        count = self.get_today_completion_count(today)
+        if self.task_type == 'count':
+            return count >= self.target_count
+        return count > 0
+    
+    def __repr__(self):
+        return f'<UserDailyTask {self.name}>'
+
+
+class TaskCompletion(db.Model):
+    """
+    Tracks individual task completions.
+    Allows multiple completions per day for count-based tasks.
+    """
+    __tablename__ = 'task_completions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    task_id = db.Column(db.Integer, db.ForeignKey('user_daily_tasks.id'), nullable=False, index=True)
+    date = db.Column(db.Date, nullable=False, default=date.today, index=True)
+    
+    # For count tasks - track each completion
+    count = db.Column(db.Integer, default=1)  # How many units completed in this entry
+    notes = db.Column(db.String(500))
+    
+    # XP earned for this completion
+    xp_earned = db.Column(db.Integer, default=0)
+    
+    # Timestamp
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<TaskCompletion {self.task_id} on {self.date}>'
+
+
+class DailyLog(db.Model):
+    """
+    Daily log tracking task completion.
+    Stores which tasks were completed each day.
+    """
+    __tablename__ = 'daily_logs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    date = db.Column(db.Date, nullable=False, default=date.today, index=True)
+    
+    # Completed tasks stored as JSON array of task IDs
+    completed_tasks = db.Column(db.Text, default='[]')  # JSON array of task slugs
+    
+    # Calculated
+    total_xp = db.Column(db.Integer, default=0)
+    goal_met = db.Column(db.Boolean, default=False)
+    
+    # Notes
+    notes = db.Column(db.Text)
+    mood = db.Column(db.String(20))  # Optional mood tracking
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'date', name='unique_user_date'),
+    )
+    
+    def get_completed_tasks(self):
+        try:
+            return json.loads(self.completed_tasks or '[]')
+        except:
+            return []
+    
+    def set_completed_tasks(self, tasks):
+        self.completed_tasks = json.dumps(tasks)
+    
+    def calculate_xp(self, user_tasks):
+        """Calculate XP based on completed tasks"""
+        completed = self.get_completed_tasks()
+        total = 0
+        for task in user_tasks:
+            if task.slug in completed:
+                total += task.xp_value
+        self.total_xp = total
+        return total
+    
+    def __repr__(self):
+        return f'<DailyLog {self.date}>'
+
+
+class Achievement(db.Model):
+    """
+    User-defined achievements/badges.
+    Users can create custom achievements with their own criteria.
+    """
+    __tablename__ = 'achievements'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    
+    # Achievement definition
+    name = db.Column(db.String(100), nullable=False)
+    slug = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(500))
+    
+    # Criteria (stored as JSON for flexibility)
+    # Examples: {"type": "total_count", "trackable_slug": "blog_post", "threshold": 10}
+    #           {"type": "streak", "min_days": 7}
+    #           {"type": "xp_total", "threshold": 1000}
+    criteria = db.Column(db.Text, default='{}')
+    
+    # Reward
+    xp_reward = db.Column(db.Integer, default=100)
+    
+    # Visual
+    icon = db.Column(db.String(50), default='ph-trophy')
+    color = db.Column(db.String(20), default='#fbbf24')
+    badge_image = db.Column(db.String(500))
+    
+    # Status
+    is_active = db.Column(db.Boolean, default=True)
+    is_hidden = db.Column(db.Boolean, default=False)  # Hidden until unlocked?
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def get_criteria(self):
+        try:
+            return json.loads(self.criteria or '{}')
+        except:
+            return {}
+    
+    def set_criteria(self, criteria_dict):
+        self.criteria = json.dumps(criteria_dict)
+    
+    def __repr__(self):
+        return f'<Achievement {self.name}>'
+
+
+class UserAchievement(db.Model):
+    """
+    Tracks which achievements a user has unlocked.
+    """
+    __tablename__ = 'user_achievements'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    achievement_id = db.Column(db.Integer, db.ForeignKey('achievements.id'), nullable=False, index=True)
+    
+    # When unlocked
+    unlocked_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Reference to achievement
+    achievement = db.relationship('Achievement', backref='user_achievements')
+    
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'achievement_id', name='unique_user_achievement'),
+    )
+    
+    def __repr__(self):
+        return f'<UserAchievement {self.achievement_id}>'
+
+
+class Streak(db.Model):
+    """
+    Tracks user streaks for various activities.
+    """
+    __tablename__ = 'streaks'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    
+    # Streak type
+    streak_type = db.Column(db.String(50), nullable=False)  # 'daily_xp', 'weekly_perfect', etc.
+    
+    # Current state
+    current_count = db.Column(db.Integer, default=0)
+    longest_count = db.Column(db.Integer, default=0)
+    
+    # Dates
+    last_activity_date = db.Column(db.Date)
+    streak_start_date = db.Column(db.Date)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'streak_type', name='unique_user_streak_type'),
+    )
+    
+    def update_streak(self, activity_date):
+        """Update streak based on activity date"""
+        if not self.last_activity_date:
+            # First activity
+            self.current_count = 1
+            self.streak_start_date = activity_date
+        elif activity_date == self.last_activity_date:
+            # Same day, no change
+            pass
+        elif (activity_date - self.last_activity_date).days == 1:
+            # Consecutive day
+            self.current_count += 1
+        elif (activity_date - self.last_activity_date).days > 1:
+            # Streak broken
+            self.current_count = 1
+            self.streak_start_date = activity_date
+        
+        self.last_activity_date = activity_date
+        
+        if self.current_count > self.longest_count:
+            self.longest_count = self.current_count
+    
+    def __repr__(self):
+        return f'<Streak {self.streak_type}: {self.current_count}>'
+
+
+class UserSettings(db.Model):
+    """
+    User-specific settings for gamification.
+    """
+    __tablename__ = 'user_settings'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, unique=True, index=True)
+    
+    # Appearance
+    accent_color = db.Column(db.String(20), default='#e90e0e')
+    
+    # Points settings
+    points_name = db.Column(db.String(20), default='XP')  # "XP", "Points", "Coins", etc.
+    points_icon = db.Column(db.String(50), default='ph-lightning')
+    
+    # Daily goals
+    daily_xp_goal = db.Column(db.Integer, default=50)
+    
+    # Bonuses
+    perfect_day_bonus = db.Column(db.Integer, default=50)
+    perfect_week_bonus = db.Column(db.Integer, default=500)
+    streak_bonus_per_day = db.Column(db.Integer, default=5)  # Extra XP per streak day
+    
+    # Display preferences
+    show_xp_animations = db.Column(db.Boolean, default=True)
+    dark_mode = db.Column(db.Boolean, default=True)
+    compact_view = db.Column(db.Boolean, default=False)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<UserSettings {self.user_id}>'
+    
+
+# ========== LEGACY CONTENT MODELS (kept for backward compatibility) ==========
+
+class BlogPost(db.Model):
+    __tablename__ = 'blog_posts'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(200), unique=True, nullable=False, index=True)
+    excerpt = db.Column(db.Text)
+    content = db.Column(db.Text, nullable=False)
+    featured_image = db.Column(db.String(500))
+    author = db.Column(db.String(100), default='Cryptasium Team')
+    published = db.Column(db.Boolean, default=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    views = db.Column(db.Integer, default=0)
+    likes = db.Column(db.Integer, default=0)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+
+
+class YouTubeVideo(db.Model):
+    __tablename__ = 'youtube_videos'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    video_id = db.Column(db.String(50), unique=True, nullable=False, index=True)
+    thumbnail_url = db.Column(db.String(500))
+    duration = db.Column(db.String(20))
+    duration_seconds = db.Column(db.Integer, default=0)
+    content_type = db.Column(db.String(20), default='longs') 
+    published = db.Column(db.Boolean, default=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    views = db.Column(db.Integer, default=0)
+    likes = db.Column(db.Integer, default=0)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+
+
+class Podcast(db.Model):
+    __tablename__ = 'podcasts'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    episode_number = db.Column(db.Integer)
+    audio_url = db.Column(db.String(500))
+    thumbnail_url = db.Column(db.String(500))
+    duration = db.Column(db.String(20))
+    published = db.Column(db.Boolean, default=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    views = db.Column(db.Integer, default=0)
+    likes = db.Column(db.Integer, default=0)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+
+
+class Short(db.Model):
+    __tablename__ = 'shorts'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    video_id = db.Column(db.String(50), unique=True, nullable=False, index=True)
+    thumbnail_url = db.Column(db.String(500))
+    duration = db.Column(db.String(20))
+    published = db.Column(db.Boolean, default=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    views = db.Column(db.Integer, default=0)
+    likes = db.Column(db.Integer, default=0)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+
+
+class CommunityPost(db.Model):
+    __tablename__ = 'community_posts'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    author = db.Column(db.String(100), default='Community Member')
+    category = db.Column(db.String(50))
+    published = db.Column(db.Boolean, default=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    views = db.Column(db.Integer, default=0)
+    likes = db.Column(db.Integer, default=0)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+
+
+class TopicIdea(db.Model):
+    __tablename__ = 'topic_ideas'
+    id = db.Column(db.Integer, primary_key=True)
+    topic = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    email = db.Column(db.String(200))
+    name = db.Column(db.String(100))
+    status = db.Column(db.String(20), default='pending')
+    reviewed = db.Column(db.Boolean, default=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    reviewed_at = db.Column(db.DateTime)
+
+
+# ========== LEGACY SYSTEM TABLES (kept for migrations) ==========
 
 class SystemSettings(db.Model):
     """Global system settings stored in database"""
@@ -22,1195 +809,176 @@ class SystemSettings(db.Model):
     
     @staticmethod
     def get(key, default=None):
-        """Get a setting value by key"""
         setting = SystemSettings.query.filter_by(key=key).first()
         return setting.value if setting else default
-    
-    @staticmethod
-    def set(key, value, description=None):
-        """Set a setting value"""
-        setting = SystemSettings.query.filter_by(key=key).first()
-        if setting:
-            setting.value = str(value)
-            if description:
-                setting.description = description
-        else:
-            setting = SystemSettings(key=key, value=str(value), description=description)
-            db.session.add(setting)
-        db.session.commit()
-        return setting
-    
-    def __repr__(self):
-        return f'<SystemSettings {self.key}={self.value}>'
 
-
-class Rank(db.Model):
-    """Rank definitions stored in database"""
-    __tablename__ = 'ranks'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    level = db.Column(db.Integer, unique=True, nullable=False, index=True)  # 1-9
-    code = db.Column(db.String(10), unique=True, nullable=False)
-    name = db.Column(db.String(100), nullable=False)
-    points_required = db.Column(db.Integer, default=0)
-    subscribers_required = db.Column(db.Integer, default=0)
-    views_required = db.Column(db.Integer, default=0)
-    content_required = db.Column(db.Integer, default=0)
-    color = db.Column(db.String(20), default='#666666')
-    icon = db.Column(db.String(10), default='⭐')
-    is_max_rank = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    @staticmethod
-    def get_all_ordered():
-        """Get all ranks ordered by level"""
-        return Rank.query.order_by(Rank.level.asc()).all()
-    
-    @staticmethod
-    def get_max_rank():
-        """Get the maximum rank"""
-        return Rank.query.filter_by(is_max_rank=True).first()
-    
-    def to_dict(self):
-        return {
-            'code': self.code,
-            'name': self.name,
-            'points': self.points_required,
-            'subscribers': self.subscribers_required,
-            'views': self.views_required,
-            'content': self.content_required,
-            'color': self.color,
-            'icon': self.icon,
-            'level': self.level,
-            'is_max_rank': self.is_max_rank
-        }
-    
-    def __repr__(self):
-        return f'<Rank L{self.level}: {self.code} - {self.name}>'
-
-
-class ContentPointValue(db.Model):
-    """Point values for different content types"""
-    __tablename__ = 'content_point_values'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    content_type = db.Column(db.String(50), unique=True, nullable=False, index=True)
-    name = db.Column(db.String(100), nullable=False)
-    points = db.Column(db.Float, default=0)
-    description = db.Column(db.String(500))
-    icon = db.Column(db.String(10))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    @staticmethod
-    def get_points(content_type, default=0):
-        """Get points for a content type"""
-        cpv = ContentPointValue.query.filter_by(content_type=content_type).first()
-        return cpv.points if cpv else default
-    
-    @staticmethod
-    def get_all_as_dict():
-        """Get all content point values as a dictionary"""
-        values = ContentPointValue.query.all()
-        return {v.content_type: v.points for v in values}
-    
-    def __repr__(self):
-        return f'<ContentPointValue {self.content_type}={self.points}>'
-
-
-class DailyTask(db.Model):
-    """Daily XP task definitions stored in database"""
-    __tablename__ = 'daily_tasks'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    task_key = db.Column(db.String(50), unique=True, nullable=False, index=True)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.String(500))
-    xp_value = db.Column(db.Integer, default=0)
-    icon = db.Column(db.String(10))
-    display_order = db.Column(db.Integer, default=0)
-    is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    @staticmethod
-    def get_active_tasks():
-        """Get all active daily tasks ordered by display order"""
-        return DailyTask.query.filter_by(is_active=True).order_by(DailyTask.display_order.asc()).all()
-    
-    @staticmethod
-    def get_task(task_key):
-        """Get a task by key"""
-        return DailyTask.query.filter_by(task_key=task_key).first()
-    
-    def __repr__(self):
-        return f'<DailyTask {self.task_key}: {self.xp_value} XP>'
-
-
-class WeeklyRequirement(db.Model):
-    """Weekly content requirements stored in database"""
-    __tablename__ = 'weekly_requirements'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    content_type = db.Column(db.String(50), unique=True, nullable=False, index=True)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.String(500))
-    required_count = db.Column(db.Integer, default=1)
-    icon = db.Column(db.String(10))
-    display_order = db.Column(db.Integer, default=0)
-    is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    @staticmethod
-    def get_active_requirements():
-        """Get all active weekly requirements ordered by display order"""
-        return WeeklyRequirement.query.filter_by(is_active=True).order_by(WeeklyRequirement.display_order.asc()).all()
-    
-    def __repr__(self):
-        return f'<WeeklyRequirement {self.content_type}: {self.required_count}>'
-
-
-# Helper functions that now read from database
-def get_video_content_type(duration_seconds):
-    """Determine video content type based on duration in seconds"""
-    # Get thresholds from settings or use defaults
-    shorts_max = int(SystemSettings.get('shorts_duration_max', '60'))
-    short_longs_max = int(SystemSettings.get('short_longs_duration_max', '300'))
-    mid_longs_max = int(SystemSettings.get('mid_longs_duration_max', '480'))
-    
-    if duration_seconds <= shorts_max:
-        return 'shorts'
-    elif duration_seconds <= short_longs_max:
-        return 'short_longs'
-    elif duration_seconds <= mid_longs_max:
-        return 'mid_longs'
-    else:
-        return 'longs'
-
-
-def get_rank_for_stats(points, subscribers, views, content_count):
-    """Determine current rank based on stats. Returns rank dict and next rank dict."""
-    ranks = Rank.get_all_ordered()
-    
-    if not ranks:
-        # Fallback if no ranks in database
-        unranked = {'code': 'UN', 'name': 'Unranked', 'points': 0, 'subscribers': 0, 'views': 0, 'content': 0, 'color': '#666666', 'icon': 'PNG/UN.png'}
-        return unranked, None
-    
-    current_rank = None
-    next_rank = None
-    
-    for i, rank in enumerate(ranks):
-        rank_dict = rank.to_dict()
-        # Check if ALL requirements for this rank are met
-        if (points >= rank.points_required and 
-            subscribers >= rank.subscribers_required and 
-            views >= rank.views_required and 
-            content_count >= rank.content_required):
-            current_rank = rank_dict
-            # Get next rank if exists
-            if i + 1 < len(ranks):
-                next_rank = ranks[i + 1].to_dict()
-        else:
-            # This rank not achieved, it's the next target
-            if current_rank is None:
-                # Get Unranked from database or use fallback
-                unranked_db = Rank.query.filter_by(code='UN').first()
-                if unranked_db:
-                    current_rank = unranked_db.to_dict()
-                else:
-                    current_rank = {'code': 'UN', 'name': 'Unranked', 'points': 0, 'subscribers': 0, 'views': 0, 'content': 0, 'color': '#666666', 'icon': 'PNG/UN.png'}
-            next_rank = rank_dict
-            break
-    
-    # If all ranks achieved
-    if current_rank and not next_rank and current_rank.get('is_max_rank'):
-        next_rank = None  # Max rank achieved
-    
-    return current_rank, next_rank
-
-
-def get_content_points():
-    """Get content point values from database"""
-    return ContentPointValue.get_all_as_dict()
-
-
-def get_daily_xp_goal():
-    """Get daily XP goal from settings"""
-    return int(SystemSettings.get('daily_xp_goal', '50'))
-
-
-def get_perfect_week_bonus():
-    """Get perfect week bonus XP from settings"""
-    return int(SystemSettings.get('perfect_week_bonus', '500'))
-
-
-def get_points_name():
-    """Get the name for points (XP, PT, etc.)"""
-    return SystemSettings.get('points_name', 'XP')
-
-
-
-
-class GamificationStats(db.Model):
-    """Gamification statistics and channel metrics"""
-    __tablename__ = 'gamification_stats'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    
-    # Channel stats (fetched from YouTube API)
-    subscriber_count = db.Column(db.Integer, default=0)
-    total_channel_views = db.Column(db.Integer, default=0)
-    
-    # Calculated stats
-    total_points = db.Column(db.Integer, default=0)
-    total_content_count = db.Column(db.Integer, default=0)
-    total_views = db.Column(db.Integer, default=0)
-    
-    # Current rank info
-    current_rank_code = db.Column(db.String(10), default='UNRANKED')
-    current_rank_name = db.Column(db.String(50), default='Unranked')
-    
-    # Content breakdown
-    blog_count = db.Column(db.Integer, default=0)
-    shorts_count = db.Column(db.Integer, default=0)
-    short_longs_count = db.Column(db.Integer, default=0)  # Videos < 5 min
-    podcast_count = db.Column(db.Integer, default=0)
-    mid_longs_count = db.Column(db.Integer, default=0)    # Videos 5-15 min
-    longs_count = db.Column(db.Integer, default=0)        # Videos > 15 min
-    
-    # Points breakdown
-    blog_points = db.Column(db.Integer, default=0)
-    shorts_points = db.Column(db.Integer, default=0)
-    short_longs_points = db.Column(db.Integer, default=0)
-    podcast_points = db.Column(db.Integer, default=0)
-    mid_longs_points = db.Column(db.Integer, default=0)
-    longs_points = db.Column(db.Integer, default=0)
-    subscriber_points = db.Column(db.Integer, default=0)  # 1 subscriber = 20 pts
-    views_points = db.Column(db.Integer, default=0)       # 1 view = 0.5 pts
-    daily_xp_points = db.Column(db.Integer, default=0)    # Accumulated daily XP from tasks
-    
-    # Timestamps
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    last_sync_at = db.Column(db.DateTime)
-    
-    def __repr__(self):
-        return f'<GamificationStats {self.current_rank_code} - {self.total_points} XP>'
-    
-    def calculate_rank(self):
-        """Calculate and update current rank based on stats"""
-        current_rank, next_rank = get_rank_for_stats(
-            self.total_points, 
-            self.subscriber_count, 
-            self.total_views, 
-            self.total_content_count
-        )
-        self.current_rank_code = current_rank['code']
-        self.current_rank_name = current_rank['name']
-        return current_rank, next_rank
-    
-    def get_progress_to_next_rank(self):
-        """Get progress percentages for each requirement to next rank"""
-        current_rank, next_rank = get_rank_for_stats(
-            self.total_points,
-            self.subscriber_count,
-            self.total_views,
-            self.total_content_count
-        )
-        
-        if not next_rank:
-            return None  # Max rank achieved
-        
-        def safe_progress(current, target):
-            if target == 0:
-                return 100
-            return min(100, int((current / target) * 100))
-        
-        return {
-            'points': safe_progress(self.total_points, next_rank['points']),
-            'subscribers': safe_progress(self.subscriber_count, next_rank['subscribers']),
-            'views': safe_progress(self.total_views, next_rank['views']),
-            'content': safe_progress(self.total_content_count, next_rank['content']),
-            'next_rank': next_rank
-        }
-    
-    def to_dict(self):
-        current_rank, next_rank = self.calculate_rank()
-        progress = self.get_progress_to_next_rank()
-        
-        return {
-            'total_points': self.total_points,
-            'subscriber_count': self.subscriber_count,
-            'total_views': self.total_views,
-            'total_content_count': self.total_content_count,
-            'current_rank': current_rank,
-            'next_rank': next_rank,
-            'progress': progress,
-            'content_breakdown': {
-                'blog': {'count': self.blog_count, 'points': self.blog_points},
-                'shorts': {'count': self.shorts_count, 'points': self.shorts_points},
-                'short_longs': {'count': self.short_longs_count, 'points': self.short_longs_points},
-                'podcast': {'count': self.podcast_count, 'points': self.podcast_points},
-                'mid_longs': {'count': self.mid_longs_count, 'points': self.mid_longs_points},
-                'longs': {'count': self.longs_count, 'points': self.longs_points},
-                'subscribers': {'count': self.subscriber_count, 'points': self.subscriber_points},
-                'views': {'count': self.total_views, 'points': self.views_points},
-            },
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
-        }
-
-class BlogPost(db.Model):
-    """Blog post model"""
-    __tablename__ = 'blog_posts'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
-    slug = db.Column(db.String(200), unique=True, nullable=False, index=True)
-    excerpt = db.Column(db.Text)
-    content = db.Column(db.Text, nullable=False)
-    featured_image = db.Column(db.String(500))
-    author = db.Column(db.String(100), default='Cryptasium Team')
-    published = db.Column(db.Boolean, default=False, index=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    views = db.Column(db.Integer, default=0)
-    likes = db.Column(db.Integer, default=0)
-    
-    def __repr__(self):
-        return f'<BlogPost {self.title}>'
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'title': self.title,
-            'slug': self.slug,
-            'excerpt': self.excerpt,
-            'content': self.content,
-            'featured_image': self.featured_image,
-            'author': self.author,
-            'published': self.published,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'views': self.views,
-            'likes': self.likes
-        }
-
-
-class YouTubeVideo(db.Model):
-    """YouTube video model"""
-    __tablename__ = 'youtube_videos'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text)
-    video_id = db.Column(db.String(50), unique=True, nullable=False, index=True)
-    thumbnail_url = db.Column(db.String(500))
-    duration = db.Column(db.String(20))  # e.g., "10:30"
-    duration_seconds = db.Column(db.Integer, default=0)  # Duration in seconds for categorization
-    content_type = db.Column(db.String(20), default='longs')  # shorts, short_longs, mid_longs, longs
-    published = db.Column(db.Boolean, default=False, index=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
-    views = db.Column(db.Integer, default=0)
-    likes = db.Column(db.Integer, default=0)
-    
-    def __repr__(self):
-        return f'<YouTubeVideo {self.title}>'
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'title': self.title,
-            'description': self.description,
-            'video_id': self.video_id,
-            'thumbnail_url': self.thumbnail_url,
-            'duration': self.duration,
-            'published': self.published,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'views': self.views,
-            'likes': self.likes
-        }
-
-
-class Podcast(db.Model):
-    """Podcast episode model"""
-    __tablename__ = 'podcasts'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text)
-    episode_number = db.Column(db.Integer)
-    audio_url = db.Column(db.String(500))
-    thumbnail_url = db.Column(db.String(500))
-    duration = db.Column(db.String(20))
-    published = db.Column(db.Boolean, default=False, index=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
-    views = db.Column(db.Integer, default=0)
-    likes = db.Column(db.Integer, default=0)
-    
-    def __repr__(self):
-        return f'<Podcast {self.title}>'
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'title': self.title,
-            'description': self.description,
-            'episode_number': self.episode_number,
-            'audio_url': self.audio_url,
-            'thumbnail_url': self.thumbnail_url,
-            'duration': self.duration,
-            'published': self.published,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'views': self.views
-        }
-
-
-class Short(db.Model):
-    """Short video model"""
-    __tablename__ = 'shorts'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text)
-    video_id = db.Column(db.String(50), unique=True, nullable=False, index=True)
-    thumbnail_url = db.Column(db.String(500))
-    duration = db.Column(db.String(20))
-    published = db.Column(db.Boolean, default=False, index=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
-    views = db.Column(db.Integer, default=0)
-    likes = db.Column(db.Integer, default=0)
-    
-    def __repr__(self):
-        return f'<Short {self.title}>'
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'title': self.title,
-            'description': self.description,
-            'video_id': self.video_id,
-            'thumbnail_url': self.thumbnail_url,
-            'duration': self.duration,
-            'published': self.published,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'views': self.views,
-            'likes': self.likes
-        }
-
-
-class CommunityPost(db.Model):
-    """Community post model"""
-    __tablename__ = 'community_posts'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
-    content = db.Column(db.Text, nullable=False)
-    author = db.Column(db.String(100), default='Community Member')
-    category = db.Column(db.String(50))  # e.g., "Discussion", "Question", "Announcement"
-    published = db.Column(db.Boolean, default=False, index=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
-    views = db.Column(db.Integer, default=0)
-    likes = db.Column(db.Integer, default=0)
-    
-    def __repr__(self):
-        return f'<CommunityPost {self.title}>'
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'title': self.title,
-            'content': self.content,
-            'author': self.author,
-            'category': self.category,
-            'published': self.published,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'views': self.views,
-            'likes': self.likes
-        }
-
-
-class TopicIdea(db.Model):
-    """Topic idea submission model"""
-    __tablename__ = 'topic_ideas'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    topic = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    email = db.Column(db.String(200))
-    name = db.Column(db.String(100))
-    status = db.Column(db.String(20), default='pending')  # pending, reviewed, approved, rejected
-    reviewed = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
-    reviewed_at = db.Column(db.DateTime)
-    
-    def __repr__(self):
-        return f'<TopicIdea {self.topic}>'
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'topic': self.topic,
-            'description': self.description,
-            'email': self.email,
-            'name': self.name,
-            'status': self.status,
-            'reviewed': self.reviewed,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'reviewed_at': self.reviewed_at.isoformat() if self.reviewed_at else None
-        }
-
-
-# ========== DAILY PROGRESS TRACKING SYSTEM ==========
-
-# Daily XP task definitions
-DAILY_XP_TASKS = {
-    'research': {'name': 'Research/Scripting', 'xp': 15, 'icon': '📚', 'description': 'Deep work for Long Form/Blog'},
-    'recording': {'name': 'Recording/Editing', 'xp': 20, 'icon': '🎬', 'description': 'Technical execution'},
-    'engagement': {'name': 'Community Engagement', 'xp': 10, 'icon': '💬', 'description': 'Replying to comments/Discord'},
-    'learning': {'name': 'Learning/Skill-Up', 'xp': 5, 'icon': '🎓', 'description': 'Watching masterclass or technical whitepaper'}
-}
-
-DAILY_XP_GOAL = 50
-
-# Weekly content requirements
-WEEKLY_CONTENT_REQUIREMENTS = {
-    'long_form': {'name': 'Long Form (YouTube)', 'count': 1, 'icon': '🎯', 'description': 'The "Boss Battle"'},
-    'shorts': {'name': 'Shorts (YouTube)', 'count': 2, 'icon': '⚔️', 'description': 'The "Skirmishes"'},
-    'blog': {'name': 'Blog (Technical Writing)', 'count': 1, 'icon': '📝', 'description': 'The "Knowledge Base"'},
-    'podcast': {'name': 'Podcast (Audio/Interview)', 'count': 1, 'icon': '🎙️', 'description': 'The "Networking/Philosophy"'}
-}
-
-# 9-Level Architect Rank System
-ARCHITECT_RANKS = [
-    {
-        'level': 1,
-        'code': 'BT',
-        'name': 'Beginner Token',
-        'milestone': 'Post for 4 weeks straight',
-        'focus': 'Consistency. Just finish the 5 items.',
-        'weeks_required': 4,
-        'color': '#8B4513',  # Saddle brown
-        'icon': '🌱'
-    },
-    {
-        'level': 2,
-        'code': 'HB',
-        'name': 'Habit Builder',
-        'milestone': '90-day streak of Daily XP',
-        'focus': 'Discipline. No missed days.',
-        'days_required': 90,
-        'color': '#CD853F',  # Peru
-        'icon': '🔥'
-    },
-    {
-        'level': 3,
-        'code': 'SO',
-        'name': 'Standing Out',
-        'milestone': 'Reach 1,000 Subs / 50 total videos',
-        'focus': 'Mastery. Refining the edit and audio.',
-        'subscribers_required': 1000,
-        'content_required': 50,
-        'color': '#B8860B',  # Dark goldenrod
-        'icon': '⭐'
-    },
-    {
-        'level': 4,
-        'code': 'TP',
-        'name': 'Team Player',
-        'milestone': 'First Collab or Guest on Podcast',
-        'focus': 'Leading. Working with others.',
-        'collabs_required': 1,
-        'color': '#4682B4',  # Steel blue
-        'icon': '🤝'
-    },
-    {
-        'level': 5,
-        'code': 'FL',
-        'name': 'Flight Lead',
-        'milestone': 'Launch a "Series" or Playlists',
-        'focus': 'Execution. Organizing content into themes.',
-        'series_required': 1,
-        'color': '#6A5ACD',  # Slate blue
-        'icon': '🚀'
-    },
-    {
-        'level': 6,
-        'code': 'MS',
-        'name': 'Master Strategist',
-        'milestone': 'Revenue Goal / Sponsorships',
-        'focus': 'Wealth. Making the channel profitable.',
-        'revenue_milestone': True,
-        'color': '#FFD700',  # Gold
-        'icon': '💰'
-    },
-    {
-        'level': 7,
-        'code': 'EA',
-        'name': 'Empire Architect',
-        'milestone': 'Hire an editor or researcher',
-        'focus': 'Building. Scaling the brand beyond yourself.',
-        'team_size': 1,
-        'color': '#9932CC',  # Dark orchid
-        'icon': '🏛️'
-    },
-    {
-        'level': 8,
-        'code': 'LF',
-        'name': 'Legacy Forger',
-        'milestone': '100k Subs / A "Masterwork" Video',
-        'focus': 'Legacy. One video that goes truly viral.',
-        'subscribers_required': 100000,
-        'viral_video': True,
-        'color': '#00CED1',  # Dark turquoise
-        'icon': '🔮'
-    },
-    {
-        'level': 9,
-        'code': 'AL',
-        'name': 'Alpha Legend',
-        'milestone': '1M Subs / Complete Freedom',
-        'focus': 'Alpha. You are the authority in tech.',
-        'subscribers_required': 1000000,
-        'color': '#FF2222',  # Cryptasium red
-        'icon': '👑'
-    }
-]
-
-
-class DailyXPLog(db.Model):
-    """Track daily XP tasks and streaks"""
-    __tablename__ = 'daily_xp_logs'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.Date, nullable=False, index=True, unique=True)
-    
-    # Task completions
-    research_completed = db.Column(db.Boolean, default=False)
-    recording_completed = db.Column(db.Boolean, default=False)
-    engagement_completed = db.Column(db.Boolean, default=False)
-    learning_completed = db.Column(db.Boolean, default=False)
-    
-    # Calculated XP for the day
-    total_xp = db.Column(db.Integer, default=0)
-    goal_met = db.Column(db.Boolean, default=False)
-    
-    # Notes for the day
-    notes = db.Column(db.Text)
-    
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    def calculate_xp(self):
-        """Calculate total XP based on completed tasks"""
-        xp = 0
-        
-        # Get XP values from database
-        research_task = DailyTask.get_task('research')
-        recording_task = DailyTask.get_task('recording')
-        engagement_task = DailyTask.get_task('engagement')
-        learning_task = DailyTask.get_task('learning')
-        
-        if self.research_completed and research_task:
-            xp += research_task.xp_value
-        if self.recording_completed and recording_task:
-            xp += recording_task.xp_value
-        if self.engagement_completed and engagement_task:
-            xp += engagement_task.xp_value
-        if self.learning_completed and learning_task:
-            xp += learning_task.xp_value
-        
-        self.total_xp = xp
-        self.goal_met = xp >= get_daily_xp_goal()
-        return xp
-    
-    def __repr__(self):
-        return f'<DailyXPLog {self.date} - {self.total_xp} XP>'
-
-
-class WeeklyProgress(db.Model):
-    """Track weekly content production (Full House)"""
-    __tablename__ = 'weekly_progress'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    
-    # Week identifier (ISO week format: YYYY-WW)
-    year = db.Column(db.Integer, nullable=False)
-    week_number = db.Column(db.Integer, nullable=False)
-    week_start = db.Column(db.Date, nullable=False, index=True)
-    week_end = db.Column(db.Date, nullable=False)
-    
-    # Content completion tracking
-    long_form_completed = db.Column(db.Integer, default=0)  # Target: 1
-    shorts_completed = db.Column(db.Integer, default=0)      # Target: 2
-    blog_completed = db.Column(db.Integer, default=0)        # Target: 1
-    podcast_completed = db.Column(db.Integer, default=0)     # Target: 1
-    
-    # Perfect week status
-    perfect_week = db.Column(db.Boolean, default=False)
-    multiplier_active = db.Column(db.Boolean, default=False)
-    
-    # Bonus XP from multiplier
-    bonus_xp = db.Column(db.Integer, default=0)
-    
-    notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    __table_args__ = (
-        db.UniqueConstraint('year', 'week_number', name='unique_year_week'),
-    )
-    
-    def check_perfect_week(self):
-        """Check if all weekly requirements are met"""
-        # Get requirements from database
-        requirements = {r.content_type: r.required_count for r in WeeklyRequirement.get_active_requirements()}
-        
-        self.perfect_week = (
-            self.long_form_completed >= requirements.get('long_form', 1) and
-            self.shorts_completed >= requirements.get('shorts', 2) and
-            self.blog_completed >= requirements.get('blog', 1) and
-            self.podcast_completed >= requirements.get('podcast', 1)
-        )
-        return self.perfect_week
-    
-    def get_completion_status(self):
-        """Get completion status for each content type"""
-        # Get requirements from database
-        requirements = {r.content_type: r.required_count for r in WeeklyRequirement.get_active_requirements()}
-        
-        return {
-            'long_form': {
-                'completed': self.long_form_completed,
-                'required': requirements.get('long_form', 1),
-                'done': self.long_form_completed >= requirements.get('long_form', 1)
-            },
-            'shorts': {
-                'completed': self.shorts_completed,
-                'required': requirements.get('shorts', 2),
-                'done': self.shorts_completed >= requirements.get('shorts', 2)
-            },
-            'blog': {
-                'completed': self.blog_completed,
-                'required': requirements.get('blog', 1),
-                'done': self.blog_completed >= requirements.get('blog', 1)
-            },
-            'podcast': {
-                'completed': self.podcast_completed,
-                'required': requirements.get('podcast', 1),
-                'done': self.podcast_completed >= requirements.get('podcast', 1)
-            }
-        }
-    
-    def __repr__(self):
-        return f'<WeeklyProgress {self.year}-W{self.week_number} - Perfect: {self.perfect_week}>'
-
-
-class MonthlyProgress(db.Model):
-    """Track monthly rank evaluation"""
-    __tablename__ = 'monthly_progress'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    
-    # Month identifier
-    year = db.Column(db.Integer, nullable=False)
-    month = db.Column(db.Integer, nullable=False)
-    
-    # Output Volume (e.g., 20/20 pieces of content)
-    content_target = db.Column(db.Integer, default=20)
-    content_produced = db.Column(db.Integer, default=0)
-    
-    # Retention Score (average view duration improvement)
-    avg_view_duration_start = db.Column(db.Float, default=0)  # At start of month
-    avg_view_duration_end = db.Column(db.Float, default=0)    # At end of month
-    retention_improved = db.Column(db.Boolean, default=False)
-    skill_point_earned = db.Column(db.Boolean, default=False)
-    
-    # Monthly Sprint - experimental content
-    experimental_content = db.Column(db.String(500))  # Description of experimental piece
-    experimental_completed = db.Column(db.Boolean, default=False)
-    experimental_type = db.Column(db.String(100))  # e.g., "collab", "new style", "series"
-    
-    # Perfect weeks count this month
-    perfect_weeks = db.Column(db.Integer, default=0)
-    
-    # Total XP earned this month
-    total_xp = db.Column(db.Integer, default=0)
-    
-    notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    __table_args__ = (
-        db.UniqueConstraint('year', 'month', name='unique_year_month'),
-    )
-    
-    def __repr__(self):
-        return f'<MonthlyProgress {self.year}-{self.month:02d}>'
-
-
-class YearlyMilestones(db.Model):
-    """Track yearly legacy milestones"""
-    __tablename__ = 'yearly_milestones'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    year = db.Column(db.Integer, nullable=False, unique=True)
-    
-    # Quarterly Boss Reviews - Brand Assets
-    q1_review_completed = db.Column(db.Boolean, default=False)
-    q1_review_notes = db.Column(db.Text)
-    q2_review_completed = db.Column(db.Boolean, default=False)
-    q2_review_notes = db.Column(db.Text)
-    q3_review_completed = db.Column(db.Boolean, default=False)
-    q3_review_notes = db.Column(db.Text)
-    q4_review_completed = db.Column(db.Boolean, default=False)
-    q4_review_notes = db.Column(db.Text)
-    
-    # Brand asset upgrades tracking
-    website_updated = db.Column(db.Boolean, default=False)
-    intro_outro_updated = db.Column(db.Boolean, default=False)
-    equipment_upgraded = db.Column(db.Boolean, default=False)
-    thumbnail_style_updated = db.Column(db.Boolean, default=False)
-    
-    # Veritasium Metric - Evergreen Value
-    evergreen_video_count = db.Column(db.Integer, default=0)  # Videos from 6+ months ago still getting views
-    evergreen_view_threshold = db.Column(db.Integer, default=100)  # Min views/month to count as evergreen
-    
-    # Fireship Metric - Production Speed
-    avg_production_time_start = db.Column(db.Float)  # Hours per video at year start
-    avg_production_time_current = db.Column(db.Float)  # Current hours per video
-    efficiency_improved = db.Column(db.Boolean, default=False)
-    
-    # Total stats for the year
-    total_xp = db.Column(db.Integer, default=0)
-    total_content = db.Column(db.Integer, default=0)
-    perfect_weeks = db.Column(db.Integer, default=0)
-    streak_longest = db.Column(db.Integer, default=0)
-    
-    notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    def __repr__(self):
-        return f'<YearlyMilestones {self.year}>'
-
-
-class ArchitectRankProgress(db.Model):
-    """Track progress toward 9-level Architect rank system"""
-    __tablename__ = 'architect_rank_progress'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    
-    # Current rank (1-9)
-    current_level = db.Column(db.Integer, default=0)
-    current_rank_code = db.Column(db.String(10), default='UNRANKED')
-    current_rank_name = db.Column(db.String(100), default='Unranked')
-    
-    # Streak tracking
-    daily_streak = db.Column(db.Integer, default=0)
-    weekly_streak = db.Column(db.Integer, default=0)  # Consecutive perfect weeks
-    longest_daily_streak = db.Column(db.Integer, default=0)
-    longest_weekly_streak = db.Column(db.Integer, default=0)
-    
-    # Milestone progress
-    weeks_consistent = db.Column(db.Integer, default=0)  # For L1: BT
-    days_xp_streak = db.Column(db.Integer, default=0)    # For L2: HB
-    collabs_completed = db.Column(db.Integer, default=0) # For L4: TP
-    series_launched = db.Column(db.Integer, default=0)   # For L5: FL
-    revenue_achieved = db.Column(db.Boolean, default=False)  # For L6: MS
-    team_hired = db.Column(db.Boolean, default=False)    # For L7: EA
-    viral_video_achieved = db.Column(db.Boolean, default=False)  # For L8: LF
-    
-    # Total XP accumulated (lifetime)
-    lifetime_xp = db.Column(db.Integer, default=0)
-    
-    # Last activity tracking
-    last_daily_log = db.Column(db.Date)
-    last_perfect_week = db.Column(db.Date)
-    
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    def calculate_current_rank(self, subscriber_count, total_content):
-        """Calculate current Architect rank based on progress"""
-        for rank in reversed(ARCHITECT_RANKS):
-            level = rank['level']
-            
-            # Check requirements for each level
-            if level == 1:  # BT - 4 weeks consistent
-                if self.weeks_consistent >= rank.get('weeks_required', 4):
-                    self.current_level = level
-                    self.current_rank_code = rank['code']
-                    self.current_rank_name = rank['name']
-                    continue
-                    
-            elif level == 2:  # HB - 90-day streak
-                if self.days_xp_streak >= rank.get('days_required', 90):
-                    self.current_level = level
-                    self.current_rank_code = rank['code']
-                    self.current_rank_name = rank['name']
-                    continue
-                    
-            elif level == 3:  # SO - 1k subs, 50 videos
-                if (subscriber_count >= rank.get('subscribers_required', 1000) and 
-                    total_content >= rank.get('content_required', 50)):
-                    self.current_level = level
-                    self.current_rank_code = rank['code']
-                    self.current_rank_name = rank['name']
-                    continue
-                    
-            elif level == 4:  # TP - First collab
-                if self.collabs_completed >= rank.get('collabs_required', 1):
-                    self.current_level = level
-                    self.current_rank_code = rank['code']
-                    self.current_rank_name = rank['name']
-                    continue
-                    
-            elif level == 5:  # FL - Launch series
-                if self.series_launched >= rank.get('series_required', 1):
-                    self.current_level = level
-                    self.current_rank_code = rank['code']
-                    self.current_rank_name = rank['name']
-                    continue
-                    
-            elif level == 6:  # MS - Revenue
-                if self.revenue_achieved:
-                    self.current_level = level
-                    self.current_rank_code = rank['code']
-                    self.current_rank_name = rank['name']
-                    continue
-                    
-            elif level == 7:  # EA - Hire team
-                if self.team_hired:
-                    self.current_level = level
-                    self.current_rank_code = rank['code']
-                    self.current_rank_name = rank['name']
-                    continue
-                    
-            elif level == 8:  # LF - 100k subs + viral
-                if (subscriber_count >= rank.get('subscribers_required', 100000) and 
-                    self.viral_video_achieved):
-                    self.current_level = level
-                    self.current_rank_code = rank['code']
-                    self.current_rank_name = rank['name']
-                    continue
-                    
-            elif level == 9:  # AL - 1M subs
-                if subscriber_count >= rank.get('subscribers_required', 1000000):
-                    self.current_level = level
-                    self.current_rank_code = rank['code']
-                    self.current_rank_name = rank['name']
-                    break
-        
-        return self.current_level, self.current_rank_code, self.current_rank_name
-    
-    def get_next_rank(self):
-        """Get the next rank to achieve"""
-        if self.current_level >= 9:
-            return None
-        
-        next_level = self.current_level + 1
-        for rank in ARCHITECT_RANKS:
-            if rank['level'] == next_level:
-                return rank
-        return ARCHITECT_RANKS[0] if self.current_level == 0 else None
-    
-    def __repr__(self):
-        return f'<ArchitectRankProgress L{self.current_level}: {self.current_rank_code}>'
-
-
-# ========== CONTENT CALENDAR ==========
 
 class ContentCalendarEntry(db.Model):
-    """Content calendar entries for scheduling content"""
     __tablename__ = 'content_calendar_entries'
-    
     id = db.Column(db.Integer, primary_key=True)
-    
-    # Date and time
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     scheduled_date = db.Column(db.Date, nullable=False, index=True)
-    scheduled_time = db.Column(db.Time)  # Optional time
-    
-    # Content info
-    content_type = db.Column(db.String(50), nullable=False)  # youtube, short, blog, podcast, custom
+    scheduled_time = db.Column(db.Time)
+    content_type = db.Column(db.String(50), nullable=False)
     title = db.Column(db.String(300), nullable=False)
     description = db.Column(db.Text)
-    
-    # Status
-    status = db.Column(db.String(20), default='planned')  # planned, in_progress, completed, missed
-    is_recurring = db.Column(db.Boolean, default=False)  # For fixed weekly schedule
-    recurring_day = db.Column(db.Integer)  # 0=Monday, 6=Sunday (for recurring entries)
-    
-    # Color for UI
+    status = db.Column(db.String(20), default='planned')
+    is_recurring = db.Column(db.Boolean, default=False)
+    recurring_day = db.Column(db.Integer)
     color = db.Column(db.String(20), default='#0ea5e9')
-    
-    # Link to actual content (optional)
-    linked_content_id = db.Column(db.Integer)  # ID of the actual blog/video/podcast when created
-    linked_content_type = db.Column(db.String(50))  # blog_post, youtube_video, short, podcast
-    
-    # Notes
     notes = db.Column(db.Text)
-    
-    # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     completed_at = db.Column(db.DateTime)
     
-    @staticmethod
-    def get_week_entries(start_date, end_date):
-        """Get all calendar entries for a week"""
-        return ContentCalendarEntry.query.filter(
-            ContentCalendarEntry.scheduled_date >= start_date,
-            ContentCalendarEntry.scheduled_date <= end_date
-        ).order_by(ContentCalendarEntry.scheduled_date, ContentCalendarEntry.scheduled_time).all()
-    
-    @staticmethod
-    def get_month_entries(year, month):
-        """Get all calendar entries for a month"""
-        from calendar import monthrange
-        start_date = datetime(year, month, 1).date()
-        _, last_day = monthrange(year, month)
-        end_date = datetime(year, month, last_day).date()
-        
-        return ContentCalendarEntry.query.filter(
-            ContentCalendarEntry.scheduled_date >= start_date,
-            ContentCalendarEntry.scheduled_date <= end_date
-        ).order_by(ContentCalendarEntry.scheduled_date, ContentCalendarEntry.scheduled_time).all()
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'scheduled_date': self.scheduled_date.isoformat() if self.scheduled_date else None,
-            'scheduled_time': self.scheduled_time.strftime('%H:%M') if self.scheduled_time else None,
-            'content_type': self.content_type,
-            'title': self.title,
-            'description': self.description,
-            'status': self.status,
-            'is_recurring': self.is_recurring,
-            'recurring_day': self.recurring_day,
-            'color': self.color,
-            'notes': self.notes,
-            'linked_content_id': self.linked_content_id,
-            'linked_content_type': self.linked_content_type
-        }
-    
-    def __repr__(self):
-        return f'<ContentCalendarEntry {self.scheduled_date}: {self.title}>'
 
+# ========== HELPER FUNCTIONS ==========
 
-class WeeklyPostingSchedule(db.Model):
-    """Default weekly posting schedule (fixed days for each content type)"""
-    __tablename__ = 'weekly_posting_schedule'
+def init_user_gamification(user_id):
+    """
+    Initialize default gamification settings for a new user.
+    Creates default trackable types, ranks, and daily tasks.
+    Includes content creation, sales, and finance tracking examples.
+    """
+    # Create user settings
+    settings = UserSettings(user_id=user_id)
+    db.session.add(settings)
     
-    id = db.Column(db.Integer, primary_key=True)
+    # Create default trackable types - Content Creation
+    content_types = [
+        {
+            'name': 'Blog Post', 'slug': 'blog_post', 'icon': 'ph-article', 
+            'color': '#3b82f6', 'xp_per_unit': 50, 'category': 'content',
+            'description': 'Written blog articles and posts'
+        },
+        {
+            'name': 'YouTube Video', 'slug': 'youtube_video', 'icon': 'ph-youtube-logo', 
+            'color': '#ef4444', 'xp_per_unit': 100, 'category': 'content',
+            'description': 'Long-form YouTube videos (8+ minutes)'
+        },
+        {
+            'name': 'YouTube Short', 'slug': 'youtube_short', 'icon': 'ph-lightning', 
+            'color': '#f97316', 'xp_per_unit': 25, 'category': 'content',
+            'description': 'Short-form vertical videos (<60 seconds)'
+        },
+        {
+            'name': 'Podcast Episode', 'slug': 'podcast', 'icon': 'ph-microphone', 
+            'color': '#a855f7', 'xp_per_unit': 75, 'category': 'content',
+            'description': 'Audio podcast episodes'
+        },
+    ]
     
-    # Content type: youtube, short1, short2, blog, podcast
-    content_type = db.Column(db.String(50), unique=True, nullable=False)
-    content_label = db.Column(db.String(100), nullable=False)  # Display label
+    # Sales & Business Tracking Examples
+    sales_types = [
+        {
+            'name': 'Sale', 'slug': 'sale', 'icon': 'ph-shopping-cart', 
+            'color': '#22c55e', 'category': 'sales',
+            'description': 'Track sales with value-based XP',
+            'xp_mode': 'value_based', 'xp_multiplier': 0.1, 'xp_per_unit': 10,
+            'track_value': True, 'value_label': 'Sale Amount', 'value_prefix': '$',
+            'is_pinned': False
+        },
+        {
+            'name': 'Client Call', 'slug': 'client_call', 'icon': 'ph-phone', 
+            'color': '#0ea5e9', 'xp_per_unit': 15, 'category': 'sales',
+            'description': 'Client calls and meetings',
+            'is_pinned': False
+        },
+    ]
     
-    # Day of week (0=Monday, 6=Sunday)
-    day_of_week = db.Column(db.Integer, nullable=False)
+    # Finance Tracking Examples (not pinned by default)
+    finance_types = [
+        {
+            'name': 'Income', 'slug': 'income', 'icon': 'ph-arrow-circle-up', 
+            'color': '#22c55e', 'category': 'finance',
+            'description': 'Track income received',
+            'xp_mode': 'value_based', 'xp_multiplier': 0.05, 'xp_per_unit': 5,
+            'track_value': True, 'value_label': 'Amount', 'value_prefix': '$',
+            'is_pinned': False
+        },
+        {
+            'name': 'Expense', 'slug': 'expense', 'icon': 'ph-arrow-circle-down', 
+            'color': '#ef4444', 'category': 'finance',
+            'description': 'Track expenses (no XP, just tracking)',
+            'xp_per_unit': 0, 'xp_mode': 'fixed',
+            'track_value': True, 'value_label': 'Amount', 'value_prefix': '$',
+            'allows_negative': True, 'is_pinned': False
+        },
+    ]
     
-    # Preferred time
-    preferred_time = db.Column(db.Time)
+    # Combine all default types
+    all_types = content_types + sales_types + finance_types
     
-    # Color for UI
-    color = db.Column(db.String(20), default='#0ea5e9')
-    icon = db.Column(db.String(50), default='ph-calendar')
+    for i, t in enumerate(all_types):
+        trackable = TrackableType(
+            user_id=user_id,
+            name=t['name'],
+            slug=t['slug'],
+            icon=t['icon'],
+            color=t['color'],
+            xp_per_unit=t.get('xp_per_unit', 10),
+            xp_mode=t.get('xp_mode', 'fixed'),
+            xp_multiplier=t.get('xp_multiplier', 1.0),
+            category=t['category'],
+            description=t.get('description', ''),
+            track_value=t.get('track_value', False),
+            value_label=t.get('value_label', 'Value'),
+            value_prefix=t.get('value_prefix', '$'),
+            allows_negative=t.get('allows_negative', False),
+            display_order=i,
+            is_pinned=t.get('is_pinned', True) if 'is_pinned' in t else (t['category'] == 'content')
+        )
+        db.session.add(trackable)
     
-    # Active status
-    is_active = db.Column(db.Boolean, default=True)
+    # Create default ranks
+    default_ranks = [
+        {'level': 1, 'name': 'Novice', 'code': 'NV', 'min_xp': 0, 'color': '#6b7280'},
+        {'level': 2, 'name': 'Apprentice', 'code': 'AP', 'min_xp': 500, 'color': '#22c55e'},
+        {'level': 3, 'name': 'Journeyman', 'code': 'JM', 'min_xp': 2000, 'color': '#3b82f6'},
+        {'level': 4, 'name': 'Expert', 'code': 'EX', 'min_xp': 5000, 'color': '#a855f7'},
+        {'level': 5, 'name': 'Master', 'code': 'MS', 'min_xp': 10000, 'color': '#f59e0b'},
+        {'level': 6, 'name': 'Legend', 'code': 'LG', 'min_xp': 25000, 'color': '#ef4444', 'is_max_rank': True},
+    ]
     
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    for r in default_ranks:
+        rank = CustomRank(
+            user_id=user_id,
+            level=r['level'],
+            name=r['name'],
+            code=r['code'],
+            min_xp=r['min_xp'],
+            color=r['color'],
+            is_max_rank=r.get('is_max_rank', False)
+        )
+        db.session.add(rank)
     
-    @staticmethod
-    def get_all_active():
-        """Get all active posting schedules"""
-        return WeeklyPostingSchedule.query.filter_by(is_active=True).order_by(WeeklyPostingSchedule.day_of_week).all()
+    # Create default daily tasks
+    default_tasks = [
+        {'name': 'Research', 'slug': 'research', 'icon': 'ph-magnifying-glass', 'color': '#3b82f6', 'xp_value': 15},
+        {'name': 'Create', 'slug': 'create', 'icon': 'ph-pencil-line', 'color': '#22c55e', 'xp_value': 25},
+        {'name': 'Engage', 'slug': 'engage', 'icon': 'ph-chat-circle', 'color': '#f97316', 'xp_value': 10},
+        {'name': 'Learn', 'slug': 'learn', 'icon': 'ph-book-open', 'color': '#a855f7', 'xp_value': 10},
+    ]
     
-    def to_dict(self):
-        days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-        return {
-            'id': self.id,
-            'content_type': self.content_type,
-            'content_label': self.content_label,
-            'day_of_week': self.day_of_week,
-            'day_name': days[self.day_of_week] if 0 <= self.day_of_week <= 6 else 'Unknown',
-            'preferred_time': self.preferred_time.strftime('%H:%M') if self.preferred_time else None,
-            'color': self.color,
-            'icon': self.icon,
-            'is_active': self.is_active
-        }
+    for i, t in enumerate(default_tasks):
+        task = UserDailyTask(
+            user_id=user_id,
+            name=t['name'],
+            slug=t['slug'],
+            icon=t['icon'],
+            color=t['color'],
+            xp_value=t['xp_value'],
+            display_order=i
+        )
+        db.session.add(task)
     
-    def __repr__(self):
-        return f'<WeeklyPostingSchedule {self.content_type} on day {self.day_of_week}>'
-
-
-class WeeklyContentPlan(db.Model):
-    """Weekly content plan - titles for the 5 pieces of content each week"""
-    __tablename__ = 'weekly_content_plans'
+    # Create default streak tracker
+    streak = Streak(
+        user_id=user_id,
+        streak_type='daily_xp',
+        current_count=0,
+        longest_count=0
+    )
+    db.session.add(streak)
     
-    id = db.Column(db.Integer, primary_key=True)
-    
-    # Week identifier (start of week date - Monday)
-    week_start = db.Column(db.Date, nullable=False, index=True)
-    
-    # Content type from WeeklyPostingSchedule
-    content_type = db.Column(db.String(50), nullable=False)
-    
-    # Planned title and notes
-    title = db.Column(db.String(300), nullable=False)
-    notes = db.Column(db.Text)
-    
-    # Status
-    status = db.Column(db.String(20), default='planned')  # planned, in_progress, completed
-    
-    # Link to calendar entry when created
-    calendar_entry_id = db.Column(db.Integer, db.ForeignKey('content_calendar_entries.id'))
-    
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    @staticmethod
-    def get_week_plan(week_start):
-        """Get all planned content for a specific week"""
-        return WeeklyContentPlan.query.filter_by(week_start=week_start).all()
-    
-    @staticmethod
-    def get_or_create_week_plan(week_start):
-        """Get or create content plan entries for a week based on posting schedule"""
-        existing = WeeklyContentPlan.query.filter_by(week_start=week_start).all()
-        if existing:
-            return existing
-        
-        # Create empty slots for each scheduled content type
-        schedules = WeeklyPostingSchedule.get_all_active()
-        plans = []
-        for schedule in schedules:
-            plan = WeeklyContentPlan(
-                week_start=week_start,
-                content_type=schedule.content_type,
-                title='',  # Empty until planned
-                status='planned'
-            )
-            db.session.add(plan)
-            plans.append(plan)
-        
-        db.session.commit()
-        return plans
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'week_start': self.week_start.isoformat() if self.week_start else None,
-            'content_type': self.content_type,
-            'title': self.title,
-            'notes': self.notes,
-            'status': self.status,
-            'calendar_entry_id': self.calendar_entry_id
-        }
-    
-    def __repr__(self):
-        return f'<WeeklyContentPlan {self.week_start}: {self.content_type}>'
+    db.session.commit()

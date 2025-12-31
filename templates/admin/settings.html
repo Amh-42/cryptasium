@@ -1,0 +1,319 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Settings | Cryptasium{% endblock %}
+{% block page_title %}Gamification Settings{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-container {
+        max-width: 700px;
+    }
+    
+    .settings-section {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 20px;
+    }
+    
+    .settings-section-title {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .settings-section-title i {
+        color: var(--accent);
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group:last-child {
+        margin-bottom: 0;
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+    
+    .form-row .form-group {
+        margin-bottom: 0;
+    }
+    
+    label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .help-text {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 6px;
+    }
+    
+    .settings-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        margin-bottom: 12px;
+    }
+    
+    .settings-toggle:last-child {
+        margin-bottom: 0;
+    }
+    
+    .toggle-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .toggle-label {
+        font-weight: 500;
+        font-size: 14px;
+    }
+    
+    .toggle-description {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+    
+    .toggle-switch {
+        position: relative;
+        width: 50px;
+        height: 28px;
+    }
+    
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 28px;
+        transition: 0.3s;
+    }
+    
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 22px;
+        width: 22px;
+        left: 3px;
+        bottom: 3px;
+        background: white;
+        border-radius: 50%;
+        transition: 0.3s;
+    }
+    
+    .toggle-switch input:checked + .toggle-slider {
+        background: var(--accent);
+    }
+    
+    .toggle-switch input:checked + .toggle-slider:before {
+        transform: translateX(22px);
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+    }
+    
+    .icon-preview {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        margin-top: 8px;
+    }
+    
+    .icon-preview i {
+        font-size: 20px;
+        color: var(--accent);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <form method="post">
+        <!-- Appearance Settings -->
+        <div class="settings-section">
+            <h3 class="settings-section-title">
+                <i class="ph ph-palette"></i> Appearance
+            </h3>
+            
+            <div class="form-group">
+                <label><i class="ph ph-paint-bucket"></i> Accent Color</label>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <div style="position: relative; width: 50px; height: 50px; border-radius: 10px; border: 2px solid var(--border); overflow: hidden; cursor: pointer;" id="accentPreview">
+                        <input type="color" name="accent_color" id="accentColorInput" value="{{ settings.accent_color if settings.accent_color else '#e90e0e' }}" 
+                               style="position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer;">
+                    </div>
+                    <div>
+                        <input type="text" id="accentColorText" value="{{ settings.accent_color if settings.accent_color else '#e90e0e' }}" 
+                               style="width: 100px;" readonly>
+                        <div class="help-text">Primary color for buttons and highlights</div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+                    {% set preset_colors = ['#e90e0e', '#dc2626', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#0ea5e9', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#ec4899'] %}
+                    {% for color in preset_colors %}
+                    <button type="button" class="color-preset" data-color="{{ color }}" 
+                            style="width: 32px; height: 32px; border-radius: 8px; border: 2px solid transparent; background: {{ color }}; cursor: pointer;"
+                            onclick="setAccentColor('{{ color }}')"></button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Points Settings -->
+        <div class="settings-section">
+            <h3 class="settings-section-title">
+                <i class="ph ph-lightning"></i> Points System
+            </h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label><i class="ph ph-text-aa"></i> Points Name</label>
+                    <input type="text" name="points_name" value="{{ settings.points_name }}" 
+                           placeholder="XP, Points, Coins, etc.">
+                    <div class="help-text">What to call your points</div>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="ph ph-shapes"></i> Points Icon</label>
+                    <input type="text" name="points_icon" value="{{ settings.points_icon }}" 
+                           placeholder="ph-lightning">
+                    <div class="icon-preview">
+                        <i class="{{ settings.points_icon }}"></i>
+                        <span>{{ settings.points_name }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Goals Settings -->
+        <div class="settings-section">
+            <h3 class="settings-section-title">
+                <i class="ph ph-target"></i> Goals & Streaks
+            </h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label><i class="ph ph-calendar-check"></i> Daily XP Goal</label>
+                    <input type="number" name="daily_xp_goal" value="{{ settings.daily_xp_goal }}" min="0">
+                    <div class="help-text">XP needed to complete daily goal</div>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="ph ph-fire"></i> Streak Bonus (per day)</label>
+                    <input type="number" name="streak_bonus_per_day" value="{{ settings.streak_bonus_per_day }}" min="0">
+                    <div class="help-text">Extra XP per streak day</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Bonuses -->
+        <div class="settings-section">
+            <h3 class="settings-section-title">
+                <i class="ph ph-gift"></i> Bonuses
+            </h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label><i class="ph ph-star"></i> Perfect Day Bonus</label>
+                    <input type="number" name="perfect_day_bonus" value="{{ settings.perfect_day_bonus }}" min="0">
+                    <div class="help-text">Bonus XP for completing daily goal</div>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="ph ph-trophy"></i> Perfect Week Bonus</label>
+                    <input type="number" name="perfect_week_bonus" value="{{ settings.perfect_week_bonus }}" min="0">
+                    <div class="help-text">Bonus XP for 7 consecutive days</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Display Preferences -->
+        <div class="settings-section">
+            <h3 class="settings-section-title">
+                <i class="ph ph-eye"></i> Display Preferences
+            </h3>
+            
+            <div class="settings-toggle">
+                <div class="toggle-info">
+                    <div class="toggle-label">XP Animations</div>
+                    <div class="toggle-description">Show animated popups when earning XP</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" name="show_xp_animations" {% if settings.show_xp_animations %}checked{% endif %}>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="ph ph-check"></i> Save Settings
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Accent color picker
+    const accentInput = document.getElementById('accentColorInput');
+    const accentPreview = document.getElementById('accentPreview');
+    const accentText = document.getElementById('accentColorText');
+    
+    if (accentInput) {
+        accentPreview.style.background = accentInput.value;
+        
+        accentInput.addEventListener('input', function() {
+            accentPreview.style.background = this.value;
+            accentText.value = this.value;
+            updateAccentPreview(this.value);
+        });
+    }
+    
+    function setAccentColor(color) {
+        accentInput.value = color;
+        accentPreview.style.background = color;
+        accentText.value = color;
+        updateAccentPreview(color);
+    }
+    
+    function updateAccentPreview(color) {
+        document.documentElement.style.setProperty('--accent', color);
+    }
+</script>
+{% endblock %}
+

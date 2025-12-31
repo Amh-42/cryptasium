@@ -1,0 +1,190 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Achievements | Cryptasium{% endblock %}
+{% block page_title %}Achievements{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-intro {
+        margin-bottom: 24px;
+        color: var(--text-muted);
+        font-size: 14px;
+    }
+    
+    .achievements-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+    }
+    
+    .achievement-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 20px;
+        transition: all 0.2s;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .achievement-card:hover {
+        border-color: var(--accent);
+        background: rgba(255, 255, 255, 0.04);
+    }
+    
+    .achievement-card.unlocked {
+        border-color: rgba(16, 185, 129, 0.4);
+        background: rgba(16, 185, 129, 0.05);
+    }
+    
+    .achievement-card.unlocked::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, transparent 50%, rgba(16, 185, 129, 0.2) 50%);
+    }
+    
+    .achievement-card.unlocked::after {
+        content: '✓';
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        color: #10b981;
+        font-size: 14px;
+        font-weight: 700;
+    }
+    
+    .achievement-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        margin-bottom: 16px;
+    }
+    
+    .achievement-name {
+        font-weight: 700;
+        font-size: 16px;
+        margin-bottom: 6px;
+    }
+    
+    .achievement-description {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-bottom: 12px;
+        line-height: 1.4;
+    }
+    
+    .achievement-reward {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: rgba(251, 191, 36, 0.15);
+        color: #fbbf24;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+    
+    .achievement-actions {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        display: flex;
+        gap: 6px;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    
+    .achievement-card:hover .achievement-actions {
+        opacity: 1;
+    }
+    
+    .add-achievement-card {
+        background: transparent;
+        border: 2px dashed var(--border);
+        border-radius: 14px;
+        padding: 40px 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        color: var(--text-muted);
+        min-height: 200px;
+    }
+    
+    .add-achievement-card:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: rgba(var(--accent-rgb), 0.05);
+    }
+    
+    .add-achievement-card i {
+        font-size: 36px;
+    }
+    
+    .add-achievement-card span {
+        font-size: 14px;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Achievements</h1>
+        <p class="page-intro">Create achievements to unlock as you reach milestones!</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('admin_achievement_add') }}" class="btn btn-primary">
+            <i class="ph ph-plus"></i> Add Achievement
+        </a>
+    </div>
+</div>
+
+<div class="achievements-grid">
+    {% for achievement in achievements %}
+    <div class="achievement-card {% if achievement.id in unlocked %}unlocked{% endif %}">
+        <div class="achievement-icon" style="background: {{ achievement.color }}20; color: {{ achievement.color }}">
+            <i class="{{ achievement.icon }}"></i>
+        </div>
+        
+        <div class="achievement-name">{{ achievement.name }}</div>
+        
+        {% if achievement.description %}
+        <div class="achievement-description">{{ achievement.description }}</div>
+        {% endif %}
+        
+        <div class="achievement-reward">
+            <i class="ph ph-gift"></i>
+            +{{ achievement.xp_reward }} XP
+        </div>
+        
+        <div class="achievement-actions">
+            <a href="#" class="action-btn edit" title="Edit">
+                <i class="ph ph-pencil"></i>
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+    
+    <!-- Add New Card -->
+    <a href="{{ url_for('admin_achievement_add') }}" class="add-achievement-card">
+        <i class="ph ph-trophy"></i>
+        <span>Add Achievement</span>
+    </a>
+</div>
+{% endblock %}
+

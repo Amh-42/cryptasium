@@ -1,0 +1,271 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Add Achievement | Cryptasium{% endblock %}
+{% block page_title %}Add Achievement{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 600px;
+    }
+    
+    .form-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 28px;
+    }
+    
+    .form-section {
+        margin-bottom: 24px;
+    }
+    
+    .form-section-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border);
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+    
+    .color-input-wrapper {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+    
+    .color-preview {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        border: 2px solid var(--border);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .color-preview input {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+    
+    .criteria-options {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .criteria-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 2px solid var(--border);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .criteria-option:hover {
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .criteria-option.selected {
+        border-color: var(--accent);
+        background: rgba(var(--accent-rgb), 0.1);
+    }
+    
+    .criteria-option input {
+        display: none;
+    }
+    
+    .criteria-radio {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .criteria-option.selected .criteria-radio {
+        border-color: var(--accent);
+    }
+    
+    .criteria-option.selected .criteria-radio::after {
+        content: '';
+        width: 10px;
+        height: 10px;
+        background: var(--accent);
+        border-radius: 50%;
+    }
+    
+    .criteria-info {
+        flex: 1;
+    }
+    
+    .criteria-label {
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 2px;
+    }
+    
+    .criteria-desc {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+    
+    .threshold-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 16px;
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <form method="post" class="form-card">
+        <div class="form-section">
+            <div class="form-section-title">Basic Info</div>
+            
+            <div class="form-group">
+                <label><i class="ph ph-text-aa"></i> Achievement Name</label>
+                <input type="text" name="name" required placeholder="e.g., First Steps, Content Creator">
+            </div>
+            
+            <div class="form-group">
+                <label><i class="ph ph-text-align-left"></i> Description</label>
+                <textarea name="description" rows="2" placeholder="What is this achievement for?"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label><i class="ph ph-gift"></i> XP Reward</label>
+                <input type="number" name="xp_reward" value="100" min="0">
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <div class="form-section-title">Criteria</div>
+            
+            <div class="criteria-options">
+                <label class="criteria-option selected" onclick="selectCriteria('xp_total')">
+                    <input type="radio" name="criteria_type" value="xp_total" checked>
+                    <div class="criteria-radio"></div>
+                    <div class="criteria-info">
+                        <div class="criteria-label">Total XP</div>
+                        <div class="criteria-desc">Unlock when reaching a certain XP amount</div>
+                    </div>
+                </label>
+                
+                <label class="criteria-option" onclick="selectCriteria('total_count')">
+                    <input type="radio" name="criteria_type" value="total_count">
+                    <div class="criteria-radio"></div>
+                    <div class="criteria-info">
+                        <div class="criteria-label">Trackable Count</div>
+                        <div class="criteria-desc">Unlock after completing X items of a trackable</div>
+                    </div>
+                </label>
+                
+                <label class="criteria-option" onclick="selectCriteria('streak')">
+                    <input type="radio" name="criteria_type" value="streak">
+                    <div class="criteria-radio"></div>
+                    <div class="criteria-info">
+                        <div class="criteria-label">Streak</div>
+                        <div class="criteria-desc">Unlock after maintaining a streak of X days</div>
+                    </div>
+                </label>
+            </div>
+            
+            <div class="threshold-row">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Threshold</label>
+                    <input type="number" name="threshold" value="100" min="1">
+                </div>
+                
+                <div class="form-group" id="trackableSelect" style="margin-bottom: 0; display: none;">
+                    <label>Trackable</label>
+                    <select name="trackable_slug">
+                        <option value="">Select trackable...</option>
+                        {% for t in trackables %}
+                        <option value="{{ t.slug }}">{{ t.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <div class="form-section-title">Appearance</div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label><i class="ph ph-palette"></i> Color</label>
+                    <div class="color-input-wrapper">
+                        <div class="color-preview" style="background: #fbbf24">
+                            <input type="color" name="color" value="#fbbf24">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="ph ph-shapes"></i> Icon</label>
+                    <input type="text" name="icon" value="ph-trophy" placeholder="ph-trophy">
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="ph ph-check"></i> Create Achievement
+            </button>
+            <a href="{{ url_for('admin_achievements') }}" class="btn btn-outline">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function selectCriteria(type) {
+        document.querySelectorAll('.criteria-option').forEach(el => el.classList.remove('selected'));
+        event.currentTarget.classList.add('selected');
+        
+        // Show/hide trackable select
+        document.getElementById('trackableSelect').style.display = 
+            type === 'total_count' ? 'block' : 'none';
+    }
+</script>
+{% endblock %}
+

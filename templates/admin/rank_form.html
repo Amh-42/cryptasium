@@ -1,0 +1,219 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ 'Edit' if rank else 'Add' }} Rank | Cryptasium{% endblock %}
+{% block page_title %}{{ 'Edit' if rank else 'Add' }} Rank{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 540px;
+    }
+    
+    .form-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 28px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+    
+    .color-input-wrapper {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+    
+    .color-preview {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        border: 2px solid var(--border);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .color-preview input {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+    }
+    
+    .rank-preview {
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    
+    .preview-badge {
+        width: 60px;
+        height: 60px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: 700;
+    }
+    
+    .preview-info {
+        flex: 1;
+    }
+    
+    .preview-name {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+    
+    .preview-level {
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <form method="post" class="form-card">
+        <div class="rank-preview" id="rankPreview">
+            <div class="preview-badge" id="previewBadge" style="background: {{ rank.color if rank else '#666666' }}30; color: {{ rank.color if rank else '#666666' }}">
+                <span id="previewCode">{{ rank.code if rank else 'L1' }}</span>
+            </div>
+            <div class="preview-info">
+                <div class="preview-name" id="previewName" style="color: {{ rank.color if rank else '#666666' }}">{{ rank.name if rank else 'Rank Name' }}</div>
+                <div class="preview-level">Level <span id="previewLevel">{{ rank.level if rank else 1 }}</span> • <span id="previewXP">{{ rank.min_xp if rank else 0 }}</span> XP</div>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label><i class="ph ph-hash"></i> Level</label>
+                <input type="number" name="level" id="levelInput" value="{{ rank.level if rank else 1 }}" min="1" required>
+            </div>
+            
+            <div class="form-group">
+                <label><i class="ph ph-code"></i> Code</label>
+                <input type="text" name="code" id="codeInput" value="{{ rank.code if rank else '' }}" 
+                       placeholder="e.g., NV, EX, MS" maxlength="4">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label><i class="ph ph-text-aa"></i> Rank Name</label>
+            <input type="text" name="name" id="nameInput" value="{{ rank.name if rank else '' }}" required 
+                   placeholder="e.g., Novice, Expert, Master">
+        </div>
+        
+        <div class="form-group">
+            <label><i class="ph ph-lightning"></i> Minimum XP Required</label>
+            <input type="number" name="min_xp" id="xpInput" value="{{ rank.min_xp if rank else 0 }}" min="0" required>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">XP needed to reach this rank</div>
+        </div>
+        
+        <div class="form-group">
+            <label><i class="ph ph-text-align-left"></i> Description (Optional)</label>
+            <input type="text" name="description" value="{{ rank.description if rank else '' }}" 
+                   placeholder="Description of this rank">
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label><i class="ph ph-palette"></i> Color</label>
+                <div class="color-input-wrapper">
+                    <div class="color-preview" id="colorPreview" style="background: {{ rank.color if rank else '#666666' }}">
+                        <input type="color" name="color" id="colorInput" value="{{ rank.color if rank else '#666666' }}">
+                    </div>
+                    <input type="text" id="colorText" value="{{ rank.color if rank else '#666666' }}" style="width: 100px;" readonly>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label><i class="ph ph-shapes"></i> Icon (Optional)</label>
+                <input type="text" name="icon" value="{{ rank.icon if rank else '' }}" 
+                       placeholder="e.g., ph-crown, ph-star">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="checkbox-item" style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                <input type="checkbox" name="is_max_rank" {% if rank and rank.is_max_rank %}checked{% endif %} 
+                       style="width: 20px; height: 20px; accent-color: var(--accent);">
+                <span>This is the maximum rank</span>
+            </label>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="ph ph-check"></i> {{ 'Save Changes' if rank else 'Create Rank' }}
+            </button>
+            <a href="{{ url_for('admin_ranks') }}" class="btn btn-outline">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const colorInput = document.getElementById('colorInput');
+    const colorPreview = document.getElementById('colorPreview');
+    const colorText = document.getElementById('colorText');
+    const previewBadge = document.getElementById('previewBadge');
+    const previewName = document.getElementById('previewName');
+    const previewCode = document.getElementById('previewCode');
+    const previewLevel = document.getElementById('previewLevel');
+    const previewXP = document.getElementById('previewXP');
+    
+    colorInput.addEventListener('input', function() {
+        colorPreview.style.background = this.value;
+        colorText.value = this.value;
+        previewBadge.style.background = this.value + '30';
+        previewBadge.style.color = this.value;
+        previewName.style.color = this.value;
+    });
+    
+    document.getElementById('nameInput').addEventListener('input', function() {
+        previewName.textContent = this.value || 'Rank Name';
+    });
+    
+    document.getElementById('codeInput').addEventListener('input', function() {
+        previewCode.textContent = this.value || 'L' + document.getElementById('levelInput').value;
+    });
+    
+    document.getElementById('levelInput').addEventListener('input', function() {
+        previewLevel.textContent = this.value;
+        if (!document.getElementById('codeInput').value) {
+            previewCode.textContent = 'L' + this.value;
+        }
+    });
+    
+    document.getElementById('xpInput').addEventListener('input', function() {
+        previewXP.textContent = parseInt(this.value).toLocaleString();
+    });
+</script>
+{% endblock %}
+

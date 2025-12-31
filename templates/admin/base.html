@@ -8,14 +8,29 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    {% if current_user.is_authenticated and current_user.user_settings and current_user.user_settings.accent_color %}
+    {% set ac = current_user.user_settings.accent_color %}
+    {% set r = ac[1:3]|int(base=16) %}
+    {% set g = ac[3:5]|int(base=16) %}
+    {% set b = ac[5:7]|int(base=16) %}
+    <style>
+        :root, [data-theme="dark"], [data-theme="light"], [data-theme="system"] {
+            --accent: {{ ac }} !important;
+            --accent-rgb: {{ r }}, {{ g }}, {{ b }} !important;
+        }
+    </style>
+    {% endif %}
 
     <style>
-        :root {
+        /* Dark Theme (Default) */
+        :root, [data-theme="dark"] {
             --bg-body: #050505;
             --bg-card: #0f0f0f;
             --bg-card-hover: #141414;
             --border: #262626;
             --accent: #e90e0e;
+            --accent-rgb: 233, 14, 14;
             --accent-hover: #c70202;
             --text-main: #ffffff;
             --text-muted: #a3a3a3;
@@ -24,6 +39,32 @@
             --success: #10b981;
             --warning: #f59e0b;
             --danger: #ef4444;
+        }
+        
+        /* Light Theme */
+        [data-theme="light"] {
+            --bg-body: #f5f5f5;
+            --bg-card: #ffffff;
+            --bg-card-hover: #fafafa;
+            --border: #e5e5e5;
+            --accent: #dc2626;
+            --accent-hover: #b91c1c;
+            --text-main: #171717;
+            --text-muted: #737373;
+        }
+        
+        /* System theme - respects OS preference */
+        @media (prefers-color-scheme: light) {
+            [data-theme="system"] {
+                --bg-body: #f5f5f5;
+                --bg-card: #ffffff;
+                --bg-card-hover: #fafafa;
+                --border: #e5e5e5;
+                --accent: #dc2626;
+                --accent-hover: #b91c1c;
+                --text-main: #171717;
+                --text-muted: #737373;
+            }
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -70,13 +111,58 @@
             font-size: 14px; font-weight: 500; position: relative;
         }
         .nav-item:hover { background: rgba(255,255,255,0.05); color: var(--text-main); }
-        .nav-item.active { background: rgba(233, 14, 14, 0.1); color: var(--accent); }
+        .nav-item.active { background: rgba(var(--accent-rgb), 0.1); color: var(--accent); }
         .nav-item.active::before {
             content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
             width: 3px; height: 60%; background: var(--accent); border-radius: 0 2px 2px 0;
         }
         .nav-item i { font-size: 20px; width: 24px; display: flex; align-items: center; justify-content: center; }
-        .nav-badge { margin-left: auto; background: rgba(233, 14, 14, 0.2); color: var(--accent); padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .nav-badge { margin-left: auto; background: rgba(var(--accent-rgb), 0.2); color: var(--accent); padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        
+        /* Theme Toggle */
+        .theme-toggle-wrapper {
+            padding: 12px 16px;
+            margin-bottom: 8px;
+        }
+        .theme-toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+        .theme-toggle-label i { font-size: 20px; }
+        .theme-toggle-options {
+            display: flex;
+            gap: 6px;
+            background: rgba(255,255,255,0.05);
+            padding: 4px;
+            border-radius: 10px;
+        }
+        .theme-option {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        .theme-option:hover {
+            background: rgba(255,255,255,0.1);
+            color: var(--text-main);
+        }
+        .theme-option.active {
+            background: var(--accent);
+            color: #fff;
+        }
 
         /* Main */
         .admin-main { flex: 1; margin-left: 280px; min-height: 100vh; position: relative; z-index: 1; overflow-x: hidden; max-width: calc(100vw - 280px); }
@@ -121,7 +207,7 @@
             border-radius: 8px; color: var(--text-muted); font-size: 13px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;
         }
         .filter-btn:hover { background: rgba(255,255,255,0.08); border-color: var(--accent); color: var(--text-main); }
-        .filter-btn.active { background: rgba(233, 14, 14, 0.1); border-color: var(--accent); color: var(--accent); }
+        .filter-btn.active { background: rgba(var(--accent-rgb), 0.1); border-color: var(--accent); color: var(--accent); }
         .table-wrapper { overflow-x: auto; }
         .filament-table { width: 100%; border-collapse: collapse; }
         .filament-table thead { background: rgba(255,255,255,0.02); }
@@ -169,7 +255,7 @@
         .btn-primary { background: var(--accent); color: #fff; }
         .btn-primary:hover { background: var(--accent-hover); }
         .btn-outline { border: 1px solid var(--border); color: var(--text-main); background: transparent; }
-        .btn-outline:hover { border-color: var(--accent); background: rgba(233, 14, 14, 0.1); }
+        .btn-outline:hover { border-color: var(--accent); background: rgba(var(--accent-rgb), 0.1); }
         .btn-sm { padding: 6px 12px; font-size: 13px; }
 
         /* Alerts */
@@ -181,13 +267,34 @@
         .alert-message.error { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
 
         /* Inputs */
-        input[type="text"], input[type="password"], input[type="email"], input[type="url"], input[type="number"], textarea, select {
+        input[type="text"], input[type="password"], input[type="email"], input[type="url"], input[type="number"], input[type="date"], input[type="time"], input[type="datetime-local"], textarea, select {
             width: 100%; padding: 12px; background: rgba(255,255,255,0.05);
-            border: 1px solid var(--border); border-radius: 8px; color: #fff;
+            border: 1px solid var(--border); border-radius: 8px; color: var(--text-main);
             font-size: 14px; font-family: inherit; box-sizing: border-box;
         }
         input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
         label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px; }
+        
+        /* Date input styling */
+        input[type="date"], input[type="time"], input[type="datetime-local"] {
+            color-scheme: dark;
+        }
+        [data-theme="light"] input[type="date"],
+        [data-theme="light"] input[type="time"],
+        [data-theme="light"] input[type="datetime-local"] {
+            color-scheme: light;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator,
+        input[type="time"]::-webkit-calendar-picker-indicator,
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.7);
+            cursor: pointer;
+        }
+        [data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator,
+        [data-theme="light"] input[type="time"]::-webkit-calendar-picker-indicator,
+        [data-theme="light"] input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            filter: none;
+        }
 
         /* Mobile Bottom Navigation */
         .mobile-bottom-nav {
@@ -239,6 +346,7 @@
             .admin-content { padding: 20px 12px 100px; overflow-x: hidden; }
             .mobile-bottom-nav { display: block; }
             .admin-header { padding: 16px 12px; }
+            .admin-header > div:last-child { display: none; } /* Hide View Site/Logout in header on mobile */
             body { padding-bottom: 80px; }
             
             /* Table mobile optimization */
@@ -262,9 +370,59 @@
         
         @media (min-width: 1025px) { .mobile-bottom-nav { display: none !important; } }
         
+        /* Mobile Theme Toggle Styles */
+        .mobile-theme-toggle {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+            margin-top: 8px;
+        }
+        .mobile-theme-label {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .mobile-theme-options {
+            display: flex;
+            gap: 8px;
+        }
+        .mobile-theme-btn {
+            flex: 1;
+            padding: 10px 8px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.03);
+            color: var(--text-muted);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .mobile-theme-btn:hover {
+            background: rgba(255,255,255,0.08);
+            color: var(--text-main);
+        }
+        .mobile-theme-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+        .mobile-more-footer {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            padding: 16px;
+            border-top: 1px solid var(--border);
+            margin-top: 8px;
+        }
+        
         @media (max-width: 768px) {
             .admin-header { flex-wrap: wrap; gap: 8px; }
-            .admin-header > div:last-child { display: none; } /* Hide header buttons on mobile */
             .table-header { flex-direction: column; align-items: stretch; gap: 10px; }
             .table-search { max-width: 100%; min-width: 100%; }
             .table-search input { padding: 8px 12px 8px 36px; font-size: 14px; }
@@ -430,7 +588,7 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    {% if session.get('admin_logged_in') %}
+    {% if current_user.is_authenticated %}
     <div class="admin-layout">
         <aside class="admin-sidebar" id="adminSidebar">
             <div class="sidebar-header">
@@ -440,25 +598,36 @@
                 <div class="nav-group">
                     <div class="nav-group-label">Main</div>
                     <a href="{{ url_for('admin_dashboard') }}" class="nav-item" data-route="dashboard"><i class="ph ph-gauge"></i><span>Dashboard</span></a>
-                    <a href="{{ url_for('admin_progress') }}" class="nav-item" data-route="progress"><i class="ph ph-game-controller"></i><span>Progress</span></a>
-                    <a href="{{ url_for('admin_calendar') }}" class="nav-item" data-route="calendar"><i class="ph ph-calendar-blank"></i><span>Calendar</span></a>
+                    <a href="{{ url_for('admin_log_entry') }}" class="nav-item" data-route="log"><i class="ph ph-plus-circle"></i><span>Log Entry</span></a>
+                    <a href="{{ url_for('admin_progress') }}" class="nav-item" data-route="progress"><i class="ph ph-chart-line"></i><span>Progress</span></a>
                 </div>
                 <div class="nav-group">
-                    <div class="nav-group-label">Content</div>
-                    <a href="{{ url_for('admin_blog_list') }}" class="nav-item" data-route="blog"><i class="ph ph-article"></i><span>Blog Posts</span></a>
-                    <a href="{{ url_for('admin_youtube_list') }}" class="nav-item" data-route="youtube"><i class="ph ph-youtube-logo"></i><span>YouTube Videos</span></a>
-                    <a href="{{ url_for('admin_podcast_list') }}" class="nav-item" data-route="podcast"><i class="ph ph-microphone"></i><span>Podcasts</span></a>
-                    <a href="{{ url_for('admin_shorts_list') }}" class="nav-item" data-route="shorts"><i class="ph ph-video"></i><span>Shorts</span></a>
-                    <a href="{{ url_for('admin_community_list') }}" class="nav-item" data-route="community"><i class="ph ph-users"></i><span>Community</span></a>
-                </div>
-                <div class="nav-group">
-                    <div class="nav-group-label">Submissions</div>
-                    <a href="{{ url_for('admin_ideas_list') }}" class="nav-item" data-route="ideas">
-                        <i class="ph ph-lightbulb"></i><span>Topic Ideas</span>
-                        {% if ideas_count and ideas_count > 0 %}<span class="nav-badge">{{ ideas_count }}</span>{% endif %}
-                    </a>
+                    <div class="nav-group-label">Gamification</div>
+                    <a href="{{ url_for('admin_trackables') }}" class="nav-item" data-route="trackable"><i class="ph ph-package"></i><span>Trackables</span></a>
+                    <a href="{{ url_for('admin_daily_tasks') }}" class="nav-item" data-route="daily-task"><i class="ph ph-check-square"></i><span>Tasks</span></a>
+                    <a href="{{ url_for('admin_ranks') }}" class="nav-item" data-route="ranks"><i class="ph ph-crown"></i><span>Ranks</span></a>
+                    <a href="{{ url_for('admin_achievements') }}" class="nav-item" data-route="achievement"><i class="ph ph-trophy"></i><span>Achievements</span></a>
+                    <a href="{{ url_for('admin_settings') }}" class="nav-item" data-route="settings"><i class="ph ph-gear"></i><span>Settings</span></a>
                 </div>
                 <div class="nav-group" style="margin-top: auto; padding-top: 24px; border-top: 1px solid var(--border);">
+                    <!-- Theme Toggle -->
+                    <div class="theme-toggle-wrapper">
+                        <div class="theme-toggle-label">
+                            <i class="ph ph-paint-brush"></i>
+                            <span>Theme</span>
+                        </div>
+                        <div class="theme-toggle-options">
+                            <button class="theme-option" data-theme="light" title="Light">
+                                <i class="ph ph-sun"></i>
+                            </button>
+                            <button class="theme-option" data-theme="dark" title="Dark">
+                                <i class="ph ph-moon"></i>
+                            </button>
+                            <button class="theme-option" data-theme="system" title="System">
+                                <i class="ph ph-desktop"></i>
+                            </button>
+                        </div>
+                    </div>
                     <a href="{{ url_for('index') }}" class="nav-item"><i class="ph ph-globe"></i><span>View Site</span></a>
                     <a href="{{ url_for('admin_logout') }}" class="nav-item"><i class="ph ph-sign-out"></i><span>Logout</span></a>
                 </div>
@@ -495,10 +664,9 @@
     <nav class="mobile-bottom-nav">
         <div class="mobile-nav-items">
             <a href="{{ url_for('admin_dashboard') }}" class="mobile-nav-item" data-route="dashboard"><i class="ph ph-gauge"></i><span>Dashboard</span></a>
-            <a href="{{ url_for('admin_progress') }}" class="mobile-nav-item" data-route="progress"><i class="ph ph-game-controller"></i><span>Progress</span></a>
-            <a href="{{ url_for('admin_calendar') }}" class="mobile-nav-item" data-route="calendar"><i class="ph ph-calendar-blank"></i><span>Calendar</span></a>
-            <a href="{{ url_for('admin_youtube_list') }}" class="mobile-nav-item" data-route="youtube"><i class="ph ph-youtube-logo"></i><span>Videos</span></a>
-            <a href="{{ url_for('admin_blog_list') }}" class="mobile-nav-item" data-route="blog"><i class="ph ph-article"></i><span>Blog</span></a>
+            <a href="{{ url_for('admin_log_entry') }}" class="mobile-nav-item" data-route="log"><i class="ph ph-plus-circle"></i><span>Log</span></a>
+            <a href="{{ url_for('admin_progress') }}" class="mobile-nav-item" data-route="progress"><i class="ph ph-chart-line"></i><span>Progress</span></a>
+            <a href="{{ url_for('admin_trackables') }}" class="mobile-nav-item" data-route="trackable"><i class="ph ph-package"></i><span>Track</span></a>
             <button class="mobile-nav-item" id="mobileMoreBtn"><i class="ph ph-dots-three"></i><span>More</span></button>
         </div>
     </nav>
@@ -508,16 +676,25 @@
         <div class="mobile-more-overlay"></div>
         <div class="mobile-more-content">
             <div class="mobile-more-items">
-                <a href="{{ url_for('admin_podcast_list') }}" class="mobile-more-item"><i class="ph ph-microphone"></i><span>Podcast</span></a>
-                <a href="{{ url_for('admin_shorts_list') }}" class="mobile-more-item"><i class="ph ph-video"></i><span>Shorts</span></a>
-                <a href="{{ url_for('admin_community_list') }}" class="mobile-more-item"><i class="ph ph-users"></i><span>Community</span></a>
-                <a href="{{ url_for('admin_ideas_list') }}" class="mobile-more-item">
-                    <i class="ph ph-lightbulb"></i><span>Topic Ideas</span>
-                    {% if ideas_count and ideas_count > 0 %}
-                    <span style="margin-left: auto; background: rgba(255, 34, 34, 0.2); color: var(--accent); padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">{{ ideas_count }}</span>
-                    {% endif %}
-                </a>
+                <a href="{{ url_for('admin_daily_tasks') }}" class="mobile-more-item"><i class="ph ph-check-square"></i><span>Tasks</span></a>
+                <a href="{{ url_for('admin_ranks') }}" class="mobile-more-item"><i class="ph ph-crown"></i><span>Ranks</span></a>
+                <a href="{{ url_for('admin_achievements') }}" class="mobile-more-item"><i class="ph ph-trophy"></i><span>Achievements</span></a>
+                <a href="{{ url_for('admin_settings') }}" class="mobile-more-item"><i class="ph ph-gear"></i><span>Settings</span></a>
+            </div>
+            
+            <!-- Theme Toggle for Mobile -->
+            <div class="mobile-theme-toggle">
+                <div class="mobile-theme-label"><i class="ph ph-paint-brush"></i> Theme</div>
+                <div class="mobile-theme-options">
+                    <button class="mobile-theme-btn theme-option" data-theme="light"><i class="ph ph-sun"></i> Light</button>
+                    <button class="mobile-theme-btn theme-option" data-theme="dark"><i class="ph ph-moon"></i> Dark</button>
+                    <button class="mobile-theme-btn theme-option" data-theme="system"><i class="ph ph-desktop"></i> System</button>
+                </div>
+            </div>
+            
+            <div class="mobile-more-footer">
                 <a href="{{ url_for('index') }}" class="mobile-more-item"><i class="ph ph-globe"></i><span>View Site</span></a>
+                <a href="{{ url_for('admin_logout') }}" class="mobile-more-item" style="color: var(--danger);"><i class="ph ph-sign-out"></i><span>Logout</span></a>
             </div>
         </div>
     </div>
@@ -537,6 +714,31 @@
     {% endif %}
 
     <script>
+        // Theme Management
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+        
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            
+            // Update active state on buttons
+            document.querySelectorAll('.theme-option').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.theme === theme);
+            });
+        }
+        
+        // Initialize theme buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.querySelectorAll('.theme-option').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.theme === savedTheme);
+                btn.addEventListener('click', () => setTheme(btn.dataset.theme));
+            });
+        });
+        
         // Sidebar toggle
         const sidebarToggle = document.getElementById('sidebarToggle');
         const sidebar = document.getElementById('adminSidebar');
