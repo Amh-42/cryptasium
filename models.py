@@ -40,6 +40,7 @@ class User(UserMixin, db.Model):
     streaks = db.relationship('Streak', backref='user', lazy=True, cascade='all, delete-orphan')
     daily_logs = db.relationship('DailyLog', backref='user', lazy=True, cascade='all, delete-orphan')
     user_settings = db.relationship('UserSettings', backref='user', lazy=True, uselist=False, cascade='all, delete-orphan')
+    dashboard_images = db.relationship('DashboardImage', backref='user', lazy=True, cascade='all, delete-orphan')
     
     # Legacy relationships (kept for backward compatibility)
     blog_posts = db.relationship('BlogPost', backref='user', lazy=True)
@@ -709,6 +710,7 @@ class UserSettings(db.Model):
     show_xp_animations = db.Column(db.Boolean, default=True)
     dark_mode = db.Column(db.Boolean, default=True)
     compact_view = db.Column(db.Boolean, default=False)
+    show_dashboard_header = db.Column(db.Boolean, default=True)
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -717,6 +719,21 @@ class UserSettings(db.Model):
     def __repr__(self):
         return f'<UserSettings {self.user_id}>'
     
+
+class DashboardImage(db.Model):
+    """
+    Images uploaded by user for their dashboard header.
+    """
+    __tablename__ = 'dashboard_images'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    image_url = db.Column(db.String(500), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<DashboardImage {self.id}>'
+
 
 # ========== LEGACY CONTENT MODELS (kept for backward compatibility) ==========
 

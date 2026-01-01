@@ -14,10 +14,11 @@ from models import (
     db, BlogPost, YouTubeVideo, Podcast, Short, CommunityPost, TopicIdea,
     SystemSettings, User, TrackableType, TrackableEntry, CustomRank,
     UserDailyTask, TaskCompletion, DailyLog, Achievement, UserAchievement, Streak,
-    UserSettings, ContentCalendarEntry, init_user_gamification
+    UserSettings, ContentCalendarEntry, init_user_gamification, DashboardImage
 )
 import youtube_service
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from werkzeug.utils import secure_filename
 
 
 def create_app(config_name=None):
@@ -386,14 +387,96 @@ def create_app(config_name=None):
             user_id=current_user.id
         ).all()
 
+        # Get dashboard images
+        dashboard_images = DashboardImage.query.filter_by(
+            user_id=current_user.id
+        ).order_by(DashboardImage.created_at.desc()).all()
+
         return render_template('admin/dashboard.html', 
             stats=stats,
             weekly=weekly,
             daily_tasks=daily_tasks,
             pinned_trackables=pinned_trackables,
             recent_entries=recent_entries,
-            unlocked_achievements=unlocked_achievements
+            unlocked_achievements=unlocked_achievements,
+            dashboard_images=dashboard_images
         )
+
+    # ========== DASHBOARD CUSTOMIZATION ==========
+
+    @app.route('/admin/dashboard/upload_image', methods=['POST'])
+    @admin_required
+    def upload_dashboard_image():
+        if 'image' not in request.files:
+            flash('No file part', 'error')
+            return redirect(url_for('admin_dashboard'))
+            
+        file = request.files['image']
+        if file.filename == '':
+            flash('No selected file', 'error')
+            return redirect(url_for('admin_dashboard'))
+            
+        if file:
+            filename = secure_filename(file.filename)
+            # Ensure unique filename
+            timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+            filename = f"{timestamp}_{filename}"
+            
+            # Save file
+            upload_folder = os.path.join(app.static_folder, 'uploads', 'dashboard')
+            os.makedirs(upload_folder, exist_ok=True)
+            
+            file.save(os.path.join(upload_folder, filename))
+            
+            # Create DB record
+            image_url = url_for('static', filename=f'uploads/dashboard/{filename}')
+            dashboard_image = DashboardImage(
+                user_id=current_user.id,
+                image_url=image_url
+            )
+            db.session.add(dashboard_image)
+            db.session.commit()
+            
+            flash('Image uploaded successfully', 'success')
+            
+        return redirect(url_for('admin_dashboard'))
+
+    @app.route('/admin/dashboard/delete_image/<int:image_id>', methods=['POST'])
+    @admin_required
+    def delete_dashboard_image(image_id):
+        image = DashboardImage.query.get_or_404(image_id)
+        if image.user_id != current_user.id:
+            abort(403)
+            
+        # Delete from DB
+        db.session.delete(image)
+        db.session.commit()
+        
+        # Optional: Delete file from filesystem
+        try:
+            # Extract filename from URL (simplified assuming standard structure)
+            filename = image.image_url.split('/')[-1]
+            filepath = os.path.join(app.static_folder, 'uploads', 'dashboard', filename)
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        except Exception as e:
+            print(f"Error deleting file: {e}")
+        
+        flash('Image removed from dashboard', 'success')
+        return redirect(url_for('admin_dashboard'))
+
+    @app.route('/admin/dashboard/toggle_header', methods=['POST'])
+    @admin_required
+    def toggle_dashboard_header():
+        settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+        if settings:
+            settings.show_dashboard_header = not settings.show_dashboard_header
+            db.session.commit()
+            status = "shown" if settings.show_dashboard_header else "hidden"
+            flash(f'Header section {status}', 'success')
+        
+        return redirect(url_for('admin_dashboard'))
+
 
     # ========== TRACKABLE TYPES MANAGEMENT ==========
     
@@ -946,6 +1029,7 @@ def create_app(config_name=None):
             settings.perfect_week_bonus = int(request.form.get('perfect_week_bonus', 500))
             settings.streak_bonus_per_day = int(request.form.get('streak_bonus_per_day', 5))
             settings.show_xp_animations = request.form.get('show_xp_animations') == 'on'
+            settings.show_dashboard_header = request.form.get('show_dashboard_header') == 'on'
             db.session.commit()
             flash('Settings saved!', 'success')
             return redirect(url_for('admin_settings'))
