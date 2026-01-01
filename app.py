@@ -960,28 +960,69 @@ def create_app(config_name=None):
         stats = get_user_stats()
         weekly = get_weekly_stats()
         
-        # Get last 30 days of daily logs
-        thirty_days_ago = date.today() - timedelta(days=30)
+        # Get last 365 days of daily logs
+        end_date = date.today()
+        start_date = end_date - timedelta(days=364) # 365 days total including today
+        
         daily_logs = DailyLog.query.filter(
             DailyLog.user_id == current_user.id,
-            DailyLog.date >= thirty_days_ago
-        ).order_by(DailyLog.date.desc()).all()
+            DailyLog.date >= start_date,
+            DailyLog.date <= end_date
+        ).all()
         
-        # Build calendar data
-        calendar_data = {}
+        # Build calendar data lookup
+        logs_by_date = {log.date.isoformat(): log for log in daily_logs}
+        
+        # Calculate max XP for scaling
+        max_xp = 0
         for log in daily_logs:
-            calendar_data[log.date.isoformat()] = {
-                'xp': log.total_xp,
-                'goal_met': log.goal_met
+            if log.total_xp > max_xp:
+                max_xp = log.total_xp
+        
+        # Determine quartiles for activity levels (0-4)
+        # Level 0: 0 XP
+        # Level 1: 1 - 25% of max
+        # Level 2: 25% - 50% of max
+        # Level 3: 50% - 75% of max
+        # Level 4: 75% - 100% of max
+        
+        calendar_data = {}
+        # Pre-fill all dates
+        current_date = start_date
+        while current_date <= end_date:
+            date_str = current_date.isoformat()
+            log = logs_by_date.get(date_str)
+            
+            xp = log.total_xp if log else 0
+            level = 0
+            
+            if xp > 0:
+                if max_xp <= 0:
+                    level = 1
+                else:
+                    ratio = xp / max_xp
+                    if ratio <= 0.25: level = 1
+                    elif ratio <= 0.50: level = 2
+                    elif ratio <= 0.75: level = 3
+                    else: level = 4
+            
+            calendar_data[date_str] = {
+                'xp': xp,
+                'goal_met': log.goal_met if log else False,
+                'level': level,
+                'date': current_date
             }
+            
+            current_date += timedelta(days=1)
         
         return render_template('admin/progress.html',
             stats=stats,
             weekly=weekly,
-            daily_logs=daily_logs,
             calendar_data=calendar_data,
-            now=date.today(),
-            timedelta=timedelta
+            start_date=start_date,
+            end_date=end_date,
+            timedelta=timedelta,
+            daily_logs=daily_logs # Keeping for compatible view below if needed
         )
 
     # ========== CALENDAR ==========

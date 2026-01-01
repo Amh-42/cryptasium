@@ -10,34 +10,38 @@
         grid-template-columns: 1fr 320px;
         gap: 24px;
     }
-    
+
     .progress-main {
         display: flex;
         flex-direction: column;
         gap: 24px;
+        min-width: 0;
+        /* Critical for grid item to shrink */
     }
-    
+
     .progress-sidebar {
         display: flex;
         flex-direction: column;
         gap: 20px;
+        min-width: 0;
     }
-    
+
     /* Stats Cards Row */
     .stats-row {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
         gap: 16px;
     }
-    
+
     .stat-card {
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid var(--border);
         border-radius: 14px;
         padding: 20px;
         text-align: center;
+        min-width: 0;
     }
-    
+
     .stat-icon {
         width: 44px;
         height: 44px;
@@ -48,35 +52,41 @@
         justify-content: center;
         font-size: 22px;
     }
-    
+
     .stat-value {
         font-size: 28px;
         font-weight: 800;
         margin-bottom: 4px;
     }
-    
+
     .stat-label {
         font-size: 12px;
         color: var(--text-muted);
         text-transform: uppercase;
         letter-spacing: 0.3px;
     }
-    
-    /* Calendar Heatmap */
+
+    /* Calendar Heatmap - GitHub Style */
     .calendar-section {
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid var(--border);
         border-radius: 14px;
         padding: 24px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
     }
-    
+
     .section-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 10px;
     }
-    
+
     .section-title {
         font-size: 18px;
         font-weight: 700;
@@ -84,124 +94,218 @@
         align-items: center;
         gap: 10px;
     }
-    
+
     .section-title i {
         color: var(--accent);
     }
-    
-    .calendar-grid {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 6px;
+
+    .contribution-graph-container {
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
     }
-    
-    .calendar-day-label {
-        font-size: 11px;
+
+    .graph-scroll-area {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 10px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Custom Scrollbar */
+    .graph-scroll-area::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .graph-scroll-area::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 4px;
+    }
+
+    .graph-scroll-area::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+    }
+
+    .graph-scroll-area::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .graph-wrapper {
+        display: flex;
+        gap: 10px;
+        min-width: 750px;
+        padding-right: 2px;
+    }
+
+    .day-labels {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        /* Align with bottom grid */
+        gap: 4px;
+        /* Match grid gap */
+        padding-top: 20px;
+        /* Offset for month labels row */
+        padding-bottom: 4px;
+    }
+
+    .day-label-item {
+        height: 12px;
+        /* Match tile size approximate */
+        line-height: 12px;
+        font-size: 10px;
         color: var(--text-muted);
-        text-align: center;
-        padding: 8px 0;
-    }
-    
-    .calendar-day {
-        aspect-ratio: 1;
-        border-radius: 6px;
-        background: rgba(255, 255, 255, 0.05);
+        text-align: right;
+        min-width: 28px;
         display: flex;
         align-items: center;
-        justify-content: center;
-        font-size: 12px;
+        justify-content: flex-end;
+    }
+
+    .graph-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .months-row {
+        display: grid;
+        grid-template-columns: repeat(53, 1fr);
+        margin-bottom: 8px;
+        height: 15px;
+    }
+
+    .month-label {
+        font-size: 10px;
         color: var(--text-muted);
-        position: relative;
-        cursor: default;
+        text-align: left;
     }
-    
-    .calendar-day.empty {
-        background: transparent;
+
+    .contribution-grid {
+        display: grid;
+        grid-template-rows: repeat(7, 1fr);
+        grid-auto-flow: column;
+        /* Fill columns first (weeks) */
+        gap: 4px;
     }
-    
-    .calendar-day.has-activity {
+
+    .contribution-day {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.05);
+        /* Level 0 */
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: transform 0.1s;
+    }
+
+    .contribution-day:hover {
+        border-color: rgba(255, 255, 255, 0.5);
+        transform: scale(1.2);
+        z-index: 10;
+        cursor: pointer;
+    }
+
+    /* Activity Levels using CSS Variables for Accent */
+    .level-0 {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .level-1 {
         background: rgba(var(--accent-rgb), 0.2);
+        border-color: rgba(var(--accent-rgb), 0.3);
     }
-    
-    .calendar-day.goal-met {
-        background: rgba(16, 185, 129, 0.3);
-        color: #10b981;
+
+    .level-2 {
+        background: rgba(var(--accent-rgb), 0.4);
+        border-color: rgba(var(--accent-rgb), 0.5);
     }
-    
-    .calendar-day.today {
-        border: 2px solid var(--accent);
+
+    .level-3 {
+        background: rgba(var(--accent-rgb), 0.7);
+        border-color: rgba(var(--accent-rgb), 0.8);
     }
-    
+
+    .level-4 {
+        background: rgb(var(--accent-rgb));
+        border-color: rgb(var(--accent-rgb));
+    }
+
+    /* Legend */
     .calendar-legend {
         display: flex;
-        gap: 20px;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 4px;
         margin-top: 16px;
-        padding-top: 16px;
-        border-top: 1px solid var(--border);
-        font-size: 12px;
+        font-size: 11px;
         color: var(--text-muted);
+        flex-wrap: wrap;
     }
-    
+
     .legend-item {
         display: flex;
         align-items: center;
-        gap: 6px;
     }
-    
+
     .legend-box {
-        width: 16px;
-        height: 16px;
-        border-radius: 4px;
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
     }
-    
+
     /* Weekly Summary */
     .weekly-summary {
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid var(--border);
         border-radius: 14px;
         padding: 24px;
+        min-width: 0;
     }
-    
+
     .weekly-stats {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
         gap: 16px;
     }
-    
+
     .weekly-stat {
         text-align: center;
         padding: 16px;
         background: rgba(255, 255, 255, 0.02);
         border-radius: 10px;
+        min-width: 0;
     }
-    
+
     .weekly-stat-value {
         font-size: 24px;
         font-weight: 700;
         margin-bottom: 4px;
     }
-    
+
     .weekly-stat-label {
         font-size: 11px;
         color: var(--text-muted);
         text-transform: uppercase;
     }
-    
+
     /* Sidebar Panels */
     .sidebar-panel {
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid var(--border);
         border-radius: 14px;
         padding: 20px;
+        min-width: 0;
     }
-    
+
     .panel-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 16px;
     }
-    
+
     .panel-title {
         font-size: 15px;
         font-weight: 700;
@@ -209,18 +313,18 @@
         align-items: center;
         gap: 8px;
     }
-    
+
     .panel-title i {
         color: var(--accent);
     }
-    
+
     /* Recent Logs List */
     .logs-list {
         display: flex;
         flex-direction: column;
         gap: 10px;
     }
-    
+
     .log-item {
         display: flex;
         align-items: center;
@@ -229,71 +333,72 @@
         background: rgba(255, 255, 255, 0.02);
         border-radius: 10px;
     }
-    
+
     .log-date {
         width: 50px;
         text-align: center;
     }
-    
+
     .log-date-day {
         font-size: 20px;
         font-weight: 700;
+        font-weight: 700;
     }
-    
+
     .log-date-month {
         font-size: 11px;
         color: var(--text-muted);
         text-transform: uppercase;
     }
-    
+
     .log-info {
         flex: 1;
     }
-    
+
     .log-xp {
         font-weight: 600;
         margin-bottom: 2px;
     }
-    
+
     .log-status {
         font-size: 12px;
         color: var(--text-muted);
     }
-    
+
     .log-badge {
         padding: 4px 10px;
         border-radius: 8px;
         font-size: 11px;
         font-weight: 600;
     }
-    
+
     .log-badge.goal-met {
         background: rgba(16, 185, 129, 0.15);
         color: #10b981;
     }
-    
+
     .log-badge.partial {
         background: rgba(245, 158, 11, 0.15);
         color: #f59e0b;
     }
-    
+
     @media (max-width: 1200px) {
         .progress-grid {
             grid-template-columns: 1fr;
         }
-        
+
         .progress-sidebar {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 16px;
         }
     }
-    
+
     @media (max-width: 768px) {
         .stats-row {
             grid-template-columns: repeat(2, 1fr);
         }
-        
+
         .progress-sidebar {
             grid-template-columns: 1fr;
         }
@@ -313,7 +418,7 @@
                 <div class="stat-value">{{ stats.total_xp|format_number }}</div>
                 <div class="stat-label">Total XP</div>
             </div>
-            
+
             <div class="stat-card">
                 <div class="stat-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
                     <i class="ph ph-fire"></i>
@@ -321,7 +426,7 @@
                 <div class="stat-value">{{ stats.streak.current_count if stats.streak else 0 }}</div>
                 <div class="stat-label">Day Streak</div>
             </div>
-            
+
             <div class="stat-card">
                 <div class="stat-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
                     <i class="ph ph-check-circle"></i>
@@ -329,7 +434,7 @@
                 <div class="stat-value">{{ weekly.days_with_goal_met if weekly else 0 }}</div>
                 <div class="stat-label">Goals Met This Week</div>
             </div>
-            
+
             <div class="stat-card">
                 <div class="stat-icon" style="background: rgba(168, 85, 247, 0.15); color: #a855f7;">
                     <i class="ph ph-crown"></i>
@@ -338,153 +443,188 @@
                 <div class="stat-label">Current Level</div>
             </div>
         </div>
-        
+
         <!-- Activity Calendar -->
         <div class="calendar-section">
             <div class="section-header">
-                <h2 class="section-title"><i class="ph ph-calendar-check"></i> Activity Calendar</h2>
+                <h2 class="section-title"><i class="ph ph-calendar-check"></i> Contribution Activity</h2>
+                <div style="font-size: 12px; color: var(--text-muted);">Last 365 Days</div>
             </div>
-            
-            <div class="calendar-grid">
-                <!-- Day labels -->
-                <div class="calendar-day-label">Mon</div>
-                <div class="calendar-day-label">Tue</div>
-                <div class="calendar-day-label">Wed</div>
-                <div class="calendar-day-label">Thu</div>
-                <div class="calendar-day-label">Fri</div>
-                <div class="calendar-day-label">Sat</div>
-                <div class="calendar-day-label">Sun</div>
-                
-                <!-- Calendar days (last 28 days) -->
-                {% for i in range(28) %}
-                    {% set day_offset = 27 - i %}
-                    {% set day_date = (now - timedelta(days=day_offset)) if now else none %}
-                    {% if day_date %}
-                        {% set day_str = day_date.strftime('%Y-%m-%d') %}
-                        {% set day_data = calendar_data.get(day_str, {}) %}
-                        <div class="calendar-day 
-                            {% if day_data.get('goal_met') %}goal-met{% elif day_data.get('xp') %}has-activity{% endif %}
-                            {% if day_offset == 0 %}today{% endif %}"
-                            title="{{ day_date.strftime('%b %d') }}: {{ day_data.get('xp', 0) }} XP">
-                            {{ day_date.day }}
+
+            <div class="contribution-graph-container">
+                <div class="graph-scroll-area">
+                    <div class="graph-wrapper">
+                        <!-- Left side day labels -->
+                        <div class="day-labels">
+                            <div class="day-label-item"></div>
+                            <div class="day-label-item">Mon</div>
+                            <div class="day-label-item"></div>
+                            <div class="day-label-item">Wed</div>
+                            <div class="day-label-item"></div>
+                            <div class="day-label-item">Fri</div>
+                            <div class="day-label-item"></div>
                         </div>
-                    {% else %}
-                        <div class="calendar-day">{{ i + 1 }}</div>
-                    {% endif %}
-                {% endfor %}
-            </div>
-            
-            <div class="calendar-legend">
-                <div class="legend-item">
-                    <div class="legend-box" style="background: rgba(255, 255, 255, 0.05);"></div>
-                    <span>No activity</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-box" style="background: rgba(var(--accent-rgb), 0.2);"></div>
-                    <span>Some XP</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-box" style="background: rgba(16, 185, 129, 0.3);"></div>
-                    <span>Goal met</span>
+
+                        <!-- The main grid -->
+                        <div class="graph-content">
+                            <!-- Months row -->
+                            <div class="months-row">
+                                <!-- Logic to place month labels appropriately based on weeks -->
+                                {% set current_month = namespace(value=None) %}
+                                {% for i in range(53) %}
+                                {% set week_start_date = start_date + timedelta(days=i*7) %}
+                                {% if week_start_date.month != current_month.value %}
+                                <div class="month-label">{{ week_start_date.strftime('%b') }}</div>
+                                {% set current_month.value = week_start_date.month %}
+                                {% else %}
+                                <div class="month-label placeholder"></div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+
+                            <!-- The tiles grid (7 rows, flows by column) -->
+                            <div class="contribution-grid">
+                                {% for i in range(371) %}
+                                {# 53 weeks * 7 days = 371 tiles to fill grid safely #}
+                                {% set day_date = start_date + timedelta(days=i) %}
+                                {% if day_date <= end_date %} {% set day_str=day_date.strftime('%Y-%m-%d') %} {% set
+                                    day_data=calendar_data.get(day_str, {'level': 0, 'xp' : 0}) %} <div
+                                    class="contribution-day level-{{ day_data.level }}"
+                                    data-date="{{ day_date.strftime('%Y-%m-%d') }}" data-xp="{{ day_data.xp }}"
+                                    title="{{ day_date.strftime('%a, %b %d, %Y') }}: {{ day_data.xp }} XP">
+                            </div>
+                            {% else %}
+                            <!-- Empty future days filler if needed for grid shape -->
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        
-        <!-- Weekly Summary -->
-        <div class="weekly-summary">
-            <div class="section-header">
-                <h2 class="section-title"><i class="ph ph-calendar"></i> This Week</h2>
+
+        <div class="calendar-legend">
+            <div style="margin-right: 8px;">Less</div>
+            <div class="legend-item">
+                <div class="legend-box level-0"></div>
             </div>
-            
-            <div class="weekly-stats">
-                {% if weekly and weekly.by_type %}
-                    {% for slug, data in weekly.by_type.items() %}
-                    <div class="weekly-stat">
-                        <div class="weekly-stat-value" style="color: {{ data.type.color if data.type else 'var(--text-main)' }}">
-                            {{ data.count }}
-                        </div>
-                        <div class="weekly-stat-label">{{ data.type.name if data.type else slug }}</div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                <div style="text-align: center; color: var(--text-muted); padding: 20px;">
-                    No entries this week yet. <a href="{{ url_for('admin_log_entry') }}" style="color: var(--accent);">Log something!</a>
-                </div>
-                {% endif %}
+            <div class="legend-item">
+                <div class="legend-box level-1"></div>
             </div>
+            <div class="legend-item">
+                <div class="legend-box level-2"></div>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box level-3"></div>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box level-4"></div>
+            </div>
+            <div style="margin-left: 8px;">More</div>
         </div>
     </div>
-    
-    <div class="progress-sidebar">
-        <!-- Current Rank -->
-        {% if stats.current_rank %}
-        <div class="sidebar-panel">
-            <div class="panel-header">
-                <h3 class="panel-title"><i class="ph ph-crown"></i> Current Rank</h3>
-            </div>
-            
-            <div style="text-align: center; padding: 16px 0;">
-                <div style="width: 80px; height: 80px; margin: 0 auto 16px; border-radius: 20px; 
-                            background: {{ stats.current_rank.color }}30; color: {{ stats.current_rank.color }};
-                            display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700;">
-                    {{ stats.current_rank.code or 'L' ~ stats.current_rank.level }}
-                </div>
-                <div style="font-size: 20px; font-weight: 700; color: {{ stats.current_rank.color }}; margin-bottom: 4px;">
-                    {{ stats.current_rank.name }}
-                </div>
-                <div style="font-size: 13px; color: var(--text-muted);">Level {{ stats.current_rank.level }}</div>
-            </div>
-            
-            {% if stats.next_rank %}
-            <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; color: var(--text-muted);">
-                    <span>{{ stats.total_xp|format_number }} XP</span>
-                    <span>{{ stats.next_rank.min_xp|format_number }} XP</span>
-                </div>
-                <div style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
-                    <div style="height: 100%; width: {{ stats.progress_percent }}%; background: {{ stats.current_rank.color }}; border-radius: 4px;"></div>
-                </div>
-                <div style="text-align: center; margin-top: 8px; font-size: 12px; color: var(--text-muted);">
-                    {{ stats.next_rank.min_xp - stats.total_xp }} XP to {{ stats.next_rank.name }}
-                </div>
-            </div>
-            {% endif %}
+
+    <!-- Weekly Summary -->
+    <div class="weekly-summary">
+        <div class="section-header">
+            <h2 class="section-title"><i class="ph ph-calendar"></i> This Week</h2>
         </div>
-        {% endif %}
-        
-        <!-- Recent Daily Logs -->
-        <div class="sidebar-panel">
-            <div class="panel-header">
-                <h3 class="panel-title"><i class="ph ph-clock-counter-clockwise"></i> Recent Days</h3>
-            </div>
-            
-            {% if daily_logs %}
-            <div class="logs-list">
-                {% for log in daily_logs[:7] %}
-                <div class="log-item">
-                    <div class="log-date">
-                        <div class="log-date-day">{{ log.date.day }}</div>
-                        <div class="log-date-month">{{ log.date.strftime('%b') }}</div>
-                    </div>
-                    <div class="log-info">
-                        <div class="log-xp">{{ log.total_xp }} XP</div>
-                        <div class="log-status">
-                            {{ log.get_completed_tasks()|length }} tasks completed
-                        </div>
-                    </div>
-                    <span class="log-badge {% if log.goal_met %}goal-met{% else %}partial{% endif %}">
-                        {% if log.goal_met %}✓ Goal{% else %}Partial{% endif %}
-                    </span>
+
+        <div class="weekly-stats">
+            {% if weekly and weekly.by_type %}
+            {% for slug, data in weekly.by_type.items() %}
+            <div class="weekly-stat">
+                <div class="weekly-stat-value"
+                    style="color: {{ data.type.color if data.type else 'var(--text-main)' }}">
+                    {{ data.count }}
                 </div>
-                {% endfor %}
+                <div class="weekly-stat-label">{{ data.type.name if data.type else slug }}</div>
             </div>
+            {% endfor %}
             {% else %}
             <div style="text-align: center; color: var(--text-muted); padding: 20px;">
-                No daily logs yet.
+                No entries this week yet. <a href="{{ url_for('admin_log_entry') }}" style="color: var(--accent);">Log
+                    something!</a>
             </div>
             {% endif %}
         </div>
     </div>
+</div>
+
+<div class="progress-sidebar">
+    <!-- Current Rank -->
+    {% if stats.current_rank %}
+    <div class="sidebar-panel">
+        <div class="panel-header">
+            <h3 class="panel-title"><i class="ph ph-crown"></i> Current Rank</h3>
+        </div>
+
+        <div style="text-align: center; padding: 16px 0;">
+            <div
+                style="width: 80px; height: 80px; margin: 0 auto 16px; border-radius: 20px; 
+                            background: {{ stats.current_rank.color }}30; color: {{ stats.current_rank.color }};
+                            display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700;">
+                {{ stats.current_rank.code or 'L' ~ stats.current_rank.level }}
+            </div>
+            <div style="font-size: 20px; font-weight: 700; color: {{ stats.current_rank.color }}; margin-bottom: 4px;">
+                {{ stats.current_rank.name }}
+            </div>
+            <div style="font-size: 13px; color: var(--text-muted);">Level {{ stats.current_rank.level }}</div>
+        </div>
+
+        {% if stats.next_rank %}
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
+            <div
+                style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; color: var(--text-muted);">
+                <span>{{ stats.total_xp|format_number }} XP</span>
+                <span>{{ stats.next_rank.min_xp|format_number }} XP</span>
+            </div>
+            <div style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                <div
+                    style="height: 100%; width: {{ stats.progress_percent }}%; background: {{ stats.current_rank.color }}; border-radius: 4px;">
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 8px; font-size: 12px; color: var(--text-muted);">
+                {{ stats.next_rank.min_xp - stats.total_xp }} XP to {{ stats.next_rank.name }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Recent Daily Logs -->
+    <div class="sidebar-panel">
+        <div class="panel-header">
+            <h3 class="panel-title"><i class="ph ph-clock-counter-clockwise"></i> Recent Days</h3>
+        </div>
+
+        {% if daily_logs %}
+        <div class="logs-list">
+            {% for log in daily_logs[:7] %}
+            <div class="log-item">
+                <div class="log-date">
+                    <div class="log-date-day">{{ log.date.day }}</div>
+                    <div class="log-date-month">{{ log.date.strftime('%b') }}</div>
+                </div>
+                <div class="log-info">
+                    <div class="log-xp">{{ log.total_xp }} XP</div>
+                    <div class="log-status">
+                        {{ log.get_completed_tasks()|length }} tasks completed
+                    </div>
+                </div>
+                <span class="log-badge {% if log.goal_met %}goal-met{% else %}partial{% endif %}">
+                    {% if log.goal_met %}✓ Goal{% else %}Partial{% endif %}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; color: var(--text-muted); padding: 20px;">
+            No daily logs yet.
+        </div>
+        {% endif %}
+    </div>
+</div>
 </div>
 {% endblock %}
 
