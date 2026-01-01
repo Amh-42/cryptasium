@@ -782,24 +782,8 @@
         overflow-x: auto;
         padding-bottom: 12px;
         scroll-behavior: smooth;
-    }
-
-    .header-gallery::-webkit-scrollbar {
-        height: 6px;
-    }
-
-    .header-gallery::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 3px;
-    }
-
-    .header-gallery::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 3px;
-    }
-
-    .header-gallery::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.2);
+        width: 100%;
+        flex-direction: row;
     }
 
     .gallery-item {
@@ -810,25 +794,35 @@
         position: relative;
         border: 1px solid var(--border);
         flex-shrink: 0;
+        width: auto;
     }
 
     .gallery-item img {
         width: 100%;
         height: 100%;
         object-fit: cover;
+        object-position: center;
         transition: transform 0.5s;
     }
 
     .gallery-item:hover img {
-        transform: scale(1.05);
+        transform: scale(1.02);
     }
 
     .gallery-add-btn {
-        min-width: 240px;
-        height: 160px;
-        min-height: 160px;
+        width: 100%;
+        height: 48px;
+        min-height: 48px;
         flex-shrink: 0;
         margin: 0;
+        flex-direction: row;
+        gap: 10px;
+        border-style: dashed;
+        border-width: 2px;
+    }
+
+    .gallery-add-btn i {
+        font-size: 20px;
     }
 
     .gallery-delete-btn {
@@ -898,27 +892,31 @@
             </div>
 
             <div class="header-gallery">
-                <!-- Add Button -->
-                <label for="header-image-upload" class="add-card gallery-add-btn">
-                    <i class="ph ph-plus"></i>
-                    <span>Add Image</span>
-                </label>
-                <form id="upload-form" action="{{ url_for('upload_dashboard_image') }}" method="POST"
-                    enctype="multipart/form-data" style="display: none;">
-                    <input type="file" id="header-image-upload" name="image" accept="image/*"
-                        onchange="document.getElementById('upload-form').submit()">
-                </form>
-
                 <!-- Images -->
                 {% for image in dashboard_images %}
                 <div class="gallery-item">
+                    {% if image.image_url.lower().endswith(('.mp4', '.webm', '.mov')) %}
+                    <video src="{{ image.image_url }}" autoplay muted loop playsinline></video>
+                    {% else %}
                     <img src="{{ image.image_url }}" alt="Dashboard Header">
+                    {% endif %}
                     <form action="{{ url_for('delete_dashboard_image', image_id=image.id) }}" method="POST"
                         onsubmit="return confirm('Delete this image?')">
                         <button type="submit" class="gallery-delete-btn"><i class="ph ph-trash"></i></button>
                     </form>
                 </div>
                 {% endfor %}
+
+                <!-- Add Button -->
+                <label for="header-image-upload" class="add-card gallery-add-btn">
+                    <i class="ph ph-plus"></i>
+                    <span>Add Media</span>
+                </label>
+                <form id="upload-form" action="{{ url_for('upload_dashboard_image') }}" method="POST"
+                    enctype="multipart/form-data" style="display: none;">
+                    <input type="file" id="header-image-upload" name="image" accept="image/*,video/*"
+                        onchange="document.getElementById('upload-form').submit()">
+                </form>
             </div>
         </div>
         {% endif %}
