@@ -10,13 +10,13 @@
         color: var(--text-muted);
         font-size: 14px;
     }
-    
+
     .ranks-list {
         display: flex;
         flex-direction: column;
         gap: 12px;
     }
-    
+
     .rank-row {
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid var(--border);
@@ -27,12 +27,12 @@
         gap: 16px;
         transition: all 0.2s;
     }
-    
+
     .rank-row:hover {
         border-color: var(--accent);
         background: rgba(255, 255, 255, 0.04);
     }
-    
+
     .rank-level {
         width: 40px;
         height: 40px;
@@ -44,7 +44,7 @@
         font-weight: 700;
         flex-shrink: 0;
     }
-    
+
     .rank-icon-box {
         width: 48px;
         height: 48px;
@@ -56,12 +56,12 @@
         font-weight: 700;
         flex-shrink: 0;
     }
-    
+
     .rank-info {
         flex: 1;
         min-width: 0;
     }
-    
+
     .rank-name {
         font-weight: 600;
         font-size: 15px;
@@ -70,12 +70,12 @@
         align-items: center;
         gap: 8px;
     }
-    
+
     .rank-meta {
         font-size: 13px;
         color: var(--text-muted);
     }
-    
+
     .rank-xp {
         font-size: 16px;
         font-weight: 600;
@@ -83,12 +83,12 @@
         min-width: 100px;
         text-align: right;
     }
-    
+
     .rank-actions {
         display: flex;
         gap: 8px;
     }
-    
+
     .badge-max {
         padding: 2px 8px;
         border-radius: 6px;
@@ -121,15 +121,15 @@
         <div class="rank-level" style="background: {{ rank.color }}20; color: {{ rank.color }}">
             {{ rank.level }}
         </div>
-        
+
         <div class="rank-icon-box" style="background: {{ rank.color }}30; color: {{ rank.color }}">
             {% if rank.icon %}
-            <i class="{{ rank.icon }}"></i>
+            <i class="ph {{ rank.icon }}"></i>
             {% else %}
             {{ rank.code or 'L' ~ rank.level }}
             {% endif %}
         </div>
-        
+
         <div class="rank-info">
             <div class="rank-name">
                 {{ rank.name }}
@@ -141,15 +141,15 @@
                 Code: {{ rank.code or '-' }} | Level {{ rank.level }}
             </div>
         </div>
-        
+
         <div class="rank-xp">{{ rank.min_xp|format_number }} XP</div>
-        
+
         <div class="rank-actions">
             <a href="{{ url_for('admin_rank_edit', id=rank.id) }}" class="action-btn edit" title="Edit">
                 <i class="ph ph-pencil"></i>
             </a>
-            <form action="{{ url_for('admin_rank_delete', id=rank.id) }}" method="post" 
-                  onsubmit="return confirmDelete(this, 'Rank')" style="display: inline;">
+            <form action="{{ url_for('admin_rank_delete', id=rank.id) }}" method="post"
+                onsubmit="return confirmDelete(this, 'Rank')" style="display: inline;">
                 <button type="submit" class="action-btn delete" title="Delete">
                     <i class="ph ph-trash"></i>
                 </button>
@@ -169,4 +169,3 @@
 </div>
 {% endif %}
 {% endblock %}
-

@@ -11,13 +11,13 @@
         grid-template-columns: 1fr 320px;
         gap: 24px;
     }
-    
+
     .dashboard-main {
         display: flex;
         flex-direction: column;
         gap: 24px;
     }
-    
+
     .dashboard-sidebar {
         display: flex;
         flex-direction: column;
@@ -26,14 +26,14 @@
 
     /* ========== XP HEADER ========== */
     .xp-header {
-        background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.15) 0%, rgba(0,0,0,0) 60%);
+        background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.15) 0%, rgba(0, 0, 0, 0) 60%);
         border: 1px solid var(--border);
         border-radius: 16px;
         padding: 28px;
         position: relative;
         overflow: hidden;
     }
-    
+
     .xp-header::before {
         content: '';
         position: absolute;
@@ -44,7 +44,7 @@
         background: radial-gradient(circle, rgba(var(--accent-rgb), 0.1) 0%, transparent 70%);
         pointer-events: none;
     }
-    
+
     .xp-header-top {
         display: flex;
         align-items: flex-start;
@@ -53,13 +53,13 @@
         position: relative;
         z-index: 1;
     }
-    
+
     .xp-info {
         display: flex;
         flex-direction: column;
         gap: 4px;
     }
-    
+
     .xp-label {
         font-size: 13px;
         color: var(--text-muted);
@@ -67,7 +67,7 @@
         letter-spacing: 0.5px;
         font-weight: 600;
     }
-    
+
     .xp-value {
         font-size: 48px;
         font-weight: 800;
@@ -77,12 +77,12 @@
         background-clip: text;
         line-height: 1;
     }
-    
+
     .xp-value span {
         font-size: 24px;
         font-weight: 600;
     }
-    
+
     .rank-badge {
         display: flex;
         align-items: center;
@@ -92,7 +92,7 @@
         border: 1px solid var(--border);
         border-radius: 12px;
     }
-    
+
     .rank-icon {
         width: 48px;
         height: 48px;
@@ -102,31 +102,31 @@
         justify-content: center;
         font-size: 24px;
     }
-    
+
     .rank-details {
         display: flex;
         flex-direction: column;
         gap: 2px;
     }
-    
+
     .rank-level {
         font-size: 11px;
         color: var(--text-muted);
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
-    
+
     .rank-name {
         font-size: 18px;
         font-weight: 700;
     }
-    
+
     /* Progress bar */
     .xp-progress-section {
         position: relative;
         z-index: 1;
     }
-    
+
     .xp-progress-labels {
         display: flex;
         justify-content: space-between;
@@ -134,7 +134,7 @@
         font-size: 12px;
         color: var(--text-muted);
     }
-    
+
     .xp-progress-bar {
         height: 12px;
         background: rgba(255, 255, 255, 0.1);
@@ -142,7 +142,7 @@
         overflow: hidden;
         position: relative;
     }
-    
+
     .xp-progress-fill {
         height: 100%;
         background: linear-gradient(90deg, #e90e0e, #ff4444);
@@ -150,7 +150,7 @@
         transition: width 0.5s ease;
         position: relative;
     }
-    
+
     .xp-progress-fill::after {
         content: '';
         position: absolute;
@@ -158,13 +158,18 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
+        background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
         animation: shimmer 2s infinite;
     }
-    
+
     @keyframes shimmer {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
+        0% {
+            transform: translateX(-100%);
+        }
+
+        100% {
+            transform: translateX(100%);
+        }
     }
 
     /* ========== STREAK & STATS BAR ========== */
@@ -173,7 +178,7 @@
         grid-template-columns: repeat(4, 1fr);
         gap: 16px;
     }
-    
+
     .stat-card {
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid var(--border);
@@ -182,12 +187,12 @@
         text-align: center;
         transition: all 0.2s;
     }
-    
+
     .stat-card:hover {
         border-color: var(--accent);
         background: rgba(255, 255, 255, 0.04);
     }
-    
+
     .stat-icon {
         width: 40px;
         height: 40px;
@@ -198,13 +203,13 @@
         justify-content: center;
         font-size: 20px;
     }
-    
+
     .stat-value {
         font-size: 24px;
         font-weight: 700;
         margin-bottom: 4px;
     }
-    
+
     .stat-label {
         font-size: 12px;
         color: var(--text-muted);
@@ -219,7 +224,7 @@
         align-items: center;
         margin-bottom: 16px;
     }
-    
+
     .section-title {
         font-size: 18px;
         font-weight: 700;
@@ -227,17 +232,17 @@
         align-items: center;
         gap: 10px;
     }
-    
+
     .section-title i {
         color: var(--accent);
     }
-    
+
     .daily-tasks-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 12px;
     }
-    
+
     .daily-task {
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid var(--border);
@@ -249,17 +254,17 @@
         cursor: pointer;
         transition: all 0.2s;
     }
-    
+
     .daily-task:hover {
         border-color: rgba(255, 255, 255, 0.2);
         background: rgba(255, 255, 255, 0.04);
     }
-    
+
     .daily-task.completed {
         border-color: rgba(16, 185, 129, 0.4);
         background: rgba(16, 185, 129, 0.1);
     }
-    
+
     .task-checkbox {
         width: 24px;
         height: 24px;
@@ -271,39 +276,39 @@
         transition: all 0.2s;
         flex-shrink: 0;
     }
-    
+
     .daily-task.completed .task-checkbox {
         background: #10b981;
         border-color: #10b981;
     }
-    
+
     .task-checkbox i {
         font-size: 14px;
         color: #fff;
         opacity: 0;
         transition: opacity 0.2s;
     }
-    
+
     .daily-task.completed .task-checkbox i {
         opacity: 1;
     }
-    
+
     .task-info {
         flex: 1;
         min-width: 0;
     }
-    
+
     .task-name {
         font-weight: 600;
         font-size: 14px;
         margin-bottom: 2px;
     }
-    
+
     .task-xp {
         font-size: 12px;
         color: var(--text-muted);
     }
-    
+
     .task-xp span {
         color: var(--accent);
         font-weight: 600;
@@ -315,7 +320,7 @@
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         gap: 16px;
     }
-    
+
     .trackable-card {
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid var(--border);
@@ -326,13 +331,13 @@
         position: relative;
         overflow: hidden;
     }
-    
+
     .trackable-card:hover {
         border-color: var(--accent);
         background: rgba(255, 255, 255, 0.04);
         transform: translateY(-2px);
     }
-    
+
     .trackable-icon {
         width: 56px;
         height: 56px;
@@ -343,36 +348,36 @@
         justify-content: center;
         font-size: 28px;
     }
-    
+
     .trackable-name {
         font-weight: 600;
         font-size: 15px;
         margin-bottom: 6px;
     }
-    
+
     .trackable-count {
         font-size: 28px;
         font-weight: 800;
         margin-bottom: 4px;
     }
-    
+
     .trackable-xp {
         font-size: 13px;
         color: var(--text-muted);
     }
-    
+
     .trackable-xp span {
         color: var(--accent);
         font-weight: 600;
     }
-    
+
     .trackable-actions {
         display: flex;
         gap: 8px;
         margin-top: 14px;
         justify-content: center;
     }
-    
+
     .trackable-btn {
         width: 36px;
         height: 36px;
@@ -386,19 +391,19 @@
         cursor: pointer;
         transition: all 0.2s;
     }
-    
+
     .trackable-btn:hover {
         border-color: var(--accent);
         color: var(--accent);
         background: rgba(var(--accent-rgb), 0.1);
     }
-    
+
     .trackable-btn.primary {
         background: var(--accent);
         border-color: var(--accent);
         color: #fff;
     }
-    
+
     .trackable-btn.primary:hover {
         background: var(--accent-hover);
     }
@@ -410,14 +415,14 @@
         border-radius: 14px;
         padding: 20px;
     }
-    
+
     .panel-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 16px;
     }
-    
+
     .panel-title {
         font-size: 15px;
         font-weight: 700;
@@ -425,7 +430,7 @@
         align-items: center;
         gap: 8px;
     }
-    
+
     .panel-title i {
         color: var(--accent);
     }
@@ -437,17 +442,17 @@
         margin: 0 auto 16px;
         position: relative;
     }
-    
+
     .goal-circle svg {
         transform: rotate(-90deg);
     }
-    
+
     .goal-circle-bg {
         fill: none;
         stroke: rgba(255, 255, 255, 0.1);
         stroke-width: 10;
     }
-    
+
     .goal-circle-progress {
         fill: none;
         stroke: var(--accent);
@@ -455,7 +460,7 @@
         stroke-linecap: round;
         transition: stroke-dashoffset 0.5s ease;
     }
-    
+
     .goal-center {
         position: absolute;
         top: 50%;
@@ -463,25 +468,25 @@
         transform: translate(-50%, -50%);
         text-align: center;
     }
-    
+
     .goal-value {
         font-size: 28px;
         font-weight: 800;
     }
-    
+
     .goal-label {
         font-size: 11px;
         color: var(--text-muted);
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
-    
+
     .goal-footer {
         text-align: center;
         font-size: 13px;
         color: var(--text-muted);
     }
-    
+
     .goal-footer span {
         color: var(--accent);
         font-weight: 600;
@@ -497,27 +502,27 @@
         border-radius: 12px;
         margin-bottom: 16px;
     }
-    
+
     .streak-fire {
         font-size: 42px;
     }
-    
+
     .streak-info {
         flex: 1;
     }
-    
+
     .streak-count {
         font-size: 32px;
         font-weight: 800;
         color: #f59e0b;
     }
-    
+
     .streak-count span {
         font-size: 14px;
         font-weight: 600;
         color: var(--text-muted);
     }
-    
+
     .streak-best {
         font-size: 12px;
         color: var(--text-muted);
@@ -529,7 +534,7 @@
         flex-direction: column;
         gap: 10px;
     }
-    
+
     .rank-item {
         display: flex;
         align-items: center;
@@ -539,16 +544,16 @@
         background: rgba(255, 255, 255, 0.02);
         transition: all 0.2s;
     }
-    
+
     .rank-item.current {
         background: rgba(var(--accent-rgb), 0.1);
         border: 1px solid rgba(var(--accent-rgb), 0.3);
     }
-    
+
     .rank-item.locked {
         opacity: 0.5;
     }
-    
+
     .rank-item-icon {
         width: 32px;
         height: 32px;
@@ -559,22 +564,22 @@
         font-size: 14px;
         font-weight: 700;
     }
-    
+
     .rank-item-info {
         flex: 1;
         min-width: 0;
     }
-    
+
     .rank-item-name {
         font-weight: 600;
         font-size: 13px;
     }
-    
+
     .rank-item-xp {
         font-size: 11px;
         color: var(--text-muted);
     }
-    
+
     .rank-item-check {
         color: #10b981;
         font-size: 16px;
@@ -586,7 +591,7 @@
         flex-direction: column;
         gap: 12px;
     }
-    
+
     .activity-item {
         display: flex;
         align-items: center;
@@ -594,11 +599,11 @@
         padding: 10px 0;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
-    
+
     .activity-item:last-child {
         border-bottom: none;
     }
-    
+
     .activity-icon {
         width: 36px;
         height: 36px;
@@ -608,12 +613,12 @@
         justify-content: center;
         font-size: 16px;
     }
-    
+
     .activity-info {
         flex: 1;
         min-width: 0;
     }
-    
+
     .activity-title {
         font-size: 13px;
         font-weight: 500;
@@ -621,12 +626,12 @@
         overflow: hidden;
         text-overflow: ellipsis;
     }
-    
+
     .activity-time {
         font-size: 11px;
         color: var(--text-muted);
     }
-    
+
     .activity-xp {
         font-size: 13px;
         font-weight: 600;
@@ -639,7 +644,7 @@
         grid-template-columns: repeat(2, 1fr);
         gap: 10px;
     }
-    
+
     .quick-action {
         display: flex;
         flex-direction: column;
@@ -653,17 +658,17 @@
         color: var(--text-main);
         transition: all 0.2s;
     }
-    
+
     .quick-action:hover {
         border-color: var(--accent);
         background: rgba(var(--accent-rgb), 0.1);
     }
-    
+
     .quick-action i {
         font-size: 24px;
         color: var(--accent);
     }
-    
+
     .quick-action span {
         font-size: 12px;
         font-weight: 500;
@@ -686,17 +691,17 @@
         color: var(--text-muted);
         min-height: 180px;
     }
-    
+
     .add-card:hover {
         border-color: var(--accent);
         color: var(--accent);
         background: rgba(var(--accent-rgb), 0.05);
     }
-    
+
     .add-card i {
         font-size: 32px;
     }
-    
+
     .add-card span {
         font-size: 13px;
         font-weight: 500;
@@ -707,50 +712,50 @@
         .dashboard-grid {
             grid-template-columns: 1fr;
         }
-        
+
         .dashboard-sidebar {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 16px;
         }
     }
-    
+
     @media (max-width: 768px) {
         .xp-header {
             padding: 20px;
         }
-        
+
         .xp-header-top {
             flex-direction: column;
             gap: 16px;
         }
-        
+
         .xp-value {
             font-size: 36px;
         }
-        
+
         .rank-badge {
             width: 100%;
             justify-content: center;
         }
-        
+
         .stats-bar {
             grid-template-columns: repeat(2, 1fr);
         }
-        
+
         .dashboard-sidebar {
             grid-template-columns: 1fr;
         }
-        
+
         .trackables-grid {
             grid-template-columns: repeat(2, 1fr);
         }
-        
+
         .daily-tasks-grid {
             grid-template-columns: 1fr;
         }
     }
-    
+
     @media (max-width: 480px) {
         .trackables-grid {
             grid-template-columns: 1fr;
@@ -768,21 +773,24 @@
             <div class="xp-header-top">
                 <div class="xp-info">
                     <div class="xp-label">Total {{ stats.settings.points_name if stats.settings else 'XP' }}</div>
-                    <div class="xp-value">{{ stats.total_xp|format_number }}<span> {{ stats.settings.points_name if stats.settings else 'XP' }}</span></div>
+                    <div class="xp-value">{{ stats.total_xp|format_number }}<span> {{ stats.settings.points_name if
+                            stats.settings else 'XP' }}</span></div>
                 </div>
-                
+
                 {% if stats.current_rank %}
                 <div class="rank-badge">
-                    <div class="rank-icon" style="background: {{ stats.current_rank.color }}20; color: {{ stats.current_rank.color }}">
+                    <div class="rank-icon"
+                        style="background: {{ stats.current_rank.color }}20; color: {{ stats.current_rank.color }}">
                         {% if stats.current_rank.icon %}
-                        <i class="{{ stats.current_rank.icon }}"></i>
+                        <i class="ph {{ stats.current_rank.icon }}"></i>
                         {% else %}
                         {{ stats.current_rank.code or 'L' ~ stats.current_rank.level }}
                         {% endif %}
                     </div>
                     <div class="rank-details">
                         <div class="rank-level">Level {{ stats.current_rank.level }}</div>
-                        <div class="rank-name" style="color: {{ stats.current_rank.color }}">{{ stats.current_rank.name }}</div>
+                        <div class="rank-name" style="color: {{ stats.current_rank.color }}">{{ stats.current_rank.name
+                            }}</div>
                     </div>
                 </div>
                 {% else %}
@@ -797,11 +805,13 @@
                 </a>
                 {% endif %}
             </div>
-            
+
             <div class="xp-progress-section">
                 <div class="xp-progress-labels">
                     <span>{% if stats.current_rank %}{{ stats.current_rank.name }}{% else %}Start{% endif %}</span>
-                    <span>{% if stats.next_rank %}{{ stats.next_rank.name }} ({{ stats.next_rank.min_xp|format_number }} XP){% elif stats.current_rank and stats.current_rank.is_max_rank %}MAX RANK{% else %}???{% endif %}</span>
+                    <span>{% if stats.next_rank %}{{ stats.next_rank.name }} ({{ stats.next_rank.min_xp|format_number }}
+                        XP){% elif stats.current_rank and stats.current_rank.is_max_rank %}MAX RANK{% else %}???{% endif
+                        %}</span>
                 </div>
                 <div class="xp-progress-bar">
                     <div class="xp-progress-fill" style="width: {{ stats.progress_percent }}%"></div>
@@ -849,14 +859,16 @@
                     <i class="ph ph-gear"></i> Manage
                 </a>
             </div>
-            
+
             {% if daily_tasks %}
             <div class="daily-tasks-grid">
                 {% for task in daily_tasks %}
                 {% set is_completed = task.is_completed_today() %}
                 {% set current_count = task.get_today_completion_count() if task.task_type == 'count' else 0 %}
-                <form action="{{ url_for('admin_toggle_daily_task', slug=task.slug) }}" method="post" class="daily-task-form">
-                    <div class="daily-task {% if is_completed %}completed{% endif %}" onclick="this.parentElement.submit()">
+                <form action="{{ url_for('admin_toggle_daily_task', slug=task.slug) }}" method="post"
+                    class="daily-task-form">
+                    <div class="daily-task {% if is_completed %}completed{% endif %}"
+                        onclick="this.parentElement.submit()">
                         <div class="task-checkbox" style="border-color: {{ task.color }}">
                             {% if task.task_type == 'count' and not is_completed %}
                             <span style="font-size: 12px; font-weight: 700;">{{ current_count }}</span>
@@ -868,10 +880,12 @@
                             <div class="task-name">
                                 {% if task.emoji %}{{ task.emoji }} {% endif %}{{ task.name }}
                                 {% if task.task_type == 'count' %}
-                                <span style="font-size: 11px; color: var(--text-muted); font-weight: 400;">({{ current_count }}/{{ task.target_count }})</span>
+                                <span style="font-size: 11px; color: var(--text-muted); font-weight: 400;">({{
+                                    current_count }}/{{ task.target_count }})</span>
                                 {% endif %}
                             </div>
-                            <div class="task-xp"><span>+{{ task.xp_value }}</span> {{ stats.settings.points_name if stats.settings else 'XP' }}</div>
+                            <div class="task-xp"><span>+{{ task.xp_value }}</span> {{ stats.settings.points_name if
+                                stats.settings else 'XP' }}</div>
                         </div>
                         <i class="{{ task.icon }}" style="font-size: 20px; color: {{ task.color }}"></i>
                     </div>
@@ -881,7 +895,8 @@
             {% else %}
             <div style="text-align: center; padding: 24px; color: var(--text-muted);">
                 <p>No tasks due today.</p>
-                <a href="{{ url_for('admin_daily_task_add') }}" class="btn btn-primary btn-sm" style="margin-top: 12px;">
+                <a href="{{ url_for('admin_daily_task_add') }}" class="btn btn-primary btn-sm"
+                    style="margin-top: 12px;">
                     <i class="ph ph-plus"></i> Add Task
                 </a>
             </div>
@@ -896,50 +911,55 @@
                     <i class="ph ph-gear"></i> Manage All
                 </a>
             </div>
-            
+
             <div class="trackables-grid">
                 {% for trackable in pinned_trackables %}
                 <div class="trackable-card">
-                    <div class="trackable-icon" style="background: {{ trackable.color }}20; color: {{ trackable.color }}">
-                        <i class="{{ trackable.icon }}"></i>
+                    <div class="trackable-icon"
+                        style="background: {{ trackable.color }}20; color: {{ trackable.color }}">
+                        <i class="ph {{ trackable.icon }}"></i>
                     </div>
                     <div class="trackable-name">{{ trackable.name }}</div>
                     <div class="trackable-count">{{ trackable.get_total_count() }}</div>
-                    
+
                     {% if trackable.track_value %}
                     <div style="font-size: 14px; color: #22c55e; font-weight: 600; margin-bottom: 4px;">
                         {{ trackable.value_prefix }}{{ trackable.get_total_value()|format_number }}
                     </div>
                     {% endif %}
-                    
-                    <div class="trackable-xp"><span>{{ trackable.get_total_xp()|format_number }}</span> {{ stats.settings.points_name if stats.settings else 'XP' }}</div>
-                    
+
+                    <div class="trackable-xp"><span>{{ trackable.get_total_xp()|format_number }}</span> {{
+                        stats.settings.points_name if stats.settings else 'XP' }}</div>
+
                     {% if trackable.weekly_goal > 0 %}
                     <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">
                         {% set week_count = weekly.by_type.get(trackable.slug, {}).get('count', 0) if weekly else 0 %}
                         {{ week_count }}/{{ trackable.weekly_goal }} this week
                     </div>
                     {% endif %}
-                    
+
                     <div class="trackable-actions">
                         {% if trackable.track_value %}
-                        <a href="{{ url_for('admin_log_entry') }}?trackable={{ trackable.id }}" class="trackable-btn primary" title="Log with value">
+                        <a href="{{ url_for('admin_log_entry') }}?trackable={{ trackable.id }}"
+                            class="trackable-btn primary" title="Log with value">
                             <i class="ph ph-plus"></i>
                         </a>
                         {% else %}
-                        <form action="{{ url_for('admin_quick_log', trackable_id=trackable.id) }}" method="post" style="display: inline;">
+                        <form action="{{ url_for('admin_quick_log', trackable_id=trackable.id) }}" method="post"
+                            style="display: inline;">
                             <button type="submit" class="trackable-btn primary" title="Quick +1">
                                 <i class="ph ph-plus"></i>
                             </button>
                         </form>
                         {% endif %}
-                        <a href="{{ url_for('admin_log_entry') }}?trackable={{ trackable.id }}" class="trackable-btn" title="Log with details">
+                        <a href="{{ url_for('admin_log_entry') }}?trackable={{ trackable.id }}" class="trackable-btn"
+                            title="Log with details">
                             <i class="ph ph-note-pencil"></i>
                         </a>
                     </div>
                 </div>
                 {% endfor %}
-                
+
                 <!-- Add New Card -->
                 <a href="{{ url_for('admin_trackable_add') }}" class="add-card">
                     <i class="ph ph-plus-circle"></i>
@@ -956,25 +976,25 @@
             <div class="panel-header">
                 <h3 class="panel-title"><i class="ph ph-target"></i> Today's Goal</h3>
             </div>
-            
+
             {% set daily_goal = stats.settings.daily_xp_goal if stats.settings else 50 %}
             {% set today_xp = stats.today_log.total_xp if stats.today_log else 0 %}
             {% set goal_progress = ((today_xp / daily_goal) * 100) if daily_goal > 0 else 0 %}
             {% set goal_progress = [goal_progress, 100]|min %}
-            
+
             <div class="goal-circle">
                 <svg width="140" height="140" viewBox="0 0 140 140">
-                    <circle cx="70" cy="70" r="60" class="goal-circle-bg"/>
-                    <circle cx="70" cy="70" r="60" class="goal-circle-progress" 
-                            stroke-dasharray="377" 
-                            stroke-dashoffset="{{ 377 - (377 * goal_progress / 100) }}"/>
+                    <circle cx="70" cy="70" r="60" class="goal-circle-bg" />
+                    <circle cx="70" cy="70" r="60" class="goal-circle-progress" stroke-dasharray="377"
+                        stroke-dashoffset="{{ 377 - (377 * goal_progress / 100) }}" />
                 </svg>
                 <div class="goal-center">
                     <div class="goal-value">{{ today_xp }}</div>
-                    <div class="goal-label">/ {{ daily_goal }} {{ stats.settings.points_name if stats.settings else 'XP' }}</div>
+                    <div class="goal-label">/ {{ daily_goal }} {{ stats.settings.points_name if stats.settings else 'XP'
+                        }}</div>
                 </div>
             </div>
-            
+
             <div class="goal-footer">
                 {% if goal_progress >= 100 %}
                 <span>🎉 Goal Complete!</span>
@@ -994,7 +1014,7 @@
                     <div class="streak-best">Best: {{ stats.streak.longest_count }} days</div>
                 </div>
             </div>
-            
+
             {% if stats.settings and stats.settings.streak_bonus_per_day > 0 %}
             <div style="text-align: center; font-size: 13px; color: var(--text-muted);">
                 +{{ stats.streak.current_count * stats.settings.streak_bonus_per_day }} bonus XP from streak
@@ -1008,7 +1028,7 @@
             <div class="panel-header">
                 <h3 class="panel-title"><i class="ph ph-lightning"></i> Quick Actions</h3>
             </div>
-            
+
             <div class="quick-actions">
                 <a href="{{ url_for('admin_log_entry') }}" class="quick-action">
                     <i class="ph ph-plus-circle"></i>
@@ -1035,10 +1055,11 @@
             <div class="panel-header">
                 <h3 class="panel-title"><i class="ph ph-crown"></i> Rank Progress</h3>
             </div>
-            
+
             <div class="ranks-list">
                 {% for rank in stats.ranks %}
-                <div class="rank-item {% if stats.current_rank and rank.id == stats.current_rank.id %}current{% elif stats.total_xp < rank.min_xp %}locked{% endif %}">
+                <div
+                    class="rank-item {% if stats.current_rank and rank.id == stats.current_rank.id %}current{% elif stats.total_xp < rank.min_xp %}locked{% endif %}">
                     <div class="rank-item-icon" style="background: {{ rank.color }}20; color: {{ rank.color }}">
                         {{ rank.code or 'L' ~ rank.level }}
                     </div>
@@ -1065,15 +1086,17 @@
             <div class="panel-header">
                 <h3 class="panel-title"><i class="ph ph-clock-counter-clockwise"></i> Recent</h3>
             </div>
-            
+
             <div class="activity-list">
                 {% for entry in recent_entries[:5] %}
                 <div class="activity-item">
-                    <div class="activity-icon" style="background: {{ entry.trackable_type.color if entry.trackable_type else '#666' }}20; color: {{ entry.trackable_type.color if entry.trackable_type else '#666' }}">
+                    <div class="activity-icon"
+                        style="background: {{ entry.trackable_type.color if entry.trackable_type else '#666' }}20; color: {{ entry.trackable_type.color if entry.trackable_type else '#666' }}">
                         <i class="{{ entry.trackable_type.icon if entry.trackable_type else 'ph-star' }}"></i>
                     </div>
                     <div class="activity-info">
-                        <div class="activity-title">{{ entry.title or entry.trackable_type.name if entry.trackable_type else 'Entry' }}</div>
+                        <div class="activity-title">{{ entry.title or entry.trackable_type.name if entry.trackable_type
+                            else 'Entry' }}</div>
                         <div class="activity-time">{{ entry.date.strftime('%b %d') }}</div>
                     </div>
                     <div class="activity-xp">+{{ entry.get_xp() }}</div>
@@ -1088,31 +1111,31 @@
 
 {% block extra_js %}
 <script>
-// Prevent form resubmission on page refresh
-if (window.history.replaceState) {
-    window.history.replaceState(null, null, window.location.href);
-}
+    // Prevent form resubmission on page refresh
+    if (window.history.replaceState) {
+        window.history.replaceState(null, null, window.location.href);
+    }
 
-// AJAX for quick log
-document.querySelectorAll('.trackable-btn.primary').forEach(btn => {
-    btn.closest('form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const form = this;
-        
-        fetch(form.action, {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                // Show XP popup
-                const popup = document.createElement('div');
-                popup.className = 'xp-popup';
-                popup.textContent = '+' + data.xp + ' XP';
-                popup.style.cssText = `
+    // AJAX for quick log
+    document.querySelectorAll('.trackable-btn.primary').forEach(btn => {
+        btn.closest('form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const form = this;
+
+            fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show XP popup
+                        const popup = document.createElement('div');
+                        popup.className = 'xp-popup';
+                        popup.textContent = '+' + data.xp + ' XP';
+                        popup.style.cssText = `
                     position: fixed;
                     top: 50%;
                     left: 50%;
@@ -1126,27 +1149,27 @@ document.querySelectorAll('.trackable-btn.primary').forEach(btn => {
                     z-index: 9999;
                     animation: popIn 0.3s ease, popOut 0.3s ease 0.8s forwards;
                 `;
-                document.body.appendChild(popup);
-                
-                setTimeout(() => popup.remove(), 1200);
-                
-                // Update count on card
-                const card = btn.closest('.trackable-card');
-                if (card) {
-                    const countEl = card.querySelector('.trackable-count');
-                    const xpEl = card.querySelector('.trackable-xp span');
-                    if (countEl) countEl.textContent = data.total_count;
-                    if (xpEl) xpEl.textContent = data.total_xp.toLocaleString();
-                }
-            }
-        })
-        .catch(() => form.submit());
-    });
-});
+                        document.body.appendChild(popup);
 
-// Add CSS animation
-const style = document.createElement('style');
-style.textContent = `
+                        setTimeout(() => popup.remove(), 1200);
+
+                        // Update count on card
+                        const card = btn.closest('.trackable-card');
+                        if (card) {
+                            const countEl = card.querySelector('.trackable-count');
+                            const xpEl = card.querySelector('.trackable-xp span');
+                            if (countEl) countEl.textContent = data.total_count;
+                            if (xpEl) xpEl.textContent = data.total_xp.toLocaleString();
+                        }
+                    }
+                })
+                .catch(() => form.submit());
+        });
+    });
+
+    // Add CSS animation
+    const style = document.createElement('style');
+    style.textContent = `
     @keyframes popIn {
         0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
         100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
@@ -1156,6 +1179,6 @@ style.textContent = `
         100% { opacity: 0; transform: translate(-50%, -80%) scale(0.8); }
     }
 `;
-document.head.appendChild(style);
+    document.head.appendChild(style);
 </script>
 {% endblock %}

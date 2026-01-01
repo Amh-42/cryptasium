@@ -161,7 +161,7 @@
     {% for trackable in trackables %}
     <div class="trackable-row {% if not trackable.is_active %}inactive{% endif %}">
         <div class="trackable-icon-box" style="background: {{ trackable.color }}20; color: {{ trackable.color }}">
-            <i class="{{ trackable.icon }}"></i>
+            <i class="ph {{ trackable.icon }}"></i>
         </div>
         
         <div class="trackable-info">

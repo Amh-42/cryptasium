@@ -10,14 +10,14 @@
         color: var(--text-muted);
         font-size: 14px;
     }
-    
+
     .filter-tabs {
         display: flex;
         gap: 8px;
         margin-bottom: 20px;
         flex-wrap: wrap;
     }
-    
+
     .filter-tab {
         padding: 8px 16px;
         border-radius: 8px;
@@ -28,24 +28,24 @@
         font-size: 13px;
         transition: all 0.2s;
     }
-    
+
     .filter-tab:hover {
         border-color: rgba(255, 255, 255, 0.2);
         color: var(--text-main);
     }
-    
+
     .filter-tab.active {
         border-color: var(--accent);
         background: rgba(var(--accent-rgb), 0.1);
         color: var(--accent);
     }
-    
+
     .tasks-list {
         display: flex;
         flex-direction: column;
         gap: 12px;
     }
-    
+
     .task-row {
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid var(--border);
@@ -56,20 +56,20 @@
         gap: 16px;
         transition: all 0.2s;
     }
-    
+
     .task-row:hover {
         border-color: var(--accent);
         background: rgba(255, 255, 255, 0.04);
     }
-    
+
     .task-row.inactive {
         opacity: 0.5;
     }
-    
+
     .task-row.pinned {
         border-color: var(--accent);
     }
-    
+
     .task-icon-box {
         width: 48px;
         height: 48px;
@@ -80,12 +80,12 @@
         font-size: 24px;
         flex-shrink: 0;
     }
-    
+
     .task-info {
         flex: 1;
         min-width: 0;
     }
-    
+
     .task-name {
         font-weight: 600;
         font-size: 15px;
@@ -94,13 +94,13 @@
         align-items: center;
         gap: 8px;
     }
-    
+
     .task-badges {
         display: flex;
         gap: 6px;
         flex-wrap: wrap;
     }
-    
+
     .task-badge {
         font-size: 10px;
         padding: 2px 8px;
@@ -111,33 +111,84 @@
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
-    
-    .task-badge.repeat-none { background: rgba(107, 114, 128, 0.15); color: #6b7280; }
-    .task-badge.repeat-daily { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
-    .task-badge.repeat-weekdays { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
-    .task-badge.repeat-weekends { background: rgba(249, 115, 22, 0.15); color: #f97316; }
-    .task-badge.repeat-weekly { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
-    .task-badge.repeat-monthly { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
-    .task-badge.repeat-yearly { background: rgba(217, 70, 239, 0.15); color: #d946ef; }
-    .task-badge.repeat-custom { background: rgba(20, 184, 166, 0.15); color: #14b8a6; }
-    .task-badge.repeat-once { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-    .task-badge.repeat-ebbinghaus { background: rgba(236, 72, 153, 0.15); color: #ec4899; }
-    .task-badge.repeat-unlimited { background: rgba(99, 102, 241, 0.15); color: #6366f1; }
-    .task-badge.type-count { background: rgba(6, 182, 212, 0.15); color: #06b6d4; }
-    .task-badge.pinned { background: rgba(var(--accent-rgb), 0.2); color: var(--accent); }
-    
+
+    .task-badge.repeat-none {
+        background: rgba(107, 114, 128, 0.15);
+        color: #6b7280;
+    }
+
+    .task-badge.repeat-daily {
+        background: rgba(34, 197, 94, 0.15);
+        color: #22c55e;
+    }
+
+    .task-badge.repeat-weekdays {
+        background: rgba(34, 197, 94, 0.15);
+        color: #22c55e;
+    }
+
+    .task-badge.repeat-weekends {
+        background: rgba(249, 115, 22, 0.15);
+        color: #f97316;
+    }
+
+    .task-badge.repeat-weekly {
+        background: rgba(59, 130, 246, 0.15);
+        color: #3b82f6;
+    }
+
+    .task-badge.repeat-monthly {
+        background: rgba(139, 92, 246, 0.15);
+        color: #8b5cf6;
+    }
+
+    .task-badge.repeat-yearly {
+        background: rgba(217, 70, 239, 0.15);
+        color: #d946ef;
+    }
+
+    .task-badge.repeat-custom {
+        background: rgba(20, 184, 166, 0.15);
+        color: #14b8a6;
+    }
+
+    .task-badge.repeat-once {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+    }
+
+    .task-badge.repeat-ebbinghaus {
+        background: rgba(236, 72, 153, 0.15);
+        color: #ec4899;
+    }
+
+    .task-badge.repeat-unlimited {
+        background: rgba(99, 102, 241, 0.15);
+        color: #6366f1;
+    }
+
+    .task-badge.type-count {
+        background: rgba(6, 182, 212, 0.15);
+        color: #06b6d4;
+    }
+
+    .task-badge.pinned {
+        background: rgba(var(--accent-rgb), 0.2);
+        color: var(--accent);
+    }
+
     .task-description {
         font-size: 13px;
         color: var(--text-muted);
         margin-top: 2px;
     }
-    
+
     .task-meta {
         display: flex;
         gap: 16px;
         align-items: center;
     }
-    
+
     .task-xp {
         font-size: 16px;
         font-weight: 700;
@@ -147,7 +198,7 @@
         border-radius: 8px;
         white-space: nowrap;
     }
-    
+
     .task-category {
         font-size: 12px;
         color: var(--text-muted);
@@ -155,23 +206,23 @@
         align-items: center;
         gap: 4px;
     }
-    
+
     .task-actions {
         display: flex;
         gap: 8px;
     }
-    
+
     @media (max-width: 768px) {
         .task-row {
             flex-wrap: wrap;
             gap: 12px;
         }
-        
+
         .task-meta {
             width: 100%;
             justify-content: space-between;
         }
-        
+
         .task-actions {
             width: 100%;
             justify-content: flex-end;
@@ -209,28 +260,29 @@
     {% for task in tasks %}
     {% set is_archived = task.completed_date and task.repeat_type in ('once', 'none') %}
     <div class="task-row {% if not task.is_active %}inactive{% endif %} {% if task.is_pinned %}pinned{% endif %} {% if is_archived %}archived{% endif %}"
-         data-repeat="{{ task.repeat_type }}" data-type="{{ task.task_type }}" data-archived="{{ 'true' if is_archived else 'false' }}"
-         {% if is_archived %}style="opacity: 0.6;"{% endif %}>
+        data-repeat="{{ task.repeat_type }}" data-type="{{ task.task_type }}"
+        data-archived="{{ 'true' if is_archived else 'false' }}" {% if is_archived %}style="opacity: 0.6;" {% endif %}>
         <div class="task-icon-box" style="background: {{ task.color }}; color: {{ task.color }}">
             {% if task.emoji %}
             <span style="font-size: 28px;">{{ task.emoji }}</span>
             {% else %}
-            <i class="{{ task.icon }}"></i>
+            <i class="ph {{ task.icon }}"></i>
             {% endif %}
         </div>
-        
+
         <div class="task-info">
             <div class="task-name">
                 {{ task.name }}
                 <div class="task-badges">
                     {% if is_archived %}
-                    <span class="task-badge" style="background: rgba(107, 114, 128, 0.2); color: #6b7280;"><i class="ph ph-archive"></i> Archived</span>
+                    <span class="task-badge" style="background: rgba(107, 114, 128, 0.2); color: #6b7280;"><i
+                            class="ph ph-archive"></i> Archived</span>
                     {% endif %}
-                    
+
                     {% if task.is_pinned and not is_archived %}
                     <span class="task-badge pinned"><i class="ph ph-push-pin"></i></span>
                     {% endif %}
-                    
+
                     <span class="task-badge repeat-{{ task.repeat_type }}">
                         {% if task.repeat_type == 'none' %}No Deadline
                         {% elif task.repeat_type == 'daily' %}Daily
@@ -239,14 +291,15 @@
                         {% elif task.repeat_type == 'weekly' %}Weekly
                         {% elif task.repeat_type == 'monthly' %}Monthly
                         {% elif task.repeat_type == 'yearly' %}Yearly
-                        {% elif task.repeat_type == 'custom' %}Every {{ task.repeat_interval }} {{ task.repeat_unit or 'day' }}{% if task.repeat_interval > 1 %}s{% endif %}
+                        {% elif task.repeat_type == 'custom' %}Every {{ task.repeat_interval }} {{ task.repeat_unit or
+                        'day' }}{% if task.repeat_interval > 1 %}s{% endif %}
                         {% elif task.repeat_type == 'once' %}One-Time
                         {% elif task.repeat_type == 'ebbinghaus' %}Spaced
                         {% elif task.repeat_type == 'unlimited' %}Unlimited
                         {% else %}{{ task.repeat_type|capitalize }}
                         {% endif %}
                     </span>
-                    
+
                     {% if task.task_type == 'count' %}
                     <span class="task-badge type-count">×{{ task.target_count }}</span>
                     {% endif %}
@@ -256,7 +309,7 @@
             <div class="task-description">{{ task.description }}</div>
             {% endif %}
         </div>
-        
+
         <div class="task-meta">
             <span class="task-category">
                 <i class="ph ph-folder"></i> {{ task.category|capitalize }}
@@ -268,13 +321,13 @@
                 {% endif %}
             </div>
         </div>
-        
+
         <div class="task-actions">
             <a href="{{ url_for('admin_daily_task_edit', id=task.id) }}" class="action-btn edit" title="Edit">
                 <i class="ph ph-pencil"></i>
             </a>
-            <form action="{{ url_for('admin_daily_task_delete', id=task.id) }}" method="post" 
-                  onsubmit="return confirmDelete(this, 'Task')" style="display: inline;">
+            <form action="{{ url_for('admin_daily_task_delete', id=task.id) }}" method="post"
+                onsubmit="return confirmDelete(this, 'Task')" style="display: inline;">
                 <button type="submit" class="action-btn delete" title="Delete">
                     <i class="ph ph-trash"></i>
                 </button>
@@ -300,11 +353,11 @@
     // Filter tabs
     const filterTabs = document.querySelectorAll('.filter-tab');
     const taskRows = document.querySelectorAll('.task-row');
-    
+
     function applyFilter(filter) {
         taskRows.forEach(row => {
             const isArchived = row.dataset.archived === 'true';
-            
+
             if (filter === 'all') {
                 // Show all active (non-archived) tasks
                 row.style.display = isArchived ? 'none' : '';
@@ -318,15 +371,15 @@
             }
         });
     }
-    
+
     filterTabs.forEach(tab => {
-        tab.addEventListener('click', function() {
+        tab.addEventListener('click', function () {
             filterTabs.forEach(t => t.classList.remove('active'));
             this.classList.add('active');
             applyFilter(this.dataset.filter);
         });
     });
-    
+
     // Apply initial filter (hide archived by default)
     applyFilter('all');
 </script>
