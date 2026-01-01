@@ -507,8 +507,17 @@ def create_app(config_name=None):
                 user_id=current_user.id,
                 streak_type='daily_xp'
             ).first()
-            if streak:
-                streak.update_streak(entry.date)
+            
+            if not streak:
+                streak = Streak(
+                    user_id=current_user.id,
+                    streak_type='daily_xp',
+                    current_count=0,
+                    longest_count=0
+                )
+                db.session.add(streak)
+                
+            streak.update_streak(entry.date)
             
             db.session.commit()
             
@@ -539,8 +548,17 @@ def create_app(config_name=None):
             user_id=current_user.id,
             streak_type='daily_xp'
         ).first()
-        if streak:
-            streak.update_streak(date.today())
+        
+        if not streak:
+            streak = Streak(
+                user_id=current_user.id,
+                streak_type='daily_xp',
+                current_count=0,
+                longest_count=0
+            )
+            db.session.add(streak)
+            
+        streak.update_streak(date.today())
             
         db.session.commit()
         
@@ -771,13 +789,23 @@ def create_app(config_name=None):
         if settings and today_log.total_xp >= settings.daily_xp_goal:
             today_log.goal_met = True
             
-            # Update streak
+        # Update streak if any tasks are completed
+        if completed_tasks:
             streak = Streak.query.filter_by(
                 user_id=current_user.id,
                 streak_type='daily_xp'
             ).first()
-            if streak:
-                streak.update_streak(today)
+            
+            if not streak:
+                streak = Streak(
+                    user_id=current_user.id,
+                    streak_type='daily_xp',
+                    current_count=0,
+                    longest_count=0
+                )
+                db.session.add(streak)
+                
+            streak.update_streak(today)
         
         db.session.commit()
         
