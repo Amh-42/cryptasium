@@ -310,10 +310,73 @@
 
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">
-                <i class="ph ph-check"></i> Save Settings
+                <i class="ph ph-check"></i> Save Visual Settings
             </button>
         </div>
     </form>
+
+    <!-- Backup & Portability -->
+    <div class="settings-section">
+        <div class="settings-section-title">
+            <i class="ph ph-archive"></i> Backup & Portability
+        </div>
+        <p class="help-text" style="margin-bottom: 20px;">
+            Export your settings, trackables, and rank configurations to a backup file.
+            You can import this file later to restore your target configuration.
+        </p>
+
+        <div class="form-row" style="align-items: end;">
+            <div class="form-group">
+                <label>Export Current Settings</label>
+                <a href="{{ url_for('admin_export_settings') }}" class="btn btn-outline"
+                    style="width: 100%; display: flex; justify-content: center; gap: 8px;">
+                    <i class="ph ph-download-simple"></i> Download .cryptasium
+                </a>
+            </div>
+
+            <form action="{{ url_for('admin_import_settings') }}" method="post" enctype="multipart/form-data"
+                class="form-group">
+                <label>Import Settings</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="file" name="backup_file" accept=".cryptasium,.json" required
+                        style="flex: 1; padding: 7px;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ph ph-upload-simple"></i> Import
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Account Security -->
+    <div class="settings-section">
+        <div class="settings-section-title">
+            <i class="ph ph-shield-check"></i> Account Security
+        </div>
+        <form action="{{ url_for('admin_reset_password') }}" method="post">
+            <div class="form-group">
+                <label>Current Password</label>
+                <input type="password" name="current_password" required placeholder="Enter your current password">
+            </div>
+            <div class="form-row" style="margin-top: 20px;">
+                <div class="form-group">
+                    <label>New Password</label>
+                    <input type="password" name="new_password" required minlength="6"
+                        placeholder="At least 6 characters">
+                </div>
+                <div class="form-group">
+                    <label>Confirm New Password</label>
+                    <input type="password" name="confirm_password" required minlength="6"
+                        placeholder="Repeat new password">
+                </div>
+            </div>
+            <div class="form-actions" style="margin-top: 24px;">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ph ph-lock-key"></i> Update Password
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 {% endblock %}
 

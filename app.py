@@ -457,23 +457,36 @@ def create_app(config_name=None):
     @app.route('/admin/signup', methods=['GET', 'POST'])
     def admin_signup():
         if request.method == 'POST':
-            if User.query.filter_by(username=request.form.get('username')).first():
-                flash('Username exists', 'error')
+            username = request.form.get('username')
+            email = request.form.get('email')
+            
+            # Check if username exists
+            if User.query.filter_by(username=username).first():
+                flash('Username already exists. Please choose another.', 'error')
+            # Check if email exists
+            elif User.query.filter_by(email=email).first():
+                flash('An account with this email already exists.', 'error')
             else:
                 user = User(
-                    username=request.form.get('username'),
-                    email=request.form.get('email')
+                    username=username,
+                    email=email
                 )
                 user.set_password(request.form.get('password'))
                 db.session.add(user)
-                db.session.commit()
                 
-                # Initialize gamification for new user
-                init_user_gamification(user.id)
-                
-                login_user(user)
-                flash('Account created! Your gamification dashboard is ready.', 'success')
-                return redirect(url_for('admin_dashboard'))
+                try:
+                    db.session.commit()
+                    
+                    # Initialize gamification for new user
+                    init_user_gamification(user.id)
+                    
+                    login_user(user)
+                    flash('Account created! Your gamification dashboard is ready.', 'success')
+                    return redirect(url_for('admin_dashboard'))
+                except Exception as e:
+                    db.session.rollback()
+                    flash(f'An error occurred: {str(e)}', 'error')
+                    
         return render_template('admin/signup.html')
 
     # ========== MAIN DASHBOARD ==========
@@ -1276,6 +1289,158 @@ def create_app(config_name=None):
             return redirect(url_for('admin_settings'))
         
         return render_template('admin/settings.html', settings=settings)
+
+    @app.route('/admin/settings/export')
+    @admin_required
+    def admin_export_settings():
+        """Export user settings, trackables, and ranks to a .cryptasium file"""
+        from flask import make_response
+        
+        # Gather data
+        settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+        trackables = TrackableType.query.filter_by(user_id=current_user.id).all()
+        ranks = CustomRank.query.filter_by(user_id=current_user.id).all()
+        
+        data = {
+            'version': '1.0',
+            'exported_at': datetime.now().isoformat(),
+            'user_settings': settings.to_dict() if settings else {},
+            'trackables': [t.to_dict() for t in trackables],
+            'ranks': []
+        }
+        
+        # Add ranks with their conditions
+        for rank in ranks:
+            r_dict = rank.to_dict()
+            r_dict['conditions'] = [{
+                'type': c.condition_type,
+                'threshold': c.threshold,
+                'custom_name': c.custom_name,
+                'trackable_slug': c.trackable_slug,
+                'is_bucket': c.is_bucket
+            } for c in rank.conditions]
+            data['ranks'].append(r_dict)
+            
+        # Create response
+        json_data = json.dumps(data, indent=4)
+        response = make_response(json_data)
+        
+        # Set content type and filename with .cryptasium extension
+        filename = f"backup_{current_user.username}_{datetime.now().strftime('%Y%m%d')}.cryptasium"
+        response.headers['Content-Disposition'] = f'attachment; filename={filename}'
+        response.headers['Content-Type'] = 'application/json'
+        
+        return response
+
+    @app.route('/admin/settings/import', methods=['POST'])
+    @admin_required
+    def admin_import_settings():
+        """Import settings from a .cryptasium file"""
+        if 'backup_file' not in request.files:
+            flash('No file provided', 'error')
+            return redirect(url_for('admin_settings'))
+            
+        file = request.files['backup_file']
+        if file.filename == '':
+            flash('No file selected', 'error')
+            return redirect(url_for('admin_settings'))
+            
+        try:
+            # Read and parse JSON
+            content = file.read().decode('utf-8')
+            data = json.loads(content)
+            
+            # 1. Update User Settings
+            s_data = data.get('user_settings', {})
+            if s_data:
+                settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+                if not settings:
+                    settings = UserSettings(user_id=current_user.id)
+                    db.session.add(settings)
+                
+                # Update fields (excluding IDs and sensitive ones)
+                for key, value in s_data.items():
+                    if hasattr(settings, key) and key not in ['id', 'user_id', 'created_at', 'updated_at']:
+                        setattr(settings, key, value)
+            
+            # 2. Sync Trackables
+            t_list = data.get('trackables', [])
+            for t_data in t_list:
+                slug = t_data.get('slug')
+                if not slug: continue
+                
+                trackable = TrackableType.query.filter_by(user_id=current_user.id, slug=slug).first()
+                if not trackable:
+                    trackable = TrackableType(user_id=current_user.id, slug=slug)
+                    db.session.add(trackable)
+                
+                for key, value in t_data.items():
+                    if hasattr(trackable, key) and key not in ['id', 'user_id', 'created_at', 'updated_at', 'total_count', 'total_xp']:
+                        setattr(trackable, key, value)
+            
+            # 3. Sync Ranks
+            r_list = data.get('ranks', [])
+            for r_data in r_list:
+                level = r_data.get('level')
+                if level is None: continue
+                
+                rank = CustomRank.query.filter_by(user_id=current_user.id, level=level).first()
+                if not rank:
+                    rank = CustomRank(user_id=current_user.id, level=level)
+                    db.session.add(rank)
+                
+                for key, value in r_data.items():
+                    if hasattr(rank, key) and key not in ['id', 'user_id', 'created_at', 'updated_at', 'conditions', 'condition_count']:
+                        setattr(rank, key, value)
+                
+                # Rebuild conditions
+                db.session.flush() # Get rank.id
+                RankCondition.query.filter_by(rank_id=rank.id).delete()
+                for c_data in r_data.get('conditions', []):
+                    cond = RankCondition(
+                        rank_id=rank.id,
+                        condition_type=c_data.get('type'),
+                        threshold=c_data.get('threshold', 0),
+                        custom_name=c_data.get('custom_name'),
+                        trackable_slug=c_data.get('trackable_slug'),
+                        is_bucket=c_data.get('is_bucket', False)
+                    )
+                    db.session.add(cond)
+            
+            db.session.commit()
+            flash('Account settings imported successfully!', 'success')
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Import failed: {str(e)}', 'error')
+            
+        return redirect(url_for('admin_settings'))
+
+    @app.route('/admin/reset-password', methods=['POST'])
+    @admin_required
+    def admin_reset_password():
+        """Reset password for the current user"""
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if not current_user.check_password(current_password):
+            flash('Current password is incorrect.', 'error')
+            return redirect(url_for('admin_settings'))
+            
+        if new_password != confirm_password:
+            flash('New passwords do not match.', 'error')
+            return redirect(url_for('admin_settings'))
+            
+        if len(new_password) < 6:
+            flash('Password must be at least 6 characters.', 'error')
+            return redirect(url_for('admin_settings'))
+            
+        current_user.set_password(new_password)
+        db.session.commit()
+        
+        flash('Password updated successfully!', 'success')
+        return redirect(url_for('admin_settings'))
 
     # ========== PROGRESS PAGE ==========
     

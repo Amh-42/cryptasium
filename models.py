@@ -59,6 +59,16 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
         
+    def to_dict(self):
+        return {
+            'username': self.username,
+            'email': self.email,
+            'role': self.role,
+            'display_name': self.display_name,
+            'avatar_url': self.avatar_url,
+            'timezone': self.timezone
+        }
+        
     def get_total_xp(self):
         """Calculate total XP from all sources"""
         total = 0
@@ -246,21 +256,31 @@ class TrackableType(db.Model):
     
     def to_dict(self):
         return {
-            'id': self.id,
             'name': self.name,
             'slug': self.slug,
             'description': self.description,
-            'category': self.category,
             'xp_per_unit': self.xp_per_unit,
+            'xp_mode': self.xp_mode,
+            'xp_multiplier': self.xp_multiplier,
+            'tiers_config': self.tiers_config,
+            'track_value': self.track_value,
+            'value_label': self.value_label,
+            'value_prefix': self.value_prefix,
+            'value_suffix': self.value_suffix,
             'icon': self.icon,
             'color': self.color,
             'emoji': self.emoji,
+            'is_countable': self.is_countable,
+            'track_duration': self.track_duration,
+            'track_views': self.track_views,
+            'allows_negative': self.allows_negative,
             'daily_goal': self.daily_goal,
             'weekly_goal': self.weekly_goal,
             'monthly_goal': self.monthly_goal,
-            'is_pinned': self.is_pinned,
-            'total_count': self.get_total_count(),
-            'total_xp': self.get_total_xp()
+            'value_goal': self.value_goal,
+            'display_order': self.display_order,
+            'is_active': self.is_active,
+            'is_pinned': self.is_pinned
         }
     
     def __repr__(self):
@@ -995,8 +1015,21 @@ class UserSettings(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    def __repr__(self):
-        return f'<UserSettings {self.user_id}>'
+    def to_dict(self):
+        return {
+            'accent_color': self.accent_color,
+            'points_name': self.points_name,
+            'points_icon': self.points_icon,
+            'daily_xp_goal': self.daily_xp_goal,
+            'perfect_day_bonus': self.perfect_day_bonus,
+            'perfect_week_bonus': self.perfect_week_bonus,
+            'streak_bonus_per_day': self.streak_bonus_per_day,
+            'show_xp_animations': self.show_xp_animations,
+            'dark_mode': self.dark_mode,
+            'compact_view': self.compact_view,
+            'show_dashboard_header': self.show_dashboard_header,
+            'enable_youtube_sync': self.enable_youtube_sync
+        }
     
 
 class DashboardImage(db.Model):
