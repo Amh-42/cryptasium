@@ -284,6 +284,19 @@
 
             <div class="settings-toggle">
                 <div class="toggle-info">
+                    <div class="toggle-label">YouTube Sync</div>
+                    <div class="toggle-description">Enable automatic syncing of YouTube stats and XP (off by default)
+                    </div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" name="enable_youtube_sync" {% if settings.enable_youtube_sync %}checked{%
+                        endif %}>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="settings-toggle">
+                <div class="toggle-info">
                     <div class="toggle-label">Show Gallery Header</div>
                     <div class="toggle-description">Enable the customizable top gallery on dashboard</div>
                 </div>
