@@ -190,15 +190,8 @@ def create_app(config_name=None):
             is_active=True
         ).order_by(TrackableType.display_order).all()
         
-        # Calculate total XP
-        total_xp = 0
-        for t in trackables:
-            total_xp += t.get_total_xp()
-        
-        # Add daily task XP
-        daily_logs = DailyLog.query.filter_by(user_id=current_user.id).all()
-        for log in daily_logs:
-            total_xp += log.total_xp or 0
+        # Calculate total XP using centralization method on User model
+        total_xp = current_user.get_total_xp()
         
         # Get current rank and next rank
         # Sort by level to determine order
