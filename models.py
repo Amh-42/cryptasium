@@ -69,13 +69,18 @@ class User(UserMixin, db.Model):
         for log in self.daily_logs:
             total += log.total_xp or 0
             
-        # Add dynamic YouTube XP
-        total += self.get_youtube_xp()
+        # Add dynamic YouTube XP if enabled
+        if self.user_settings and self.user_settings.enable_youtube_sync:
+            total += self.get_youtube_xp()
         
         return total
 
     def get_youtube_xp(self):
-        """Calculate dynamic XP from synced YouTube data"""
+        """Calculate dynamic XP from synced YouTube data if enabled"""
+        # Check if YouTube sync is enabled in settings
+        if not self.user_settings or not self.user_settings.enable_youtube_sync:
+            return 0
+            
         xp = 0.0
         
         # 1 subscriber = 20 points
@@ -351,7 +356,15 @@ class CustomRank(db.Model):
             if self.min_xp is not None:
                 user = User.query.get(user_id)
                 total_xp = user.get_total_xp() if user else 0
-                return total_xp >= self.min_xp, {'total_xp': total_xp, 'required_xp': self.min_xp}
+                return total_xp >= self.min_xp, {
+                    'legacy_xp': {
+                        'type': 'total_xp',
+                        'threshold': self.min_xp,
+                        'current': total_xp,
+                        'met': total_xp >= self.min_xp,
+                        'custom_name': 'Total XP'
+                    }
+                }
             return True, {}  # No conditions = always met
         
         # Check all conditions (AND logic)
@@ -963,6 +976,7 @@ class UserSettings(db.Model):
     dark_mode = db.Column(db.Boolean, default=True)
     compact_view = db.Column(db.Boolean, default=False)
     show_dashboard_header = db.Column(db.Boolean, default=True)
+    enable_youtube_sync = db.Column(db.Boolean, default=False)
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

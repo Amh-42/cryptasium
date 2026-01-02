@@ -113,6 +113,11 @@ def create_app(config_name=None):
         user = User.query.get(user_id)
         if not user:
             return False, "User not found"
+            
+        # Check if YouTube sync is enabled in settings
+        settings = UserSettings.query.filter_by(user_id=user_id).first()
+        if not settings or not settings.enable_youtube_sync:
+            return False, "YouTube sync is disabled in settings"
         
         # Check cooldown (sync at most once every 10 minutes)
         if user.last_youtube_sync:
@@ -1250,6 +1255,7 @@ def create_app(config_name=None):
             settings.streak_bonus_per_day = int(request.form.get('streak_bonus_per_day', 5))
             settings.show_xp_animations = request.form.get('show_xp_animations') == 'on'
             settings.show_dashboard_header = request.form.get('show_dashboard_header') == 'on'
+            settings.enable_youtube_sync = request.form.get('enable_youtube_sync') == 'on'
             db.session.commit()
             flash('Settings saved!', 'success')
             return redirect(url_for('admin_settings'))
