@@ -341,6 +341,21 @@ class TrackableEntry(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    def to_dict(self):
+        return {
+            'trackable_slug': self.trackable_type.slug if self.trackable_type else None,
+            'date': self.date.isoformat(),
+            'count': self.count,
+            'value': self.value,
+            'title': self.title,
+            'notes': self.notes,
+            'url': self.url,
+            'duration_minutes': self.duration_minutes,
+            'views': self.views,
+            'tier_name': self.tier_name,
+            'allocated_condition_id': self.allocated_condition_id
+        }
+
     def get_xp(self):
         """Calculate XP for this entry based on the trackable type's XP mode"""
         if self.trackable_type:
@@ -787,6 +802,34 @@ class UserDailyTask(db.Model):
             return count >= self.target_count
         return count > 0
     
+    def to_dict(self):
+        return {
+            'name': self.name,
+            'slug': self.slug,
+            'description': self.description,
+            'task_type': self.task_type,
+            'target_count': self.target_count,
+            'repeat_type': self.repeat_type,
+            'repeat_interval': self.repeat_interval,
+            'repeat_unit': self.repeat_unit,
+            'repeat_days': self.repeat_days,
+            'repeat_day_of_month': self.repeat_day_of_month,
+            'due_date': self.due_date.isoformat() if self.due_date else None,
+            'completed_date': self.completed_date.isoformat() if self.completed_date else None,
+            'ebbinghaus_level': self.ebbinghaus_level,
+            'next_due_date': self.next_due_date.isoformat() if self.next_due_date else None,
+            'xp_value': self.xp_value,
+            'xp_per_count': self.xp_per_count,
+            'streak_bonus': self.streak_bonus,
+            'icon': self.icon,
+            'color': self.color,
+            'emoji': self.emoji,
+            'display_order': self.display_order,
+            'is_active': self.is_active,
+            'is_pinned': self.is_pinned,
+            'category': self.category
+        }
+
     def __repr__(self):
         return f'<UserDailyTask {self.name}>'
 
@@ -813,6 +856,16 @@ class TaskCompletion(db.Model):
     # Timestamp
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    def to_dict(self):
+        return {
+            'task_slug': self.task.slug if self.task else None,
+            'date': self.date.isoformat(),
+            'count': self.count,
+            'notes': self.notes,
+            'xp_earned': self.xp_earned,
+            'created_at': self.created_at.isoformat()
+        }
+
     def __repr__(self):
         return f'<TaskCompletion {self.task_id} on {self.date}>'
 
@@ -866,6 +919,16 @@ class DailyLog(db.Model):
         self.total_xp = total
         return total
     
+    def to_dict(self):
+        return {
+            'date': self.date.isoformat(),
+            'completed_tasks': self.completed_tasks,
+            'total_xp': self.total_xp,
+            'goal_met': self.goal_met,
+            'notes': self.notes,
+            'mood': self.mood
+        }
+
     def __repr__(self):
         return f'<DailyLog {self.date}>'
 
@@ -915,6 +978,20 @@ class Achievement(db.Model):
     def set_criteria(self, criteria_dict):
         self.criteria = json.dumps(criteria_dict)
     
+    def to_dict(self):
+        return {
+            'name': self.name,
+            'slug': self.slug,
+            'description': self.description,
+            'criteria': self.criteria,
+            'xp_reward': self.xp_reward,
+            'icon': self.icon,
+            'color': self.color,
+            'badge_image': self.badge_image,
+            'is_active': self.is_active,
+            'is_hidden': self.is_hidden
+        }
+
     def __repr__(self):
         return f'<Achievement {self.name}>'
 
@@ -939,6 +1016,12 @@ class UserAchievement(db.Model):
         db.UniqueConstraint('user_id', 'achievement_id', name='unique_user_achievement'),
     )
     
+    def to_dict(self):
+        return {
+            'achievement_slug': self.achievement.slug if self.achievement else None,
+            'unlocked_at': self.unlocked_at.isoformat()
+        }
+
     def __repr__(self):
         return f'<UserAchievement {self.achievement_id}>'
 
@@ -993,6 +1076,15 @@ class Streak(db.Model):
         if self.current_count > self.longest_count:
             self.longest_count = self.current_count
     
+    def to_dict(self):
+        return {
+            'streak_type': self.streak_type,
+            'current_count': self.current_count,
+            'longest_count': self.longest_count,
+            'last_activity_date': self.last_activity_date.isoformat() if self.last_activity_date else None,
+            'streak_start_date': self.streak_start_date.isoformat() if self.streak_start_date else None
+        }
+
     def __repr__(self):
         return f'<Streak {self.streak_type}: {self.current_count}>'
 
@@ -1060,6 +1152,12 @@ class DashboardImage(db.Model):
     image_url = db.Column(db.String(500), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    def to_dict(self):
+        return {
+            'image_url': self.image_url,
+            'created_at': self.created_at.isoformat()
+        }
+
     def __repr__(self):
         return f'<DashboardImage {self.id}>'
 

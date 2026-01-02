@@ -1297,20 +1297,44 @@
                 <div class="stat-value">{{ pinned_trackables|length }}</div>
                 <div class="stat-label">Pinned</div>
             </div>
+            {% if settings.enable_youtube_sync %}
             <div class="stat-card">
                 <div class="stat-icon" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
                     <i class="ph ph-users"></i>
                 </div>
-                <div class="stat-value">{{ stats.youtube.subscribers|format_number }}</div>
+                <div class="stat-value">{{ current_user.youtube_subscribers|format_number }}</div>
                 <div class="stat-label">Subscribers</div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
                     <i class="ph ph-eye"></i>
                 </div>
-                <div class="stat-value">{{ stats.youtube.channel_views|format_number }}</div>
+                <div class="stat-value">{{ current_user.youtube_channel_views|format_number }}</div>
                 <div class="stat-label">Total Views</div>
             </div>
+            {% else %}
+            {# Fallback cards for specific trackables #}
+            {% set fallback_trackables = ['downlines', 'bonus', 'directs'] %}
+            {% for ft_slug in fallback_trackables %}
+            {% set ft = pinned_trackables | selectattr('slug', 'equalto', ft_slug) | first %}
+            {% if ft %}
+            <div class="stat-card">
+                <div class="stat-icon"
+                    style="background: {{ ft.color if ft.color and ft.color.startswith('#') else '#888' }}20; color: {{ ft.color or '#888' }};">
+                    <i class="ph {{ ft.icon }}"></i>
+                </div>
+                <div class="stat-value">
+                    {% if ft.track_value %}
+                    {{ ft.value_prefix }}{{ ft.get_total_value()|format_number }}
+                    {% else %}
+                    {{ ft.get_total_count()|format_number }}
+                    {% endif %}
+                </div>
+                <div class="stat-label">{{ ft.name }}</div>
+            </div>
+            {% endif %}
+            {% endfor %}
+            {% endif %}
             <div class="stat-card">
                 <div class="stat-icon" style="background: rgba(168, 85, 247, 0.15); color: #a855f7;">
                     <i class="ph ph-trophy"></i>
@@ -1364,7 +1388,7 @@
                 {% else %}
                 <form action="{{ url_for('admin_toggle_daily_task', slug=task.slug) }}" method="post"
                     class="daily-task-form" data-ajax-form>
-                    <div class="daily-task {% if is_completed %}completed{% endif %}"
+                    <div class="daily-task {% if is_completed %}completed{% endif %}" id="task-{{ task.slug }}"
                         onclick="handleNormalTaskToggle(this, event)">
                         <div class="task-checkbox" style="border-color: {{ task.color }}">
                             <i class="ph ph-check"></i>
@@ -1437,6 +1461,14 @@
                             onclick="handleTrackableLog('{{ trackable.id }}', {{ 'true' if trackable.track_value else 'false' }}, event)">
                             <i class="ph ph-plus"></i>
                         </button>
+                        <button type="button" class="trackable-btn" title="Remove last entry"
+                            onclick="handleTrackableLog('{{ trackable.id }}', false, event, 'decrement')">
+                            <i class="ph ph-minus"></i>
+                        </button>
+                        <a href="{{ url_for('admin_trackable_edit', id=trackable.id) }}" class="trackable-btn"
+                            title="Edit Trackable">
+                            <i class="ph ph-pencil"></i>
+                        </a>
                         <a href="{{ url_for('admin_log_entry') }}?trackable={{ trackable.id }}" class="trackable-btn"
                             title="Log with details">
                             <i class="ph ph-note-pencil"></i>
@@ -1609,63 +1641,64 @@
 
 {% block extra_js %}
 <script>
-    // AJAX for Daily Tasks (+/- and Toggle)
-    async function handleTaskAction(slug, action, event) {
+    // Socket.IO Events
+    socket.on('stats_update', function (data) {
+        updateDashboardStats(data);
+    });
+
+    socket.on('trackable_update', function (data) {
+        updateTrackableUI(data);
+    });
+
+    socket.on('task_update', function (data) {
+        updateTaskUI(data.slug, data);
+    });
+
+    // Handle Daily Tasks
+    function handleTaskAction(slug, action, event) {
         if (event) event.stopPropagation();
 
         const taskEl = document.getElementById('task-' + slug);
         if (!taskEl) return;
 
         // Frontend validation for limits
-        const countDisplay = taskEl.querySelector('.task-count-display .current');
-        const targetDisplay = taskEl.querySelector('.task-count-display .target');
+        if (action !== 'toggle') {
+            const countDisplay = taskEl.querySelector('.task-count-display .current');
+            const targetDisplay = taskEl.querySelector('.task-count-display .target');
 
-        if (countDisplay && targetDisplay) {
-            let current = parseInt(countDisplay.textContent);
-            let target = parseInt(targetDisplay.textContent);
+            if (countDisplay && targetDisplay) {
+                let current = parseInt(countDisplay.textContent);
+                let target = parseInt(targetDisplay.textContent);
 
-            if (action === 'decrement' && current <= 0) return;
-            if (action === 'increment' && current >= target) return;
+                if (action === 'decrement' && current <= 0) return;
+                if (action === 'increment' && current >= target) return;
+            }
         }
 
         taskEl.classList.add('updating');
 
-        try {
-            const formData = new FormData();
-            formData.append('action', action);
-            formData.append('ajax', '1');
+        // Emit to server
+        socket.emit('task_action', {
+            slug: slug,
+            action: action
+        });
 
-            const response = await fetch(`/admin/daily-tasks/toggle/${slug}`, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            });
-
-            const data = await response.json();
-            if (data.success) {
-                updateTaskUI(slug, data);
-                updateDashboardStats(data);
-            }
-        } catch (error) {
-            console.error('Task update failed:', error);
-        } finally {
-            if (taskEl) taskEl.classList.remove('updating');
-        }
+        // Timeout to remove updating class if socket fails
+        setTimeout(() => taskEl.classList.remove('updating'), 2000);
     }
 
     function handleNormalTaskToggle(element, event) {
         if (event) event.stopPropagation();
-        const form = element.closest('form');
-        const slug = form.action.split('/').pop();
-
+        const taskEl = element.closest('.daily-task');
+        const slug = taskEl.id.replace('task-', '');
         handleTaskAction(slug, 'toggle', null);
     }
 
     function updateTaskUI(slug, data) {
-        const taskEl = document.getElementById('task-' + slug) || document.querySelector(`form[action*="${slug}"] .daily-task`);
+        const taskEl = document.getElementById('task-' + slug);
         if (!taskEl) return;
+
+        taskEl.classList.remove('updating');
 
         if (data.is_completed) {
             taskEl.classList.add('completed');
@@ -1680,68 +1713,73 @@
         }
     }
 
-    async function handleTrackableLog(id, asksValue, event) {
+    // Handle Trackables
+    function handleTrackableLog(id, asksValue, event, action = 'increment') {
         if (event) event.stopPropagation();
 
-        let value = 0;
-        if (asksValue) {
-            const trackableEl = document.querySelector(`.trackable-card[data-id="${id}"]`);
-            const name = trackableEl ? trackableEl.getAttribute('data-name') : 'Amount';
-            const prefix = trackableEl ? trackableEl.getAttribute('data-prefix') : '$';
+        const trackableEl = document.querySelector(`.trackable-card[data-id="${id}"]`);
+        const name = trackableEl ? trackableEl.getAttribute('data-name') : 'Amount';
+        const prefix = trackableEl ? trackableEl.getAttribute('data-prefix') : '$';
 
-            const input = prompt(`Enter ${name} amount (${prefix}):`);
-            if (input === null) return;
-            value = parseFloat(input);
-            if (isNaN(value)) {
-                alert('Please enter a valid number');
+        const performAction = (val = 0) => {
+            let numValue = parseFloat(val);
+            if (asksValue && isNaN(numValue)) {
+                showModal({
+                    title: 'Invalid Input',
+                    message: 'Please enter a valid numeric value.',
+                    type: 'danger',
+                    icon: 'warning'
+                });
                 return;
             }
-        }
 
-        try {
-            const formData = new FormData();
-            formData.append('value', value);
-
-            const response = await fetch(`/admin/quick-log/${id}`, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
+            // Emit to server
+            socket.emit('trackable_action', {
+                id: id,
+                action: action,
+                value: numValue
             });
 
-            const data = await response.json();
-            if (data.success) {
-                // Show XP popup
-                showXpPopup(data.xp);
-
-                // Update card UI
-                const card = document.querySelector(`.trackable-card[data-id="${id}"]`);
-                if (card) {
-                    const countEl = card.querySelector('.trackable-count');
-                    const xpEl = card.querySelector('.trackable-xp span');
-                    const valueEl = card.querySelector('.trackable-value .value');
-
-                    if (countEl) countEl.textContent = data.total_count;
-                    if (xpEl) xpEl.textContent = data.total_xp.toLocaleString();
-                    if (valueEl) {
-                        // We don't have total_value in the simple AJAX response yet, 
-                        // but we can increment it locally or refresh. 
-                        // For now let's just refresh the value if it's there.
-                        // Actually, I should probably return total_value too.
-                    }
-                }
-
-                // Refresh dashboard stats
-                // Need to get updated daily XP
-                refreshDashboardStats();
+            // Visual feedback
+            if (trackableEl) {
+                trackableEl.style.opacity = '0.7';
+                setTimeout(() => trackableEl.style.opacity = '1', 500);
             }
-        } catch (error) {
-            console.error('Quick log failed:', error);
+        };
+
+        if (action === 'increment' && asksValue) {
+            showModal({
+                title: `Log ${name}`,
+                message: `Enter the ${name.toLowerCase()} amount to record.`,
+                showInput: true,
+                inputLabel: `${name} (${prefix})`,
+                inputPlaceholder: '0.00',
+                inputType: 'number',
+                confirmText: 'Record',
+                type: 'primary',
+                icon: 'plus-circle',
+                onConfirm: (val) => performAction(val)
+            });
+        } else {
+            performAction(0);
         }
     }
 
+    function updateTrackableUI(data) {
+        const card = document.querySelector(`.trackable-card[data-id="${data.id}"]`);
+        if (!card) return;
+
+        const countEl = card.querySelector('.trackable-count');
+        const xpEl = card.querySelector('.trackable-xp span');
+        const valueEl = card.querySelector('.trackable-value .value');
+
+        if (countEl) countEl.textContent = data.total_count;
+        if (xpEl) xpEl.textContent = data.total_xp.toLocaleString();
+        if (valueEl) valueEl.textContent = data.total_value.toLocaleString();
+    }
+
     function showXpPopup(xp) {
+        if (!xp || xp <= 0) return;
         const popup = document.createElement('div');
         popup.className = 'xp-popup';
         popup.textContent = '+' + xp + ' XP';
@@ -1763,25 +1801,25 @@
         setTimeout(() => popup.remove(), 1200);
     }
 
-    async function refreshDashboardStats() {
-        // Simple way to refresh goal circle and other stats 
-        // without a full page reload or complex state
-        const response = await fetch('/admin/dashboard', {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        });
-        const html = await response.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-
-        // Update specific elements
-        const goalPanel = doc.querySelector('.sidebar-panel:has(.goal-circle)');
-        const currentGoalPanel = document.querySelector('.sidebar-panel:has(.goal-circle)');
-        if (goalPanel && currentGoalPanel) {
-            currentGoalPanel.innerHTML = goalPanel.innerHTML;
-        }
-    }
-
     function updateDashboardStats(data) {
+        // Update lifetime XP
+        const headerXp = document.querySelector('.xp-value');
+        if (headerXp) {
+            const oldXpText = headerXp.textContent.replace(/[^0-9]/g, '');
+            const oldXp = parseInt(oldXpText) || 0;
+            const newXp = data.total_xp;
+            if (newXp > oldXp) {
+                showXpPopup(newXp - oldXp);
+            }
+            headerXp.innerHTML = `${newXp.toLocaleString()} <span>${data.points_name}</span>`;
+        }
+
+        // Update Lifetime XP Progress Bar
+        const xpFill = document.querySelector('.xp-progress-fill');
+        if (xpFill) {
+            xpFill.style.width = data.progress_percent + '%';
+        }
+
         // Update goal circle
         const goalValue = document.querySelector('.goal-value');
         const goalCircleProgress = document.querySelector('.goal-circle-progress');
@@ -1803,12 +1841,16 @@
             }
         }
 
-        // Update XP Header
-        const headerXp = document.querySelector('.xp-value');
-        if (headerXp) {
-            // This is a bit tricky as total_xp (lifetime) isn't returned directly in the simple AJAX
-            // but we can at least show a popup or something.
-            // For now, let's assume the user wants the dashboard to reflect immediate changes.
+        // Update Rank if changed
+        const rankName = document.querySelector('.rank-name');
+        if (rankName && data.current_rank) {
+            rankName.textContent = data.current_rank.name;
+        }
+
+        // Update Streak
+        const streakValue = document.querySelector('.stat-card:has(.ph-fire) .stat-value');
+        if (streakValue) {
+            streakValue.textContent = data.streak;
         }
     }
 
@@ -1822,6 +1864,10 @@
 @keyframes popOut {
 0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 100% { opacity: 0; transform: translate(-50%, -80%) scale(0.8); }
+}
+.daily-task.updating {
+    opacity: 0.6;
+    pointer-events: none;
 }
 `;
     document.head.appendChild(style);

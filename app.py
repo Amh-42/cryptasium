@@ -3,6 +3,7 @@ Main Flask application for Cryptasium
 Fully Dynamic Gamification System
 """
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, abort
+from flask_socketio import SocketIO, emit
 from functools import wraps
 from datetime import datetime, date, timedelta
 import os
@@ -21,6 +22,9 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from werkzeug.utils import secure_filename
 
 
+socketio = SocketIO(cors_allowed_origins="*", async_mode='eventlet')
+
+
 def create_app(config_name=None):
     """Application factory pattern"""
     app = Flask(__name__)
@@ -36,6 +40,9 @@ def create_app(config_name=None):
     login_manager = LoginManager()
     login_manager.init_app(app)
     login_manager.login_view = 'admin_login'
+
+    # Initialize SocketIO
+    socketio.init_app(app)
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -102,6 +109,204 @@ def create_app(config_name=None):
                 return redirect(url_for('admin_login'))
             return f(*args, **kwargs)
         return decorated_function
+
+    # ========== SOCKETIO HELPERS & EVENTS ==========
+
+    @socketio.on('join')
+    def on_join(data):
+        if current_user.is_authenticated:
+            from flask_socketio import join_room
+            room = f"user_{current_user.id}"
+            join_room(room)
+            print(f"User {current_user.id} joined room {room}")
+
+    def broadcast_user_stats():
+        """Helper to broadcast latest stats to the user's room"""
+        if not current_user.is_authenticated:
+            return
+            
+        stats = get_user_stats()
+        room = f"user_{current_user.id}"
+        
+        # Use .get() or defaults to prevent crash
+        socketio.emit('stats_update', {
+            'total_xp': stats.get('total_xp', 0),
+            'today_xp': stats.get('today_xp', 0),
+            'daily_goal': stats.get('daily_goal', 50),
+            'goal_met': stats.get('goal_met', False),
+            'current_rank': {
+                'name': stats['current_rank'].name,
+                'level': stats['current_rank'].level,
+                'color': stats['current_rank'].color,
+                'icon': stats['current_rank'].icon
+            } if stats.get('current_rank') else None,
+            'next_rank': {
+                'name': stats['next_rank'].name,
+                'level': stats['next_rank'].level
+            } if stats.get('next_rank') else None,
+            'progress_percent': stats.get('progress_percent', 0),
+            'streak': stats['streak'].current_count if stats.get('streak') else 0,
+            'points_name': stats.get('points_name', 'XP')
+        }, room=room)
+
+    @socketio.on('trackable_action')
+    def handle_trackable_action(data):
+        if not current_user.is_authenticated:
+            return
+            
+        trackable_id = data.get('id')
+        action = data.get('action', 'increment') # 'increment' or 'decrement'
+        value = float(data.get('value', 0))
+        
+        trackable = TrackableType.query.get_or_404(trackable_id)
+        if trackable.user_id != current_user.id:
+            return
+            
+        if action == 'decrement':
+            # Remove the last entry for today
+            last_entry = TrackableEntry.query.filter_by(
+                user_id=current_user.id,
+                trackable_type_id=trackable_id,
+                date=date.today()
+            ).order_by(TrackableEntry.id.desc()).first()
+            if last_entry:
+                db.session.delete(last_entry)
+        else:
+            # Increment
+            entry = TrackableEntry(
+                user_id=current_user.id,
+                trackable_type_id=trackable_id,
+                date=date.today(),
+                count=1,
+                value=value
+            )
+            db.session.add(entry)
+            
+            # Update streak
+            streak = Streak.query.filter_by(
+                user_id=current_user.id,
+                streak_type='daily_xp'
+            ).first()
+            if not streak:
+                streak = Streak(user_id=current_user.id, streak_type='daily_xp', current_count=0, longest_count=0)
+                db.session.add(streak)
+            streak.update_streak(date.today())
+            
+        db.session.commit()
+        
+        # Broadcast update for this specific trackable
+        socketio.emit('trackable_update', {
+            'id': trackable_id,
+            'total_count': trackable.get_total_count(),
+            'total_xp': trackable.get_total_xp(),
+            'total_value': trackable.get_total_value()
+        }, room=f"user_{current_user.id}")
+        
+        # Broadcast overall stats
+        broadcast_user_stats()
+
+    @socketio.on('task_action')
+    def handle_task_action(data):
+        if not current_user.is_authenticated:
+            return
+            
+        slug = data.get('slug')
+        action = data.get('action', 'toggle') # 'toggle', 'increment', 'decrement'
+        
+        task = UserDailyTask.query.filter_by(
+            user_id=current_user.id,
+            slug=slug
+        ).first()
+        if not task:
+            return
+            
+        today = date.today()
+        
+        if task.task_type == 'count':
+            current_count = task.get_today_completion_count(today)
+            if action == 'decrement':
+                if current_count > 0:
+                    last_completion = TaskCompletion.query.filter_by(
+                        user_id=current_user.id,
+                        task_id=task.id,
+                        date=today
+                    ).order_by(TaskCompletion.id.desc()).first()
+                    if last_completion:
+                        db.session.delete(last_completion)
+            else:
+                # Increment
+                if current_count < task.target_count:
+                    completion = TaskCompletion(
+                        user_id=current_user.id,
+                        task_id=task.id,
+                        date=today,
+                        count=1
+                    )
+                    xp_e = task.xp_per_count if task.xp_per_count > 0 else (task.xp_value if current_count + 1 >= task.target_count else 0)
+                    completion.xp_earned = xp_e
+                    db.session.add(completion)
+        else:
+            # Normal task toggle
+            existing = TaskCompletion.query.filter_by(
+                user_id=current_user.id,
+                task_id=task.id,
+                date=today
+            ).first()
+            if existing:
+                db.session.delete(existing)
+            else:
+                completion = TaskCompletion(
+                    user_id=current_user.id,
+                    task_id=task.id,
+                    date=today,
+                    xp_earned=task.xp_value
+                )
+                db.session.add(completion)
+                if task.repeat_type == 'ebbinghaus':
+                    task.calculate_next_ebbinghaus_date()
+                if task.repeat_type in ('once', 'none'):
+                    task.completed_date = today
+
+        # Update daily log for backward compatibility
+        today_log = DailyLog.query.filter_by(user_id=current_user.id, date=today).first()
+        if not today_log:
+            today_log = DailyLog(user_id=current_user.id, date=today)
+            db.session.add(today_log)
+        
+        db.session.flush() # Ensure deletions/additions are accounted for
+        
+        total_task_xp = db.session.query(db.func.sum(TaskCompletion.xp_earned)).filter(
+            TaskCompletion.user_id == current_user.id,
+            TaskCompletion.date == today
+        ).scalar() or 0
+        today_log.total_xp = total_task_xp
+        
+        # Check if goal met
+        settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+        if settings and today_log.total_xp >= settings.daily_xp_goal:
+            today_log.goal_met = True
+        else:
+            today_log.goal_met = False
+            
+        # Update streak
+        streak = Streak.query.filter_by(user_id=current_user.id, streak_type='daily_xp').first()
+        if not streak:
+            streak = Streak(user_id=current_user.id, streak_type='daily_xp', current_count=0, longest_count=0)
+            db.session.add(streak)
+        streak.update_streak(today)
+        
+        db.session.commit()
+        
+        # Broadcast task update
+        socketio.emit('task_update', {
+            'slug': slug,
+            'is_completed': task.is_completed_today(today),
+            'current_count': task.get_today_completion_count(today),
+            'target_count': task.target_count if task.task_type == 'count' else 1
+        }, room=f"user_{current_user.id}")
+        
+        # Broadcast overall stats
+        broadcast_user_stats()
     
     # ========== HELPER FUNCTIONS ==========
     
@@ -282,6 +487,9 @@ def create_app(config_name=None):
             unlocked_rank_ids = [r.id for r in ranks if r.level <= current_rank.level]
         
         return {
+            'today_xp': today_log.total_xp if today_log else 0,
+            'daily_goal': settings.daily_xp_goal if settings else 50,
+            'goal_met': today_log.goal_met if today_log else False,
             'total_xp': total_xp,
             'trackables': trackables,
             'current_rank': current_rank,
@@ -293,6 +501,7 @@ def create_app(config_name=None):
             'streak': streak,
             'settings': settings,
             'today_log': today_log,
+            'points_name': 'XP',
             'youtube': {
                 'subscribers': current_user.youtube_subscribers or 0,
                 'channel_views': current_user.youtube_channel_views or 0,
@@ -1298,32 +1507,44 @@ def create_app(config_name=None):
     @app.route('/admin/settings/export')
     @admin_required
     def admin_export_settings():
-        """Export user settings, trackables, and ranks to a .cryptasium file"""
+        """Export all user data to a .cryptasium file"""
         from flask import make_response
         
-        # Gather data
+        # Gather all related data
+        user = User.query.get(current_user.id)
         settings = UserSettings.query.filter_by(user_id=current_user.id).first()
         trackables = TrackableType.query.filter_by(user_id=current_user.id).all()
+        entries = TrackableEntry.query.filter_by(user_id=current_user.id).all()
         ranks = CustomRank.query.filter_by(user_id=current_user.id).all()
+        tasks = UserDailyTask.query.filter_by(user_id=current_user.id).all()
+        completions = TaskCompletion.query.filter_by(user_id=current_user.id).all()
+        achievements = Achievement.query.filter_by(user_id=current_user.id).all()
+        user_achievements = UserAchievement.query.filter_by(user_id=current_user.id).all()
+        streaks = Streak.query.filter_by(user_id=current_user.id).all()
+        logs = DailyLog.query.filter_by(user_id=current_user.id).all()
+        images = DashboardImage.query.filter_by(user_id=current_user.id).all()
         
         data = {
-            'version': '1.0',
+            'version': '2.0',
             'exported_at': datetime.now().isoformat(),
+            'username': user.username,
             'user_settings': settings.to_dict() if settings else {},
-            'trackables': [t.to_dict() for t in trackables],
-            'ranks': []
+            'trackable_types': [t.to_dict() for t in trackables],
+            'trackable_entries': [e.to_dict() for e in entries],
+            'ranks': [],
+            'daily_tasks': [t.to_dict() for t in tasks],
+            'task_completions': [c.to_dict() for c in completions],
+            'achievements': [a.to_dict() for a in achievements],
+            'user_achievements': [ua.to_dict() for ua in user_achievements],
+            'streaks': [s.to_dict() for s in streaks],
+            'daily_logs': [l.to_dict() for l in logs],
+            'dashboard_images': [i.to_dict() for i in images]
         }
         
         # Add ranks with their conditions
         for rank in ranks:
             r_dict = rank.to_dict()
-            r_dict['conditions'] = [{
-                'type': c.condition_type,
-                'threshold': c.threshold,
-                'custom_name': c.custom_name,
-                'trackable_slug': c.trackable_slug,
-                'is_bucket': c.is_bucket
-            } for c in rank.conditions]
+            r_dict['conditions'] = [c.to_dict() for c in rank.conditions]
             data['ranks'].append(r_dict)
             
         # Create response
@@ -1331,7 +1552,7 @@ def create_app(config_name=None):
         response = make_response(json_data)
         
         # Set content type and filename with .cryptasium extension
-        filename = f"backup_{current_user.username}_{datetime.now().strftime('%Y%m%d')}.cryptasium"
+        filename = f"backup_{current_user.username}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.cryptasium"
         response.headers['Content-Disposition'] = f'attachment; filename={filename}'
         response.headers['Content-Type'] = 'application/json'
         
@@ -1340,7 +1561,7 @@ def create_app(config_name=None):
     @app.route('/admin/settings/import', methods=['POST'])
     @admin_required
     def admin_import_settings():
-        """Import settings from a .cryptasium file"""
+        """Import all user data from a .cryptasium file"""
         if 'backup_file' not in request.files:
             flash('No file provided', 'error')
             return redirect(url_for('admin_settings'))
@@ -1351,9 +1572,11 @@ def create_app(config_name=None):
             return redirect(url_for('admin_settings'))
             
         try:
+            from datetime import date
             # Read and parse JSON
             content = file.read().decode('utf-8')
             data = json.loads(content)
+            version = data.get('version', '1.0')
             
             # 1. Update User Settings
             s_data = data.get('user_settings', {})
@@ -1362,58 +1585,207 @@ def create_app(config_name=None):
                 if not settings:
                     settings = UserSettings(user_id=current_user.id)
                     db.session.add(settings)
-                
-                # Update fields (excluding IDs and sensitive ones)
                 for key, value in s_data.items():
                     if hasattr(settings, key) and key not in ['id', 'user_id', 'created_at', 'updated_at']:
                         setattr(settings, key, value)
-            
-            # 2. Sync Trackables
-            t_list = data.get('trackables', [])
-            for t_data in t_list:
+
+            # 2. Trackable Types
+            t_types_data = data.get('trackable_types', data.get('trackables', [])) # version 1.0 used 'trackables'
+            t_type_map = {} # slug -> id
+            for t_data in t_types_data:
                 slug = t_data.get('slug')
                 if not slug: continue
-                
                 trackable = TrackableType.query.filter_by(user_id=current_user.id, slug=slug).first()
                 if not trackable:
                     trackable = TrackableType(user_id=current_user.id, slug=slug)
                     db.session.add(trackable)
-                
                 for key, value in t_data.items():
                     if hasattr(trackable, key) and key not in ['id', 'user_id', 'created_at', 'updated_at', 'total_count', 'total_xp']:
                         setattr(trackable, key, value)
-            
-            # 3. Sync Ranks
+                db.session.flush()
+                t_type_map[slug] = trackable.id
+
+            # 3. Daily Tasks
+            tasks_data = data.get('daily_tasks', [])
+            task_map = {} # slug -> id
+            for task_data in tasks_data:
+                slug = task_data.get('slug')
+                if not slug: continue
+                task = UserDailyTask.query.filter_by(user_id=current_user.id, slug=slug).first()
+                if not task:
+                    task = UserDailyTask(user_id=current_user.id, slug=slug)
+                    db.session.add(task)
+                for key, value in task_data.items():
+                    if hasattr(task, key) and key not in ['id', 'user_id', 'created_at', 'updated_at']:
+                        if key in ['due_date', 'completed_date', 'next_due_date'] and value:
+                            setattr(task, key, date.fromisoformat(value[:10]))
+                        else:
+                            setattr(task, key, value)
+                db.session.flush()
+                task_map[slug] = task.id
+
+            # 4. Ranks & Conditions
             r_list = data.get('ranks', [])
             for r_data in r_list:
                 level = r_data.get('level')
                 if level is None: continue
-                
                 rank = CustomRank.query.filter_by(user_id=current_user.id, level=level).first()
                 if not rank:
                     rank = CustomRank(user_id=current_user.id, level=level)
                     db.session.add(rank)
-                
                 for key, value in r_data.items():
                     if hasattr(rank, key) and key not in ['id', 'user_id', 'created_at', 'updated_at', 'conditions', 'condition_count']:
                         setattr(rank, key, value)
-                
-                # Rebuild conditions
-                db.session.flush() # Get rank.id
+                db.session.flush()
+                # Clear existing and rebuild conditions
                 RankCondition.query.filter_by(rank_id=rank.id).delete()
                 for c_data in r_data.get('conditions', []):
                     cond = RankCondition(
                         rank_id=rank.id,
-                        condition_type=c_data.get('type'),
+                        condition_type=c_data.get('condition_type') or c_data.get('type'),
                         threshold=c_data.get('threshold', 0),
                         custom_name=c_data.get('custom_name'),
                         trackable_slug=c_data.get('trackable_slug'),
                         is_bucket=c_data.get('is_bucket', False)
                     )
                     db.session.add(cond)
-            
+
+            # 5. Achievements
+            ach_data = data.get('achievements', [])
+            ach_map = {} # slug -> id
+            for a_data in ach_data:
+                slug = a_data.get('slug')
+                if not slug: continue
+                achievement = Achievement.query.filter_by(user_id=current_user.id, slug=slug).first()
+                if not achievement:
+                    achievement = Achievement(user_id=current_user.id, slug=slug)
+                    db.session.add(achievement)
+                for key, value in a_data.items():
+                    if hasattr(achievement, key) and key not in ['id', 'user_id', 'created_at']:
+                        setattr(achievement, key, value)
+                db.session.flush()
+                ach_map[slug] = achievement.id
+
+            # 6. Streaks
+            streaks_data = data.get('streaks', [])
+            for s_data in streaks_data:
+                s_type = s_data.get('streak_type')
+                if not s_type: continue
+                streak = Streak.query.filter_by(user_id=current_user.id, streak_type=s_type).first()
+                if not streak:
+                    streak = Streak(user_id=current_user.id, streak_type=s_type)
+                    db.session.add(streak)
+                for key, value in s_data.items():
+                    if hasattr(streak, key) and key not in ['id', 'user_id', 'created_at', 'updated_at']:
+                        if key in ['last_activity_date', 'streak_start_date'] and value:
+                            setattr(streak, key, date.fromisoformat(value[:10]))
+                        else:
+                            setattr(streak, key, value)
+
+            # 7. Historical Data (Optional version check or always import)
+            # Trackable Entries
+            entries_data = data.get('trackable_entries', [])
+            for e_data in entries_data:
+                slug = e_data.get('trackable_slug')
+                if slug not in t_type_map: continue
+                
+                # Check for existing entry to avoid duplicates (loose check by date/count/value/type)
+                # This might be slow if there are thousands, but it's a restore.
+                # For simplicity, we just add them unless identical exists.
+                entry_date = date.fromisoformat(e_data['date'][:10])
+                existing = TrackableEntry.query.filter_by(
+                    user_id=current_user.id,
+                    trackable_type_id=t_type_map[slug],
+                    date=entry_date,
+                    count=e_data.get('count'),
+                    value=e_data.get('value')
+                ).first()
+                
+                if not existing:
+                    entry = TrackableEntry(
+                        user_id=current_user.id,
+                        trackable_type_id=t_type_map[slug],
+                        date=entry_date,
+                        count=e_data.get('count', 1),
+                        value=e_data.get('value', 0),
+                        title=e_data.get('title'),
+                        notes=e_data.get('notes'),
+                        url=e_data.get('url'),
+                        duration_minutes=e_data.get('duration_minutes', 0),
+                        views=e_data.get('views', 0),
+                        tier_name=e_data.get('tier_name')
+                    )
+                    db.session.add(entry)
+
+            # Task Completions
+            comp_data = data.get('task_completions', [])
+            for c_data in comp_data:
+                slug = c_data.get('task_slug')
+                if slug not in task_map: continue
+                comp_date = date.fromisoformat(c_data['date'][:10])
+                existing = TaskCompletion.query.filter_by(
+                    user_id=current_user.id,
+                    task_id=task_map[slug],
+                    date=comp_date,
+                    xp_earned=c_data.get('xp_earned')
+                ).first()
+                if not existing:
+                    comp = TaskCompletion(
+                        user_id=current_user.id,
+                        task_id=task_map[slug],
+                        date=comp_date,
+                        count=c_data.get('count', 1),
+                        notes=c_data.get('notes'),
+                        xp_earned=c_data.get('xp_earned', 0)
+                    )
+                    db.session.add(comp)
+
+            # User Achievements
+            ua_data = data.get('user_achievements', [])
+            for u_data in ua_data:
+                slug = u_data.get('achievement_slug')
+                if slug not in ach_map: continue
+                existing = UserAchievement.query.filter_by(
+                    user_id=current_user.id,
+                    achievement_id=ach_map[slug]
+                ).first()
+                if not existing:
+                    ua = UserAchievement(
+                        user_id=current_user.id,
+                        achievement_id=ach_map[slug],
+                        unlocked_at=datetime.fromisoformat(u_data['unlocked_at'])
+                    )
+                    db.session.add(ua)
+
+            # Daily Logs
+            logs_data = data.get('daily_logs', [])
+            for l_data in logs_data:
+                log_date = date.fromisoformat(l_data['date'][:10])
+                log = DailyLog.query.filter_by(user_id=current_user.id, date=log_date).first()
+                if not log:
+                    log = DailyLog(user_id=current_user.id, date=log_date)
+                    db.session.add(log)
+                for key, value in l_data.items():
+                    if hasattr(log, key) and key not in ['id', 'user_id', 'date']:
+                        setattr(log, key, value)
+
+            # Dashboard Images
+            img_data = data.get('dashboard_images', [])
+            for i_data in img_data:
+                existing = DashboardImage.query.filter_by(
+                    user_id=current_user.id,
+                    image_url=i_data['image_url']
+                ).first()
+                if not existing:
+                    img = DashboardImage(
+                        user_id=current_user.id,
+                        image_url=i_data['image_url'],
+                        created_at=datetime.fromisoformat(i_data['created_at'])
+                    )
+                    db.session.add(img)
+
             db.session.commit()
-            flash('Account settings imported successfully!', 'success')
+            flash('All data imported successfully!', 'success')
             
         except Exception as e:
             db.session.rollback()
@@ -1760,4 +2132,4 @@ def create_app(config_name=None):
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(debug=True)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000)

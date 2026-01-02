@@ -147,7 +147,7 @@
             <label>What did you complete?</label>
             <div class="trackable-selector">
                 {% for t in trackables %}
-                <label class="trackable-option" onclick="selectTrackable({{ t.id }})">
+                <label class="trackable-option" onclick="selectTrackable({{ t.id }}, event)">
                     <input type="radio" name="trackable_id" value="{{ t.id }}" {% if
                         request.args.get('trackable')|int==t.id %}checked{% endif %}>
                     <div class="trackable-option-icon" style="color: {{ t.color }}">
@@ -245,11 +245,25 @@
     };
 
     // Highlight selected trackable and update form
-    function selectTrackable(id) {
+    function selectTrackable(id, event) {
         document.querySelectorAll('.trackable-option').forEach(el => {
             el.classList.remove('selected');
         });
-        event.currentTarget.classList.add('selected');
+
+        let target = null;
+        if (event && event.currentTarget) {
+            target = event.currentTarget;
+        } else {
+            // Find by radio value if called programmatically
+            const radio = document.querySelector(`.trackable-option input[value="${id}"]`);
+            if (radio) target = radio.closest('.trackable-option');
+        }
+
+        if (target) {
+            target.classList.add('selected');
+            const radio = target.querySelector('input[type="radio"]');
+            if (radio) radio.checked = true;
+        }
 
         // Update value field visibility
         const t = trackables[id];
