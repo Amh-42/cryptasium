@@ -100,6 +100,10 @@
         border-radius: 12px;
     }
 
+    [data-theme="light"] .rank-badge {
+        background: rgba(0, 0, 0, 0.02);
+    }
+
     .rank-icon {
         width: 48px;
         height: 48px;
@@ -148,6 +152,10 @@
         border-radius: 6px;
         overflow: hidden;
         position: relative;
+    }
+
+    [data-theme="light"] .xp-progress-bar {
+        background: rgba(0, 0, 0, 0.08);
     }
 
     .xp-progress-fill {
@@ -222,6 +230,130 @@
         color: var(--text-muted);
         text-transform: uppercase;
         letter-spacing: 0.3px;
+    }
+
+    /* Condition cards */
+    .condition-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+    }
+
+    .condition-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.2s ease;
+    }
+
+    .condition-card:hover {
+        background: rgba(var(--accent-rgb), 0.05);
+        border-color: rgba(var(--accent-rgb), 0.3);
+        transform: translateY(-2px);
+    }
+
+    [data-theme="light"] .condition-card {
+        background: rgba(0, 0, 0, 0.02);
+    }
+
+    .condition-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .condition-type {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
+    .condition-type i {
+        font-size: 20px;
+        color: var(--accent);
+    }
+
+    .condition-status {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-muted);
+        letter-spacing: 0.5px;
+    }
+
+    .condition-status.met {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+    }
+
+    [data-theme="light"] .condition-status {
+        background: rgba(0, 0, 0, 0.05);
+    }
+
+    .condition-progress-text {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        margin-bottom: 8px;
+    }
+
+    .condition-progress-text .current {
+        font-size: 32px;
+        font-weight: 800;
+        color: #fff;
+    }
+
+    [data-theme="light"] .condition-progress-text .current {
+        color: var(--text-main);
+    }
+
+    .condition-progress-text .threshold {
+        font-size: 14px;
+        color: var(--text-muted);
+    }
+
+    .condition-progress-bar {
+        height: 6px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    [data-theme="light"] .condition-progress-bar {
+        background: rgba(0, 0, 0, 0.05);
+    }
+
+    .condition-progress-fill {
+        height: 100%;
+        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 3px;
+    }
+
+    .condition-remaining {
+        margin-top: 4px;
+        font-size: 12px;
+        color: var(--text-muted);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .cond-perc {
+        font-weight: 700;
+        color: var(--text-muted);
     }
 
     /* ========== DAILY TASKS ========== */
@@ -458,6 +590,10 @@
         fill: none;
         stroke: rgba(255, 255, 255, 0.1);
         stroke-width: 10;
+    }
+
+    [data-theme="light"] .goal-circle-bg {
+        stroke: rgba(0, 0, 0, 0.05);
     }
 
     .goal-circle-progress {
@@ -976,14 +1112,101 @@
             <div class="xp-progress-section">
                 <div class="xp-progress-labels">
                     <span>{% if stats.current_rank %}{{ stats.current_rank.name }}{% else %}Start{% endif %}</span>
-                    <span>{% if stats.next_rank %}{{ stats.next_rank.name }} ({{ stats.next_rank.min_xp|format_number }}
-                        XP){% elif stats.current_rank and stats.current_rank.is_max_rank %}MAX RANK{% else %}???{% endif
-                        %}</span>
+                    <span>
+                        {% if stats.next_rank %}
+                        {{ stats.next_rank.name }}
+                        {% if stats.next_rank.min_xp %}
+                        ({{ stats.next_rank.min_xp|format_number }} XP)
+                        {% else %}
+                        (Next Milestone)
+                        {% endif %}
+                        {% elif stats.current_rank and stats.current_rank.is_max_rank %}
+                        MAX RANK
+                        {% else %}
+                        ???
+                        {% endif %}
+                    </span>
                 </div>
                 <div class="xp-progress-bar">
                     <div class="xp-progress-fill" style="width: {{ stats.progress_percent }}%"></div>
                 </div>
             </div>
+
+            {% if stats.next_rank and stats.rank_progress_details %}
+            <div style="margin-top: 28px;">
+                <h3
+                    style="font-size: 14px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                    <i class="ph ph-list-checks" style="color: var(--accent); font-size: 18px;"></i>
+                    Next Rank Requirements
+                </h3>
+                <div class="condition-cards">
+                    {% for cond_id, info in stats.rank_progress_details.items() %}
+                    <div class="condition-card">
+                        <div class="condition-header">
+                            <span class="condition-type">
+                                {% if info.custom_name %}
+                                <i class="ph ph-target"></i> {{ info.custom_name }}
+                                {% elif info.type == 'total_xp' %}
+                                <i class="ph ph-sparkle"></i> Total {{ points_name }}
+                                {% elif info.type == 'streaks' %}
+                                <i class="ph ph-fire"></i> Days Streak
+                                {% elif info.type == 'youtube_subscribers' %}
+                                <i class="ph ph-users"></i> Subscribers
+                                {% elif info.type == 'youtube_total_views' %}
+                                <i class="ph ph-eye"></i> Channel Views
+                                {% elif info.type == 'trackable_count' %}
+                                <i class="ph ph-package"></i> {{ info.trackable_slug|replace('_', ' ')|title if
+                                info.trackable_slug else 'Trackable' }} Count
+                                {% elif info.type == 'trackable_xp' %}
+                                <i class="ph ph-award"></i> {{ info.trackable_slug|replace('_', ' ')|title if
+                                info.trackable_slug else 'Trackable' }} XP
+                                {% elif info.type == 'perfect_weeks' %}
+                                <i class="ph ph-calendar-check"></i> Perfect Weeks
+                                {% elif info.type == 'daily_tasks_finished' %}
+                                <i class="ph ph-check-square"></i> Tasks Finished
+                                {% elif info.type == 'achievements_unlocked' %}
+                                <i class="ph ph-trophy"></i> Achievements
+                                {% else %}
+                                <i class="ph ph-target"></i> {{ info.type|replace('_', ' ')|title }}
+                                {% endif %}
+                            </span>
+                            <span class="condition-status {% if info.met %}met{% endif %}">
+                                {% if info.met %}
+                                <i class="ph ph-check-weight"></i> Met
+                                {% else %}
+                                Pending
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="condition-progress">
+                            <div class="condition-progress-text">
+                                <span class="current">{{ info.current|format_number }}</span>
+                                <span class="threshold">/ {{ info.threshold|format_number }}</span>
+                            </div>
+                            {% set per = (info.current / info.threshold * 100)|round|int if info.threshold > 0 else 0 %}
+                            <div class="condition-progress-bar">
+                                <div class="condition-progress-fill"
+                                    style="width: {{ [per, 100]|min }}%; background: {% if info.met %}#10b981{% else %}var(--accent){% endif %};">
+                                </div>
+                            </div>
+                            <div class="condition-remaining">
+                                <span>
+                                    {% if not info.met %}
+                                    <span style="color: var(--accent); font-weight: 600;">{{ (info.threshold -
+                                        info.current)|format_number if info.threshold > info.current else 0 }}</span>
+                                    more needed
+                                    {% else %}
+                                    Requirement satisfied
+                                    {% endif %}
+                                </span>
+                                <span class="cond-perc">{{ [per, 100]|min }}%</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
         </div>
 
         <!-- Stats Bar -->
@@ -1007,7 +1230,21 @@
                     <i class="ph ph-package"></i>
                 </div>
                 <div class="stat-value">{{ pinned_trackables|length }}</div>
-                <div class="stat-label">Trackables</div>
+                <div class="stat-label">Pinned</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+                    <i class="ph ph-users"></i>
+                </div>
+                <div class="stat-value">{{ stats.youtube.subscribers|format_number }}</div>
+                <div class="stat-label">Subscribers</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+                    <i class="ph ph-eye"></i>
+                </div>
+                <div class="stat-value">{{ stats.youtube.channel_views|format_number }}</div>
+                <div class="stat-label">Total Views</div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon" style="background: rgba(168, 85, 247, 0.15); color: #a855f7;">
@@ -1051,8 +1288,7 @@
                                     current_count }}/{{ task.target_count }})</span>
                                 {% endif %}
                             </div>
-                            <div class="task-xp"><span>+{{ task.xp_value }}</span> {{ stats.settings.points_name if
-                                stats.settings else 'XP' }}</div>
+                            <div class="task-xp"><span>+{{ task.xp_value }}</span> {{ points_name }}</div>
                         </div>
                         <i class="{{ task.icon }}" style="font-size: 20px; color: {{ task.color }}"></i>
                     </div>
@@ -1095,8 +1331,8 @@
                     </div>
                     {% endif %}
 
-                    <div class="trackable-xp"><span>{{ trackable.get_total_xp()|format_number }}</span> {{
-                        stats.settings.points_name if stats.settings else 'XP' }}</div>
+                    <div class="trackable-xp"><span>{{ trackable.get_total_xp()|format_number }}</span> {{ points_name
+                        }}</div>
 
                     {% if trackable.weekly_goal > 0 %}
                     <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">
@@ -1157,8 +1393,7 @@
                 </svg>
                 <div class="goal-center">
                     <div class="goal-value">{{ today_xp }}</div>
-                    <div class="goal-label">/ {{ daily_goal }} {{ stats.settings.points_name if stats.settings else 'XP'
-                        }}</div>
+                    <div class="goal-label">/ {{ daily_goal }} {{ points_name }}</div>
                 </div>
             </div>
 
@@ -1166,7 +1401,7 @@
                 {% if goal_progress >= 100 %}
                 <span>🎉 Goal Complete!</span>
                 {% else %}
-                <span>{{ daily_goal - today_xp }}</span> XP to go
+                <span>{{ daily_goal - today_xp }}</span> {{ points_name }} to go
                 {% endif %}
             </div>
         </div>
@@ -1184,7 +1419,8 @@
 
             {% if stats.settings and stats.settings.streak_bonus_per_day > 0 %}
             <div style="text-align: center; font-size: 13px; color: var(--text-muted);">
-                +{{ stats.streak.current_count * stats.settings.streak_bonus_per_day }} bonus XP from streak
+                +{{ stats.streak.current_count * stats.settings.streak_bonus_per_day }} bonus {{ points_name }} from
+                streak
             </div>
             {% endif %}
         </div>
@@ -1225,19 +1461,32 @@
 
             <div class="ranks-list">
                 {% for rank in stats.ranks %}
-                <div
-                    class="rank-item {% if stats.current_rank and rank.id == stats.current_rank.id %}current{% elif stats.total_xp < rank.min_xp %}locked{% endif %}">
+                {% set is_unlocked = rank.id in stats.unlocked_rank_ids %}
+                {% set is_current = stats.current_rank and rank.id == stats.current_rank.id %}
+                <div class="rank-item {% if is_current %}current{% elif not is_unlocked %}locked{% endif %}">
                     <div class="rank-item-icon" style="background: {{ rank.color }}20; color: {{ rank.color }}">
+                        {% if rank.icon %}
+                        <i class="ph {{ rank.icon }}"></i>
+                        {% else %}
                         {{ rank.code or 'L' ~ rank.level }}
+                        {% endif %}
                     </div>
                     <div class="rank-item-info">
                         <div class="rank-item-name">{{ rank.name }}</div>
-                        <div class="rank-item-xp">{{ rank.min_xp|format_number }} XP</div>
+                        <div class="rank-item-xp">
+                            {% if rank.conditions %}
+                            {{ rank.conditions|length }} requirement(s)
+                            {% else %}
+                            {{ rank.min_xp|format_number }} XP
+                            {% endif %}
+                        </div>
                     </div>
-                    {% if stats.total_xp >= rank.min_xp %}
+                    {% if is_unlocked %}
                     <i class="ph ph-check-circle rank-item-check"></i>
                     {% elif stats.next_rank and rank.id == stats.next_rank.id %}
-                    <i class="ph ph-arrow-right" style="color: var(--accent);"></i>
+                    <div class="rank-progress-small" title="{{ stats.progress_percent }}%">
+                        <i class="ph ph-trend-up" style="color: var(--accent);"></i>
+                    </div>
                     {% else %}
                     <i class="ph ph-lock" style="color: var(--text-muted); opacity: 0.5;"></i>
                     {% endif %}

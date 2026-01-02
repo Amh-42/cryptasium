@@ -8,22 +8,22 @@
     .form-container {
         max-width: 640px;
     }
-    
+
     .form-card {
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid var(--border);
         border-radius: 16px;
         padding: 28px;
     }
-    
+
     .form-section {
         margin-bottom: 28px;
     }
-    
+
     .form-section:last-child {
         margin-bottom: 0;
     }
-    
+
     .form-section-title {
         font-size: 14px;
         font-weight: 600;
@@ -34,25 +34,25 @@
         padding-bottom: 8px;
         border-bottom: 1px solid var(--border);
     }
-    
+
     .form-row {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 16px;
     }
-    
+
     .form-group {
         margin-bottom: 20px;
     }
-    
+
     .form-group:last-child {
         margin-bottom: 0;
     }
-    
+
     .form-group.full {
         grid-column: 1 / -1;
     }
-    
+
     label {
         display: flex;
         align-items: center;
@@ -62,23 +62,23 @@
         font-size: 14px;
         font-weight: 500;
     }
-    
+
     label i {
         color: var(--text-muted);
     }
-    
+
     .help-text {
         font-size: 12px;
         color: var(--text-muted);
         margin-top: 6px;
     }
-    
+
     .color-input-wrapper {
         display: flex;
         gap: 12px;
         align-items: center;
     }
-    
+
     .color-preview {
         width: 48px;
         height: 48px;
@@ -88,7 +88,7 @@
         position: relative;
         overflow: hidden;
     }
-    
+
     .color-preview input {
         position: absolute;
         width: 100%;
@@ -96,7 +96,7 @@
         opacity: 0;
         cursor: pointer;
     }
-    
+
     .icon-picker {
         display: grid;
         grid-template-columns: repeat(8, 1fr);
@@ -108,7 +108,7 @@
         max-height: 200px;
         overflow-y: auto;
     }
-    
+
     .icon-option {
         width: 40px;
         height: 40px;
@@ -122,37 +122,37 @@
         font-size: 20px;
         color: var(--text-muted);
     }
-    
+
     .icon-option:hover {
         background: rgba(255, 255, 255, 0.1);
         color: var(--text-main);
     }
-    
+
     .icon-option.selected {
         background: rgba(var(--accent-rgb), 0.15);
         border-color: var(--accent);
         color: var(--accent);
     }
-    
+
     .checkbox-group {
         display: flex;
         gap: 24px;
         flex-wrap: wrap;
     }
-    
+
     .checkbox-item {
         display: flex;
         align-items: center;
         gap: 10px;
         cursor: pointer;
     }
-    
+
     .checkbox-item input {
         width: 20px;
         height: 20px;
         accent-color: var(--accent);
     }
-    
+
     .form-actions {
         display: flex;
         gap: 12px;
@@ -160,12 +160,12 @@
         padding-top: 20px;
         border-top: 1px solid var(--border);
     }
-    
+
     @media (max-width: 640px) {
         .form-row {
             grid-template-columns: 1fr;
         }
-        
+
         .icon-picker {
             grid-template-columns: repeat(6, 1fr);
         }
@@ -178,152 +178,175 @@
     <form method="post" class="form-card">
         <div class="form-section">
             <div class="form-section-title">Basic Info</div>
-            
+
             <div class="form-group">
                 <label><i class="ph ph-text-aa"></i> Name</label>
-                <input type="text" name="name" value="{{ trackable.name if trackable else '' }}" required 
-                       placeholder="e.g., Blog Post, Sale, Income, Client Call">
+                <input type="text" name="name" value="{{ trackable.name if trackable else '' }}" required
+                    placeholder="e.g., Blog Post, Sale, Income, Client Call">
                 <div class="help-text">What do you want to track?</div>
             </div>
-            
+
             <div class="form-group">
                 <label><i class="ph ph-text-align-left"></i> Description</label>
-                <textarea name="description" rows="2" placeholder="Optional description...">{{ trackable.description if trackable else '' }}</textarea>
+                <textarea name="description" rows="2"
+                    placeholder="Optional description...">{{ trackable.description if trackable else '' }}</textarea>
             </div>
-            
+
             <div class="form-row">
                 <div class="form-group">
                     <label><i class="ph ph-tag"></i> Category</label>
                     <select name="category">
-                        <option value="content" {% if trackable and trackable.category == 'content' %}selected{% endif %}>Content</option>
-                        <option value="task" {% if trackable and trackable.category == 'task' %}selected{% endif %}>Task</option>
-                        <option value="sales" {% if trackable and trackable.category == 'sales' %}selected{% endif %}>Sales</option>
-                        <option value="finance" {% if trackable and trackable.category == 'finance' %}selected{% endif %}>Finance</option>
-                        <option value="metric" {% if trackable and trackable.category == 'metric' %}selected{% endif %}>Metric</option>
+                        <option value="content" {% if trackable and trackable.category=='content' %}selected{% endif %}>
+                            Content</option>
+                        <option value="task" {% if trackable and trackable.category=='task' %}selected{% endif %}>Task
+                        </option>
+                        <option value="sales" {% if trackable and trackable.category=='sales' %}selected{% endif %}>
+                            Sales</option>
+                        <option value="finance" {% if trackable and trackable.category=='finance' %}selected{% endif %}>
+                            Finance</option>
+                        <option value="metric" {% if trackable and trackable.category=='metric' %}selected{% endif %}>
+                            Metric</option>
                     </select>
                 </div>
             </div>
         </div>
-        
+
         <div class="form-section">
-            <div class="form-section-title">XP Configuration</div>
-            
+            <div class="form-section-title">{{ points_name }} Configuration</div>
+
             <div class="form-group">
-                <label><i class="ph ph-gear"></i> XP Mode</label>
+                <label><i class="ph ph-gear"></i> {{ points_name }} Mode</label>
                 <select name="xp_mode" id="xpModeSelect" onchange="toggleXpOptions()">
-                    <option value="fixed" {% if trackable and trackable.xp_mode == 'fixed' %}selected{% endif %}>Fixed - Same XP per item</option>
-                    <option value="value_based" {% if trackable and trackable.xp_mode == 'value_based' %}selected{% endif %}>Value-based - XP based on value/amount</option>
+                    <option value="fixed" {% if trackable and trackable.xp_mode=='fixed' %}selected{% endif %}>Fixed -
+                        Same {{ points_name }} per item</option>
+                    <option value="value_based" {% if trackable and trackable.xp_mode=='value_based' %}selected{% endif
+                        %}>Value-based - {{ points_name }} based on value/amount</option>
                 </select>
             </div>
-            
+
             <div class="form-row">
                 <div class="form-group" id="xpPerUnitGroup">
-                    <label><i class="ph ph-lightning"></i> XP Per Unit</label>
-                    <input type="number" name="xp_per_unit" value="{{ trackable.xp_per_unit if trackable else 10 }}" min="0">
-                    <div class="help-text">Base XP for each item</div>
+                    <label><i class="ph ph-lightning"></i> {{ points_name }} Per Unit</label>
+                    <input type="number" name="xp_per_unit" value="{{ trackable.xp_per_unit if trackable else 10 }}"
+                        min="0">
+                    <div class="help-text">Base {{ points_name }} for each item</div>
                 </div>
-                
+
                 <div class="form-group" id="xpMultiplierGroup" style="display: none;">
-                    <label><i class="ph ph-percent"></i> XP Multiplier</label>
-                    <input type="number" name="xp_multiplier" value="{{ trackable.xp_multiplier if trackable else 0.1 }}" min="0" step="0.01">
-                    <div class="help-text">Value × Multiplier = XP (e.g., $100 × 0.1 = 10 XP)</div>
+                    <label><i class="ph ph-percent"></i> {{ points_name }} Multiplier</label>
+                    <input type="number" name="xp_multiplier"
+                        value="{{ trackable.xp_multiplier if trackable else 0.1 }}" min="0" step="0.01">
+                    <div class="help-text">Value × Multiplier = {{ points_name }} (e.g., $100 × 0.1 = 10 {{ points_name
+                        }})</div>
                 </div>
             </div>
         </div>
-        
+
         <div class="form-section">
             <div class="form-section-title">Value Tracking (Optional)</div>
-            <div class="help-text" style="margin-bottom: 16px;">Enable to track monetary values like sales amounts, income, expenses</div>
-            
+            <div class="help-text" style="margin-bottom: 16px;">Enable to track monetary values like sales amounts,
+                income, expenses</div>
+
             <div class="form-group">
                 <label class="checkbox-item" style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                    <input type="checkbox" name="track_value" id="trackValueCheck" onchange="toggleValueOptions()"
-                           {% if trackable and trackable.track_value %}checked{% endif %}
-                           style="width: 20px; height: 20px; accent-color: var(--accent);">
+                    <input type="checkbox" name="track_value" id="trackValueCheck" onchange="toggleValueOptions()" {% if
+                        trackable and trackable.track_value %}checked{% endif %}
+                        style="width: 20px; height: 20px; accent-color: var(--accent);">
                     <span>Track value/amount for each entry</span>
                 </label>
             </div>
-            
-            <div id="valueOptions" style="display: {% if trackable and trackable.track_value %}block{% else %}none{% endif %};">
+
+            <div id="valueOptions"
+                style="display: {% if trackable and trackable.track_value %}block{% else %}none{% endif %};">
                 <div class="form-row">
                     <div class="form-group">
                         <label>Value Label</label>
-                        <input type="text" name="value_label" value="{{ trackable.value_label if trackable else 'Amount' }}" 
-                               placeholder="Amount, Price, Revenue">
+                        <input type="text" name="value_label"
+                            value="{{ trackable.value_label if trackable else 'Amount' }}"
+                            placeholder="Amount, Price, Revenue">
                     </div>
                     <div class="form-group">
                         <label>Prefix (e.g., $)</label>
-                        <input type="text" name="value_prefix" value="{{ trackable.value_prefix if trackable else '$' }}" 
-                               placeholder="$" style="width: 80px;">
+                        <input type="text" name="value_prefix"
+                            value="{{ trackable.value_prefix if trackable else '$' }}" placeholder="$"
+                            style="width: 80px;">
                     </div>
                 </div>
             </div>
         </div>
-        
+
         <div class="form-section">
             <div class="form-section-title">Appearance</div>
-            
+
             <div class="form-group">
                 <label><i class="ph ph-palette"></i> Color</label>
                 <div class="color-input-wrapper">
-                    <div class="color-preview" id="colorPreview" style="background: {{ trackable.color if trackable else '#0ea5e9' }}">
-                        <input type="color" name="color" id="colorInput" value="{{ trackable.color if trackable else '#0ea5e9' }}">
+                    <div class="color-preview" id="colorPreview"
+                        style="background: {{ trackable.color if trackable else '#0ea5e9' }}">
+                        <input type="color" name="color" id="colorInput"
+                            value="{{ trackable.color if trackable else '#0ea5e9' }}">
                     </div>
-                    <input type="text" id="colorText" value="{{ trackable.color if trackable else '#0ea5e9' }}" 
-                           style="width: 120px;" readonly>
+                    <input type="text" id="colorText" value="{{ trackable.color if trackable else '#0ea5e9' }}"
+                        style="width: 120px;" readonly>
                 </div>
             </div>
-            
+
             <div class="form-group">
                 <label><i class="ph ph-shapes"></i> Icon</label>
-                <input type="hidden" name="icon" id="iconInput" value="{{ trackable.icon if trackable else 'ph-star' }}">
+                <input type="hidden" name="icon" id="iconInput"
+                    value="{{ trackable.icon if trackable else 'ph-star' }}">
                 <div class="icon-picker">
-                    {% set icons = ['ph-star', 'ph-article', 'ph-youtube-logo', 'ph-video', 'ph-lightning', 'ph-microphone', 
-                                    'ph-book', 'ph-pencil', 'ph-code', 'ph-camera', 'ph-image', 'ph-music-notes',
-                                    'ph-package', 'ph-target', 'ph-trophy', 'ph-crown', 'ph-rocket', 'ph-chart-line',
-                                    'ph-currency-dollar', 'ph-users', 'ph-heart', 'ph-fire', 'ph-check-circle', 'ph-flag',
-                                    'ph-calendar', 'ph-clock', 'ph-megaphone', 'ph-envelope', 'ph-chat-circle', 'ph-phone',
-                                    'ph-briefcase', 'ph-graduation-cap', 'ph-globe', 'ph-link', 'ph-gift', 'ph-sparkle'] %}
+                    {% set icons = ['ph-star', 'ph-article', 'ph-youtube-logo', 'ph-video', 'ph-lightning',
+                    'ph-microphone',
+                    'ph-book', 'ph-pencil', 'ph-code', 'ph-camera', 'ph-image', 'ph-music-notes',
+                    'ph-package', 'ph-target', 'ph-trophy', 'ph-crown', 'ph-rocket', 'ph-chart-line',
+                    'ph-currency-dollar', 'ph-users', 'ph-heart', 'ph-fire', 'ph-check-circle', 'ph-flag',
+                    'ph-calendar', 'ph-clock', 'ph-megaphone', 'ph-envelope', 'ph-chat-circle', 'ph-phone',
+                    'ph-briefcase', 'ph-graduation-cap', 'ph-globe', 'ph-link', 'ph-gift', 'ph-sparkle'] %}
                     {% for icon in icons %}
-                    <div class="icon-option {% if (trackable and trackable.icon == icon) or (not trackable and icon == 'ph-star') %}selected{% endif %}" 
-                         data-icon="{{ icon }}" onclick="selectIcon('{{ icon }}')">
+                    <div class="icon-option {% if (trackable and trackable.icon == icon) or (not trackable and icon == 'ph-star') %}selected{% endif %}"
+                        data-icon="{{ icon }}" onclick="selectIcon('{{ icon }}')">
                         <i class="ph {{ icon }}"></i>
                     </div>
                     {% endfor %}
                 </div>
             </div>
         </div>
-        
+
         <div class="form-section">
             <div class="form-section-title">Goals (Optional)</div>
-            
+
             <div class="form-row">
                 <div class="form-group">
                     <label><i class="ph ph-calendar-check"></i> Daily Goal</label>
-                    <input type="number" name="daily_goal" value="{{ trackable.daily_goal if trackable else 0 }}" min="0">
+                    <input type="number" name="daily_goal" value="{{ trackable.daily_goal if trackable else 0 }}"
+                        min="0">
                 </div>
-                
+
                 <div class="form-group">
                     <label><i class="ph ph-calendar"></i> Weekly Goal</label>
-                    <input type="number" name="weekly_goal" value="{{ trackable.weekly_goal if trackable else 0 }}" min="0">
+                    <input type="number" name="weekly_goal" value="{{ trackable.weekly_goal if trackable else 0 }}"
+                        min="0">
                 </div>
-                
+
                 <div class="form-group">
                     <label><i class="ph ph-calendar-blank"></i> Monthly Goal</label>
-                    <input type="number" name="monthly_goal" value="{{ trackable.monthly_goal if trackable else 0 }}" min="0">
+                    <input type="number" name="monthly_goal" value="{{ trackable.monthly_goal if trackable else 0 }}"
+                        min="0">
                 </div>
             </div>
         </div>
-        
+
         <div class="form-section">
             <div class="form-section-title">Settings</div>
-            
+
             <div class="checkbox-group">
                 <label class="checkbox-item">
-                    <input type="checkbox" name="is_pinned" {% if trackable and trackable.is_pinned %}checked{% elif not trackable %}checked{% endif %}>
+                    <input type="checkbox" name="is_pinned" {% if trackable and trackable.is_pinned %}checked{% elif not
+                        trackable %}checked{% endif %}>
                     <span>Pin to Dashboard</span>
                 </label>
-                
+
                 {% if trackable %}
                 <label class="checkbox-item">
                     <input type="checkbox" name="is_active" {% if trackable.is_active %}checked{% endif %}>
@@ -332,7 +355,7 @@
                 {% endif %}
             </div>
         </div>
-        
+
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">
                 <i class="ph ph-check"></i> {{ 'Save Changes' if trackable else 'Create Trackable' }}
@@ -349,39 +372,38 @@
     const colorInput = document.getElementById('colorInput');
     const colorPreview = document.getElementById('colorPreview');
     const colorText = document.getElementById('colorText');
-    
-    colorInput.addEventListener('input', function() {
+
+    colorInput.addEventListener('input', function () {
         colorPreview.style.background = this.value;
         colorText.value = this.value;
     });
-    
+
     // Icon picker
     function selectIcon(icon) {
         document.getElementById('iconInput').value = icon;
         document.querySelectorAll('.icon-option').forEach(el => el.classList.remove('selected'));
         document.querySelector(`.icon-option[data-icon="${icon}"]`).classList.add('selected');
     }
-    
+
     // XP mode toggle
     function toggleXpOptions() {
         const mode = document.getElementById('xpModeSelect').value;
         document.getElementById('xpMultiplierGroup').style.display = mode === 'value_based' ? 'block' : 'none';
     }
-    
+
     // Value tracking toggle
     function toggleValueOptions() {
         const checked = document.getElementById('trackValueCheck').checked;
         document.getElementById('valueOptions').style.display = checked ? 'block' : 'none';
-        
+
         // Auto-switch to value_based XP mode when enabling value tracking
         if (checked) {
             document.getElementById('xpModeSelect').value = 'value_based';
             toggleXpOptions();
         }
     }
-    
+
     // Initialize on page load
     toggleXpOptions();
 </script>
 {% endblock %}
-

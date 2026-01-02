@@ -29,6 +29,11 @@ class User(UserMixin, db.Model):
     display_name = db.Column(db.String(100))
     timezone = db.Column(db.String(50), default='UTC')
     
+    # YouTube sync data
+    youtube_subscribers = db.Column(db.Integer, default=0)
+    youtube_channel_views = db.Column(db.Integer, default=0)
+    last_youtube_sync = db.Column(db.DateTime)
+    
     # Relationships - Dynamic Gamification
     trackable_types = db.relationship('TrackableType', backref='user', lazy=True, cascade='all, delete-orphan')
     trackable_entries = db.relationship('TrackableEntry', backref='user', lazy=True, cascade='all, delete-orphan')
@@ -55,7 +60,7 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
         
     def get_total_xp(self):
-        """Calculate total XP from all trackable entries"""
+        """Calculate total XP from all sources"""
         total = 0
         for entry in self.trackable_entries:
             if entry.trackable_type:
@@ -63,7 +68,46 @@ class User(UserMixin, db.Model):
         # Add daily task XP
         for log in self.daily_logs:
             total += log.total_xp or 0
+            
+        # Add dynamic YouTube XP
+        total += self.get_youtube_xp()
+        
         return total
+
+    def get_youtube_xp(self):
+        """Calculate dynamic XP from synced YouTube data"""
+        xp = 0.0
+        
+        # 1 subscriber = 20 points
+        xp += (self.youtube_subscribers or 0) * 20
+        
+        # 1 view = 0.5 points (using channel views)
+        xp += (self.youtube_channel_views or 0) * 0.5
+        
+        # Videos based on duration
+        # Shorts (< 1 min) = 100 points
+        # Short Longs (< 3 min) = 200 points
+        # Mid Longs (< 8 min) = 400 points
+        # Long videos (>= 8 min) = 800 points
+        
+        # Check YouTubeVideo model (longs potentially contains some shorts too)
+        for video in self.videos:
+            dur = video.duration_seconds or 0
+            if video.content_type == 'shorts' or dur < 60:
+                xp += 100
+            elif dur < 180:
+                xp += 200
+            elif dur < 480:
+                xp += 400
+            else:
+                xp += 800
+                
+        # Check Short model
+        for short in self.shorts:
+            # These are by definition shorts
+            xp += 100
+            
+        return int(xp)
     
     def get_current_rank(self):
         """Get user's current rank based on XP"""
@@ -266,6 +310,7 @@ class CustomRank(db.Model):
     """
     User-defined rank/level system.
     Users can create their own ranks with custom names, XP thresholds, and visuals.
+    Supports both legacy XP-only mode and new multi-condition mode.
     """
     __tablename__ = 'custom_ranks'
     
@@ -278,8 +323,8 @@ class CustomRank(db.Model):
     code = db.Column(db.String(10))  # Short code like "BT", "MS"
     description = db.Column(db.String(500))
     
-    # Requirements
-    min_xp = db.Column(db.Integer, default=0)  # XP needed to reach this rank
+    # Requirements (legacy - kept for backward compatibility)
+    min_xp = db.Column(db.Integer, nullable=True)  # XP needed to reach this rank (nullable for multi-condition ranks)
     
     # Visuals
     icon = db.Column(db.String(100))  # Icon path or phosphor icon
@@ -293,6 +338,41 @@ class CustomRank(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    # Relationships
+    conditions = db.relationship('RankCondition', backref='rank', lazy=True, cascade='all, delete-orphan')
+    
+    def check_conditions_met(self, user_id):
+        """
+        Check if all conditions for this rank are met.
+        Returns (is_met: bool, progress: dict)
+        """
+        # If no conditions defined, fall back to legacy XP-only mode
+        if not self.conditions:
+            if self.min_xp is not None:
+                user = User.query.get(user_id)
+                total_xp = user.get_total_xp() if user else 0
+                return total_xp >= self.min_xp, {'total_xp': total_xp, 'required_xp': self.min_xp}
+            return True, {}  # No conditions = always met
+        
+        # Check all conditions (AND logic)
+        all_met = True
+        progress = {}
+        
+        for condition in self.conditions:
+            is_met, current_value = condition.check_condition(user_id)
+            progress[condition.id] = {
+                'type': condition.condition_type,
+                'threshold': condition.threshold,
+                'current': current_value,
+                'met': is_met,
+                'custom_name': condition.custom_name,
+                'trackable_slug': condition.trackable_slug
+            }
+            if not is_met:
+                all_met = False
+        
+        return all_met, progress
+    
     def to_dict(self):
         return {
             'id': self.id,
@@ -303,11 +383,183 @@ class CustomRank(db.Model):
             'icon': self.icon,
             'color': self.color,
             'badge_image': self.badge_image,
-            'is_max_rank': self.is_max_rank
+            'is_max_rank': self.is_max_rank,
+            'condition_count': len(self.conditions)
         }
     
     def __repr__(self):
         return f'<CustomRank L{self.level}: {self.name}>'
+
+
+class RankCondition(db.Model):
+    """
+    Individual conditions that must be met to unlock a rank.
+    Multiple conditions can be attached to a single rank (AND logic).
+    """
+    __tablename__ = 'rank_conditions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    rank_id = db.Column(db.Integer, db.ForeignKey('custom_ranks.id'), nullable=False, index=True)
+    
+    # Condition definition
+    condition_type = db.Column(db.String(50), nullable=False)  # See CONDITION_TYPES below
+    threshold = db.Column(db.Integer, nullable=False)  # The value that must be reached
+    custom_name = db.Column(db.String(100))  # User-defined name for this condition
+    
+    # Optional: for trackable-specific conditions
+    trackable_slug = db.Column(db.String(100))  # Used when condition_type is 'trackable_xp' or 'trackable_count'
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Condition types supported:
+    # - 'total_xp': Total XP across all trackables
+    # - 'trackable_xp': XP from a specific trackable
+    # - 'trackable_count': Count for a specific trackable
+    # - 'youtube_subscribers': YouTube subscriber count
+    # - 'youtube_total_views': Total YouTube channel views
+    # - 'youtube_long_count': Number of long-form videos
+    # - 'youtube_short_count': Number of shorts
+    # - 'youtube_long_views': Total views on long videos
+    # - 'youtube_short_views': Total views on shorts
+    # - 'streak_current': Current daily streak
+    # - 'streak_longest': Longest streak achieved
+    # - 'tasks_completed': Total daily tasks completed
+    # - 'perfect_weeks': Number of perfect weeks
+    # - 'achievements_unlocked': Total achievements earned
+    
+    def check_condition(self, user_id):
+        """
+        Check if this condition is met for the given user.
+        Returns (is_met: bool, current_value: int)
+        """
+        from datetime import timedelta
+        
+        user = User.query.get(user_id)
+        if not user:
+            return False, 0
+        
+        current_value = 0
+        
+        # Total XP
+        if self.condition_type == 'total_xp':
+            current_value = user.get_total_xp()
+        
+        # Trackable-specific XP
+        elif self.condition_type == 'trackable_xp' and self.trackable_slug:
+            trackable = TrackableType.query.filter_by(
+                user_id=user_id,
+                slug=self.trackable_slug
+            ).first()
+            if trackable:
+                current_value = trackable.get_total_xp()
+        
+        # Trackable-specific count
+        elif self.condition_type == 'trackable_count' and self.trackable_slug:
+            trackable = TrackableType.query.filter_by(
+                user_id=user_id,
+                slug=self.trackable_slug
+            ).first()
+            if trackable:
+                current_value = trackable.get_total_count()
+        
+        # YouTube subscribers
+        elif self.condition_type == 'youtube_subscribers':
+            current_value = user.youtube_subscribers or 0
+        
+        # YouTube total views
+        elif self.condition_type == 'youtube_total_views':
+            # Sum all views from YouTubeVideo and Short models
+            from sqlalchemy import func
+            long_views = db.session.query(func.sum(YouTubeVideo.views)).filter_by(user_id=user_id).scalar() or 0
+            short_views = db.session.query(func.sum(Short.views)).filter_by(user_id=user_id).scalar() or 0
+            current_value = long_views + short_views
+        
+        # YouTube long video count
+        elif self.condition_type == 'youtube_long_count':
+            current_value = YouTubeVideo.query.filter_by(user_id=user_id).count()
+        
+        # YouTube short count
+        elif self.condition_type == 'youtube_short_count':
+            current_value = Short.query.filter_by(user_id=user_id).count()
+        
+        # YouTube long video views
+        elif self.condition_type == 'youtube_long_views':
+            from sqlalchemy import func
+            current_value = db.session.query(func.sum(YouTubeVideo.views)).filter_by(user_id=user_id).scalar() or 0
+        
+        # YouTube short views
+        elif self.condition_type == 'youtube_short_views':
+            from sqlalchemy import func
+            current_value = db.session.query(func.sum(Short.views)).filter_by(user_id=user_id).scalar() or 0
+        
+        # Current streak
+        elif self.condition_type == 'streak_current':
+            streak = Streak.query.filter_by(
+                user_id=user_id,
+                streak_type='daily_xp'
+            ).first()
+            current_value = streak.current_count if streak else 0
+        
+        # Longest streak
+        elif self.condition_type == 'streak_longest':
+            streak = Streak.query.filter_by(
+                user_id=user_id,
+                streak_type='daily_xp'
+            ).first()
+            current_value = streak.longest_count if streak else 0
+        
+        # Total tasks completed
+        elif self.condition_type == 'tasks_completed':
+            current_value = TaskCompletion.query.filter_by(user_id=user_id).count()
+        
+        # Total days active
+        elif self.condition_type == 'total_days_active':
+            from sqlalchemy import func
+            current_value = db.session.query(func.count(func.distinct(func.date(TrackableEntry.created_at))))\
+                .filter_by(user_id=user_id).scalar() or 0
+                
+        # Total goals met
+        elif self.condition_type == 'total_goals_met':
+            current_value = DailyLog.query.filter_by(user_id=user_id, goal_met=True).count()
+            
+        # YouTube total videos (long + shorts)
+        elif self.condition_type == 'youtube_total_count':
+            long_count = YouTubeVideo.query.filter_by(user_id=user_id).count()
+            short_count = Short.query.filter_by(user_id=user_id).count()
+            current_value = long_count + short_count
+
+        # Perfect weeks
+        elif self.condition_type == 'perfect_weeks':
+            # Count weeks where all 7 days had goal_met = True
+            # This is a simplified version - could be more sophisticated
+            logs = DailyLog.query.filter_by(user_id=user_id, goal_met=True).all()
+            # Group by week and count weeks with 7+ days
+            from collections import defaultdict
+            weeks = defaultdict(int)
+            for log in logs:
+                week_key = log.date.isocalendar()[:2]  # (year, week_number)
+                weeks[week_key] += 1
+            current_value = sum(1 for count in weeks.values() if count >= 7)
+        
+        # Achievements unlocked
+        elif self.condition_type == 'achievements_unlocked':
+            current_value = UserAchievement.query.filter_by(user_id=user_id).count()
+        
+        return current_value >= self.threshold, current_value
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'rank_id': self.rank_id,
+            'condition_type': self.condition_type,
+            'threshold': self.threshold,
+            'trackable_slug': self.trackable_slug,
+            'custom_name': self.custom_name
+        }
+    
+    def __repr__(self):
+        return f'<RankCondition {self.condition_type}: {self.threshold}>'
 
 
 class UserDailyTask(db.Model):

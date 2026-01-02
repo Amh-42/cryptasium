@@ -12,7 +12,7 @@ import json
 from config import config
 from models import (
     db, BlogPost, YouTubeVideo, Podcast, Short, CommunityPost, TopicIdea,
-    SystemSettings, User, TrackableType, TrackableEntry, CustomRank,
+    SystemSettings, User, TrackableType, TrackableEntry, CustomRank, RankCondition,
     UserDailyTask, TaskCompletion, DailyLog, Achievement, UserAchievement, Streak,
     UserSettings, ContentCalendarEntry, init_user_gamification, DashboardImage
 )
@@ -84,6 +84,14 @@ def create_app(config_name=None):
         except (ValueError, TypeError):
             return str(value)
     
+    @app.context_processor
+    def inject_settings():
+        if current_user.is_authenticated:
+            settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+            points_name = settings.points_name if settings and settings.points_name else 'XP'
+            return dict(settings=settings, points_name=points_name)
+        return dict(settings=None, points_name='XP')
+
     # ========== DECORATORS ==========
     
     def admin_required(f):
@@ -97,6 +105,80 @@ def create_app(config_name=None):
     
     # ========== HELPER FUNCTIONS ==========
     
+    def sync_youtube_data(user_id):
+        """
+        Fetch latest data from YouTube API and update database.
+        Includes a cooldown to avoid excessive API calls.
+        """
+        user = User.query.get(user_id)
+        if not user:
+            return False, "User not found"
+        
+        # Check cooldown (sync at most once every 10 minutes)
+        if user.last_youtube_sync:
+            cooldown_time = timedelta(minutes=10)
+            if datetime.utcnow() - user.last_youtube_sync < cooldown_time:
+                return True, "Synced recently"
+        
+        try:
+            # 1. Sync channel statistics
+            stats, error = youtube_service.fetch_channel_statistics()
+            if stats:
+                user.youtube_subscribers = stats.get('subscriber_count', 0)
+                user.youtube_channel_views = stats.get('view_count', 0)
+            
+            # 2. Sync videos and shorts
+            videos, shorts, error = youtube_service.fetch_channel_videos(max_results=20)
+            
+            # Update regular videos
+            for v_data in videos:
+                existing = YouTubeVideo.query.filter_by(video_id=v_data['video_id']).first()
+                if existing:
+                    existing.title = v_data['title']
+                    existing.views = v_data['view_count']
+                    existing.thumbnail_url = v_data['thumbnail_url']
+                else:
+                    new_video = YouTubeVideo(
+                        video_id=v_data['video_id'],
+                        title=v_data['title'],
+                        description=v_data['description'],
+                        thumbnail_url=v_data['thumbnail_url'],
+                        duration=v_data['duration'],
+                        duration_seconds=v_data['duration_seconds'],
+                        views=v_data['view_count'],
+                        published=True,
+                        user_id=user_id
+                    )
+                    db.session.add(new_video)
+            
+            # Update shorts
+            for s_data in shorts:
+                existing = Short.query.filter_by(video_id=s_data['video_id']).first()
+                if existing:
+                    existing.title = s_data['title']
+                    existing.views = s_data['view_count']
+                    existing.thumbnail_url = s_data['thumbnail_url']
+                else:
+                    new_short = Short(
+                        video_id=s_data['video_id'],
+                        title=s_data['title'],
+                        description=s_data['description'],
+                        thumbnail_url=s_data['thumbnail_url'],
+                        duration=s_data['duration'],
+                        views=s_data['view_count'],
+                        published=True,
+                        user_id=user_id
+                    )
+                    db.session.add(new_short)
+            
+            user.last_youtube_sync = datetime.utcnow()
+            db.session.commit()
+            return True, "Successfully synced with YouTube"
+            
+        except Exception as e:
+            db.session.rollback()
+            return False, f"Sync failed: {str(e)}"
+
     def get_user_stats():
         """Get comprehensive stats for the current user"""
         if not current_user.is_authenticated:
@@ -118,35 +200,66 @@ def create_app(config_name=None):
         for log in daily_logs:
             total_xp += log.total_xp or 0
         
-        # Get current rank
+        # Get current rank and next rank
+        # Sort by level to determine order
         ranks = CustomRank.query.filter_by(
             user_id=current_user.id
-        ).order_by(CustomRank.min_xp.desc()).all()
+        ).order_by(CustomRank.level.desc()).all()
         
         current_rank = None
         next_rank = None
+        rank_progress_details = None
         
+        # Determine current rank by checking conditions from highest level downwards
         for i, rank in enumerate(ranks):
-            if total_xp >= rank.min_xp:
+            is_met, details = rank.check_conditions_met(current_user.id)
+            if is_met:
                 current_rank = rank
                 break
         
-        # Find next rank
-        if current_rank:
-            for rank in reversed(ranks):
-                if rank.min_xp > current_rank.min_xp:
-                    next_rank = rank
-                    break
-        elif ranks:
-            next_rank = ranks[-1]  # Lowest rank
+        current_level = current_rank.level if current_rank else 0
         
-        # Calculate progress
+        # Find next rank
+        # Look for the immediate next level rank
+        next_rank = CustomRank.query.filter_by(
+            user_id=current_user.id,
+            level=current_level + 1
+        ).first()
+        
+        if not next_rank and (not current_rank or not current_rank.is_max_rank):
+            # If no specific next level, find the lowest level rank that is higher than current
+            next_rank = CustomRank.query.filter(
+                CustomRank.user_id == current_user.id,
+                CustomRank.level > current_level
+            ).order_by(CustomRank.level.asc()).first()
+        
+        # Calculate progress to next rank
         progress_percent = 0
-        if current_rank and next_rank:
-            xp_in_rank = total_xp - current_rank.min_xp
-            xp_needed = next_rank.min_xp - current_rank.min_xp
-            if xp_needed > 0:
-                progress_percent = min(100, int((xp_in_rank / xp_needed) * 100))
+        if next_rank:
+            is_met, progress_details = next_rank.check_conditions_met(current_user.id)
+            rank_progress_details = progress_details
+            
+            # For progress bar, calculate an average completion percentage if multiple conditions
+            # Check for multi-condition dict format (dict of dicts)
+            if progress_details and any(isinstance(v, dict) for v in progress_details.values()):
+                total_progress = 0
+                condition_count = 0
+                for cond_id, info in progress_details.items():
+                    if isinstance(info, dict) and 'met' in info:
+                        threshold = info.get('threshold', 1) or 1
+                        current = info.get('current', 0) or 0
+                        # Cap at 100% per condition
+                        total_progress += min(1.0, float(current) / float(threshold))
+                        condition_count += 1
+                
+                if condition_count > 0:
+                    progress_percent = int((total_progress / condition_count) * 100)
+            elif next_rank.min_xp is not None: # Fallback for legacy
+                prev_xp = (current_rank.min_xp or 0) if current_rank else 0
+                xp_in_rank = total_xp - prev_xp
+                xp_needed = (next_rank.min_xp or 0) - prev_xp
+                if xp_needed > 0:
+                    progress_percent = min(100, int((xp_in_rank / xp_needed) * 100))
         elif current_rank and current_rank.is_max_rank:
             progress_percent = 100
         
@@ -165,16 +278,28 @@ def create_app(config_name=None):
             date=date.today()
         ).first()
         
+        # Get set of unlocked rank IDs for easy lookup in templates
+        unlocked_rank_ids = []
+        if current_rank:
+            unlocked_rank_ids = [r.id for r in ranks if r.level <= current_rank.level]
+        
         return {
             'total_xp': total_xp,
             'trackables': trackables,
             'current_rank': current_rank,
             'next_rank': next_rank,
             'progress_percent': progress_percent,
+            'rank_progress_details': rank_progress_details,
             'ranks': list(reversed(ranks)),
+            'unlocked_rank_ids': unlocked_rank_ids,
             'streak': streak,
             'settings': settings,
-            'today_log': today_log
+            'today_log': today_log,
+            'youtube': {
+                'subscribers': current_user.youtube_subscribers or 0,
+                'channel_views': current_user.youtube_channel_views or 0,
+                'last_sync': current_user.last_youtube_sync
+            }
         }
     
     def get_weekly_stats():
@@ -358,6 +483,9 @@ def create_app(config_name=None):
     @app.route('/admin')
     @admin_required
     def admin_dashboard():
+        # Auto-sync YouTube data on refresh (has internal cooldown)
+        sync_youtube_data(current_user.id)
+        
         stats = get_user_stats()
         weekly = get_weekly_stats()
         
@@ -924,16 +1052,43 @@ def create_app(config_name=None):
                 name=request.form.get('name'),
                 code=request.form.get('code'),
                 description=request.form.get('description'),
-                min_xp=int(request.form.get('min_xp', 0)),
+                min_xp=int(request.form.get('min_xp')) if request.form.get('min_xp') else None,
                 color=request.form.get('color', '#666666'),
                 icon=request.form.get('icon'),
                 is_max_rank=request.form.get('is_max_rank') == 'on'
             )
             db.session.add(rank)
+            db.session.flush()  # Get rank.id before adding conditions
+            
+            # Handle conditions from JSON
+            conditions_json = request.form.get('conditions_json', '[]')
+            try:
+                conditions_data = json.loads(conditions_json)
+                for cond in conditions_data:
+                    condition = RankCondition(
+                        rank_id=rank.id,
+                        condition_type=cond['type'],
+                        threshold=int(cond['threshold']),
+                        trackable_slug=cond.get('trackable_slug'),
+                        custom_name=cond.get('custom_name')
+                    )
+                    db.session.add(condition)
+            except (json.JSONDecodeError, KeyError, ValueError) as e:
+                db.session.rollback()
+                flash(f'Error processing conditions: {str(e)}', 'error')
+                return redirect(url_for('admin_rank_add'))
+            
             db.session.commit()
             flash(f'Rank "{rank.name}" created!', 'success')
             return redirect(url_for('admin_ranks'))
-        return render_template('admin/rank_form.html')
+        
+        # Get trackables for condition selector
+        trackables = TrackableType.query.filter_by(
+            user_id=current_user.id,
+            is_active=True
+        ).order_by(TrackableType.name).all()
+        
+        return render_template('admin/rank_form.html', trackables=trackables)
     
     @app.route('/admin/ranks/<int:id>/edit', methods=['GET', 'POST'])
     @admin_required
@@ -947,15 +1102,43 @@ def create_app(config_name=None):
             rank.name = request.form.get('name')
             rank.code = request.form.get('code')
             rank.description = request.form.get('description')
-            rank.min_xp = int(request.form.get('min_xp', 0))
+            rank.min_xp = int(request.form.get('min_xp')) if request.form.get('min_xp') else None
             rank.color = request.form.get('color', '#666666')
             rank.icon = request.form.get('icon')
             rank.is_max_rank = request.form.get('is_max_rank') == 'on'
+            
+            # Delete existing conditions
+            RankCondition.query.filter_by(rank_id=rank.id).delete()
+            
+            # Add new conditions from JSON
+            conditions_json = request.form.get('conditions_json', '[]')
+            try:
+                conditions_data = json.loads(conditions_json)
+                for cond in conditions_data:
+                    condition = RankCondition(
+                        rank_id=rank.id,
+                        condition_type=cond['type'],
+                        threshold=int(cond['threshold']),
+                        trackable_slug=cond.get('trackable_slug'),
+                        custom_name=cond.get('custom_name')
+                    )
+                    db.session.add(condition)
+            except (json.JSONDecodeError, KeyError, ValueError) as e:
+                db.session.rollback()
+                flash(f'Error processing conditions: {str(e)}', 'error')
+                return redirect(url_for('admin_rank_edit', id=id))
+            
             db.session.commit()
             flash('Rank updated!', 'success')
             return redirect(url_for('admin_ranks'))
         
-        return render_template('admin/rank_form.html', rank=rank)
+        # Get trackables for condition selector
+        trackables = TrackableType.query.filter_by(
+            user_id=current_user.id,
+            is_active=True
+        ).order_by(TrackableType.name).all()
+        
+        return render_template('admin/rank_form.html', rank=rank, trackables=trackables)
     
     @app.route('/admin/ranks/<int:id>/delete', methods=['POST'])
     @admin_required
@@ -967,6 +1150,50 @@ def create_app(config_name=None):
         db.session.commit()
         flash('Rank deleted!', 'success')
         return redirect(url_for('admin_ranks'))
+    
+    @app.route('/api/condition-preview')
+    @admin_required
+    def api_condition_preview():
+        """Get current values for all condition types for preview"""
+        stats = get_user_stats()
+        
+        # Get YouTube data
+        youtube_long_count = YouTubeVideo.query.filter_by(user_id=current_user.id).count()
+        youtube_short_count = Short.query.filter_by(user_id=current_user.id).count()
+        total_videos_count = YouTubeVideo.query.filter_by(user_id=current_user.id).count() + Short.query.filter_by(user_id=current_user.id).count()
+        
+        from sqlalchemy import func
+        youtube_long_views = db.session.query(func.sum(YouTubeVideo.views)).filter_by(user_id=current_user.id).scalar() or 0
+        youtube_short_views = db.session.query(func.sum(Short.views)).filter_by(user_id=current_user.id).scalar() or 0
+        
+        # Get trackable data
+        trackables = TrackableType.query.filter_by(
+            user_id=current_user.id,
+            is_active=True
+        ).all()
+        
+        trackable_data = {}
+        for t in trackables:
+            trackable_data[t.slug] = {
+                'name': t.name,
+                'xp': t.get_total_xp(),
+                'count': t.get_total_count()
+            }
+        
+        return jsonify({
+            'total_xp': stats['total_xp'] if stats else 0,
+            'streak_current': stats['streak'].current_count if stats and stats['streak'] else 0,
+            'streak_longest': stats['streak'].longest_count if stats and stats['streak'] else 0,
+            'tasks_completed': TaskCompletion.query.filter_by(user_id=current_user.id).count(),
+            'achievements_unlocked': UserAchievement.query.filter_by(user_id=current_user.id).count(),
+            'youtube_long_count': youtube_long_count,
+            'youtube_short_count': youtube_short_count,
+            'youtube_long_views': youtube_long_views,
+            'youtube_short_views': youtube_short_views,
+            'youtube_total_views': youtube_long_views + youtube_short_views,
+            'total_videos_count': total_videos_count,
+            'trackables': trackable_data
+        })
 
     # ========== ACHIEVEMENTS ==========
     

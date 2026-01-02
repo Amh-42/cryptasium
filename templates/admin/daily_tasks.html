@@ -235,7 +235,7 @@
 <div class="page-header">
     <div>
         <h1 class="page-title">Tasks</h1>
-        <p class="page-intro">Create tasks with different schedules. Complete them to earn XP!</p>
+        <p class="page-intro">Create tasks with different schedules. Complete them to earn {{ points_name }}!</p>
     </div>
     <div class="page-actions">
         <a href="{{ url_for('admin_daily_task_add') }}" class="btn btn-primary">
@@ -315,7 +315,7 @@
                 <i class="ph ph-folder"></i> {{ task.category|capitalize }}
             </span>
             <div class="task-xp">
-                +{{ task.xp_value }} XP
+                +{{ task.xp_value }} {{ points_name }}
                 {% if task.task_type == 'count' and task.xp_per_count > 0 %}
                 <span style="font-size: 11px; font-weight: 400; opacity: 0.7;">(+{{ task.xp_per_count }}/ea)</span>
                 {% endif %}
@@ -340,7 +340,7 @@
 <div class="empty-state">
     <i class="ph ph-check-square"></i>
     <h3>No Tasks Yet</h3>
-    <p>Create tasks to build habits and earn XP!</p>
+    <p>Create tasks to build habits and earn {{ points_name }}!</p>
     <a href="{{ url_for('admin_daily_task_add') }}" class="btn btn-primary" style="margin-top: 16px;">
         <i class="ph ph-plus"></i> Create Task
     </a>

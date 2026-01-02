@@ -105,7 +105,8 @@
 <div class="page-header">
     <div>
         <h1 class="page-title">Rank System</h1>
-        <p class="page-intro">Define your progression ranks. As you earn XP, you'll unlock higher ranks!</p>
+        <p class="page-intro">Define your progression ranks. As you earn {{ points_name }}, you'll unlock higher ranks!
+        </p>
     </div>
     <div class="page-actions">
         <a href="{{ url_for('admin_rank_add') }}" class="btn btn-primary">
@@ -136,13 +137,46 @@
                 {% if rank.is_max_rank %}
                 <span class="badge-max">MAX</span>
                 {% endif %}
+                {% if rank.conditions %}
+                <span class="badge-conditions"
+                    style="padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 600; background: rgba(59, 130, 246, 0.15); color: #3b82f6; text-transform: uppercase;">
+                    {{ rank.conditions|length }} condition{{ 's' if rank.conditions|length != 1 else '' }}
+                </span>
+                {% endif %}
             </div>
             <div class="rank-meta">
                 Code: {{ rank.code or '-' }} | Level {{ rank.level }}
+                {% if rank.min_xp and not rank.conditions %}
+                | {{ rank.min_xp|format_number }} {{ points_name }} (legacy)
+                {% endif %}
             </div>
+
+            {% if rank.conditions %}
+            <div class="rank-conditions-list"
+                style="margin-top: 8px; font-size: 12px; display: flex; flex-wrap: wrap; gap: 6px;">
+                {% for condition in rank.conditions %}
+                <div class="condition-tag"
+                    style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); padding: 2px 8px; border-radius: 4px; color: var(--text-muted);">
+                    <i class="ph ph-check-circle" style="vertical-align: middle;"></i>
+                    {{ condition.condition_type|replace('_', ' ')|title }}:
+                    <span style="color: var(--text-main); font-weight: 600;">{{ condition.threshold|format_number
+                        }}</span>
+                    {% if condition.trackable_slug %}
+                    <span style="font-size: 10px; opacity: 0.7;">({{ condition.trackable_slug }})</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
         </div>
 
-        <div class="rank-xp">{{ rank.min_xp|format_number }} XP</div>
+        <div class="rank-xp">
+            {% if rank.conditions %}
+            <span style="font-size: 13px; color: var(--text-muted);">Multi-condition</span>
+            {% else %}
+            {{ rank.min_xp|format_number }} {{ points_name }}
+            {% endif %}
+        </div>
 
         <div class="rank-actions">
             <a href="{{ url_for('admin_rank_edit', id=rank.id) }}" class="action-btn edit" title="Edit">
@@ -162,7 +196,7 @@
 <div class="empty-state">
     <i class="ph ph-crown"></i>
     <h3>No Ranks Yet</h3>
-    <p>Create ranks to unlock as you earn XP!</p>
+    <p>Create ranks to unlock as you earn {{ points_name }}!</p>
     <a href="{{ url_for('admin_rank_add') }}" class="btn btn-primary" style="margin-top: 16px;">
         <i class="ph ph-plus"></i> Create Rank
     </a>

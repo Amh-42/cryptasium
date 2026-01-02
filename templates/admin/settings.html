@@ -229,16 +229,16 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label><i class="ph ph-calendar-check"></i> Daily XP Goal</label>
+                    <label><i class="ph ph-calendar-check"></i> Daily {{ points_name }} Goal</label>
                     <input type="number" name="daily_xp_goal" value="{{ settings.daily_xp_goal }}" min="0">
-                    <div class="help-text">XP needed to complete daily goal</div>
+                    <div class="help-text">{{ points_name }} needed to complete daily goal</div>
                 </div>
 
                 <div class="form-group">
                     <label><i class="ph ph-fire"></i> Streak Bonus (per day)</label>
                     <input type="number" name="streak_bonus_per_day" value="{{ settings.streak_bonus_per_day }}"
                         min="0">
-                    <div class="help-text">Extra XP per streak day</div>
+                    <div class="help-text">Extra {{ points_name }} per streak day</div>
                 </div>
             </div>
         </div>
@@ -253,13 +253,13 @@
                 <div class="form-group">
                     <label><i class="ph ph-star"></i> Perfect Day Bonus</label>
                     <input type="number" name="perfect_day_bonus" value="{{ settings.perfect_day_bonus }}" min="0">
-                    <div class="help-text">Bonus XP for completing daily goal</div>
+                    <div class="help-text">Bonus {{ points_name }} for completing daily goal</div>
                 </div>
 
                 <div class="form-group">
                     <label><i class="ph ph-trophy"></i> Perfect Week Bonus</label>
                     <input type="number" name="perfect_week_bonus" value="{{ settings.perfect_week_bonus }}" min="0">
-                    <div class="help-text">Bonus XP for 7 consecutive days</div>
+                    <div class="help-text">Bonus {{ points_name }} for 7 consecutive days</div>
                 </div>
             </div>
         </div>
@@ -272,8 +272,8 @@
 
             <div class="settings-toggle">
                 <div class="toggle-info">
-                    <div class="toggle-label">XP Animations</div>
-                    <div class="toggle-description">Show animated popups when earning XP</div>
+                    <div class="toggle-label">{{ points_name }} Animations</div>
+                    <div class="toggle-description">Show animated popups when earning {{ points_name }}</div>
                 </div>
                 <label class="toggle-switch">
                     <input type="checkbox" name="show_xp_animations" {% if settings.show_xp_animations %}checked{% endif

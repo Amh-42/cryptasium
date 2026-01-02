@@ -10,13 +10,13 @@
         color: var(--text-muted);
         font-size: 14px;
     }
-    
+
     .trackables-list {
         display: flex;
         flex-direction: column;
         gap: 12px;
     }
-    
+
     .trackable-row {
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid var(--border);
@@ -27,16 +27,16 @@
         gap: 16px;
         transition: all 0.2s;
     }
-    
+
     .trackable-row:hover {
         border-color: var(--accent);
         background: rgba(255, 255, 255, 0.04);
     }
-    
+
     .trackable-row.inactive {
         opacity: 0.5;
     }
-    
+
     .trackable-icon-box {
         width: 48px;
         height: 48px;
@@ -47,12 +47,12 @@
         font-size: 24px;
         flex-shrink: 0;
     }
-    
+
     .trackable-info {
         flex: 1;
         min-width: 0;
     }
-    
+
     .trackable-name {
         font-weight: 600;
         font-size: 15px;
@@ -61,7 +61,7 @@
         align-items: center;
         gap: 8px;
     }
-    
+
     .trackable-meta {
         font-size: 12px;
         color: var(--text-muted);
@@ -69,64 +69,64 @@
         gap: 16px;
         flex-wrap: wrap;
     }
-    
+
     .trackable-meta span {
         display: flex;
         align-items: center;
         gap: 4px;
     }
-    
+
     .trackable-stats {
         display: flex;
         gap: 24px;
         text-align: center;
     }
-    
+
     .stat-item {
         display: flex;
         flex-direction: column;
         gap: 2px;
     }
-    
+
     .stat-item-value {
         font-size: 18px;
         font-weight: 700;
     }
-    
+
     .stat-item-label {
         font-size: 11px;
         color: var(--text-muted);
         text-transform: uppercase;
         letter-spacing: 0.3px;
     }
-    
+
     .trackable-actions {
         display: flex;
         gap: 8px;
     }
-    
+
     .badge {
         padding: 2px 8px;
         border-radius: 6px;
         font-size: 11px;
         font-weight: 500;
     }
-    
+
     .badge-pinned {
         background: rgba(245, 158, 11, 0.15);
         color: #f59e0b;
     }
-    
+
     .badge-category {
         background: rgba(59, 130, 246, 0.15);
         color: #3b82f6;
     }
-    
+
     @media (max-width: 768px) {
         .trackable-row {
             flex-wrap: wrap;
         }
-        
+
         .trackable-stats {
             width: 100%;
             justify-content: space-around;
@@ -134,7 +134,7 @@
             border-top: 1px solid var(--border);
             margin-top: 12px;
         }
-        
+
         .trackable-actions {
             width: 100%;
             justify-content: flex-end;
@@ -147,7 +147,7 @@
 <div class="page-header">
     <div>
         <h1 class="page-title">Trackable Types</h1>
-        <p class="page-intro">Define what you want to track. Each trackable has its own XP value.</p>
+        <p class="page-intro">Define what you want to track. Each trackable has its own {{ points_name }} value.</p>
     </div>
     <div class="page-actions">
         <a href="{{ url_for('admin_trackable_add') }}" class="btn btn-primary">
@@ -163,7 +163,7 @@
         <div class="trackable-icon-box" style="background: {{ trackable.color }}20; color: {{ trackable.color }}">
             <i class="ph {{ trackable.icon }}"></i>
         </div>
-        
+
         <div class="trackable-info">
             <div class="trackable-name">
                 {{ trackable.name }}
@@ -176,7 +176,7 @@
                 {% if trackable.xp_mode == 'value_based' %}
                 <span><i class="ph ph-lightning"></i> {{ trackable.xp_multiplier }}x value = XP</span>
                 {% else %}
-                <span><i class="ph ph-lightning"></i> {{ trackable.xp_per_unit }} XP each</span>
+                <span><i class="ph ph-lightning"></i> {{ trackable.xp_per_unit }} {{ points_name }} each</span>
                 {% endif %}
                 {% if trackable.track_value %}
                 <span><i class="ph ph-currency-dollar"></i> Tracks {{ trackable.value_label }}</span>
@@ -189,7 +189,7 @@
                 {% endif %}
             </div>
         </div>
-        
+
         <div class="trackable-stats">
             <div class="stat-item">
                 <div class="stat-item-value">{{ trackable.get_total_count() }}</div>
@@ -197,22 +197,24 @@
             </div>
             {% if trackable.track_value %}
             <div class="stat-item">
-                <div class="stat-item-value" style="color: #22c55e">{{ trackable.value_prefix }}{{ trackable.get_total_value()|format_number }}</div>
+                <div class="stat-item-value" style="color: #22c55e">{{ trackable.value_prefix }}{{
+                    trackable.get_total_value()|format_number }}</div>
                 <div class="stat-item-label">{{ trackable.value_label }}</div>
             </div>
             {% endif %}
             <div class="stat-item">
-                <div class="stat-item-value" style="color: var(--accent)">{{ trackable.get_total_xp()|format_number }}</div>
-                <div class="stat-item-label">XP</div>
+                <div class="stat-item-value" style="color: var(--accent)">{{ trackable.get_total_xp()|format_number }}
+                </div>
+                <div class="stat-item-label">{{ points_name }}</div>
             </div>
         </div>
-        
+
         <div class="trackable-actions">
             <a href="{{ url_for('admin_trackable_edit', id=trackable.id) }}" class="action-btn edit" title="Edit">
                 <i class="ph ph-pencil"></i>
             </a>
-            <form action="{{ url_for('admin_trackable_delete', id=trackable.id) }}" method="post" 
-                  onsubmit="return confirmDelete(this, 'Trackable')" style="display: inline;">
+            <form action="{{ url_for('admin_trackable_delete', id=trackable.id) }}" method="post"
+                onsubmit="return confirmDelete(this, 'Trackable')" style="display: inline;">
                 <button type="submit" class="action-btn delete" title="Delete">
                     <i class="ph ph-trash"></i>
                 </button>
@@ -225,11 +227,10 @@
 <div class="empty-state">
     <i class="ph ph-package"></i>
     <h3>No Trackables Yet</h3>
-    <p>Create your first trackable to start earning XP!</p>
+    <p>Create your first trackable to start earning {{ points_name }}!</p>
     <a href="{{ url_for('admin_trackable_add') }}" class="btn btn-primary" style="margin-top: 16px;">
         <i class="ph ph-plus"></i> Create Trackable
     </a>
 </div>
 {% endif %}
 {% endblock %}
-

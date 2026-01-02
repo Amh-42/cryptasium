@@ -6,32 +6,32 @@
 {% block extra_css %}
 <style>
     .form-container {
-        max-width: 540px;
+        max-width: 700px;
     }
-    
+
     .form-card {
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid var(--border);
         border-radius: 16px;
         padding: 28px;
     }
-    
+
     .form-group {
         margin-bottom: 20px;
     }
-    
+
     .form-row {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 16px;
     }
-    
+
     .color-input-wrapper {
         display: flex;
         gap: 12px;
         align-items: center;
     }
-    
+
     .color-preview {
         width: 48px;
         height: 48px;
@@ -41,7 +41,7 @@
         position: relative;
         overflow: hidden;
     }
-    
+
     .color-preview input {
         position: absolute;
         width: 100%;
@@ -49,7 +49,7 @@
         opacity: 0;
         cursor: pointer;
     }
-    
+
     .form-actions {
         display: flex;
         gap: 12px;
@@ -57,7 +57,7 @@
         padding-top: 20px;
         border-top: 1px solid var(--border);
     }
-    
+
     .rank-preview {
         padding: 20px;
         background: rgba(255, 255, 255, 0.03);
@@ -68,7 +68,7 @@
         gap: 16px;
         margin-bottom: 24px;
     }
-    
+
     .preview-badge {
         width: 60px;
         height: 60px;
@@ -79,94 +79,278 @@
         font-size: 24px;
         font-weight: 700;
     }
-    
+
     .preview-info {
         flex: 1;
     }
-    
+
     .preview-name {
         font-size: 18px;
         font-weight: 700;
         margin-bottom: 4px;
     }
-    
+
     .preview-level {
         font-size: 13px;
         color: var(--text-muted);
+    }
+
+    /* Conditions Section */
+    .conditions-section {
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 2px solid var(--border);
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+    }
+
+    .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-main);
+    }
+
+    .condition-item {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 12px;
+        display: grid;
+        grid-template-columns: 1.5fr 1.5fr 1fr auto;
+        gap: 12px;
+        align-items: end;
+    }
+
+    .condition-item.trackable-condition {
+        grid-template-columns: 1.2fr 1.2fr 1.2fr 1fr auto;
+    }
+
+    .trackable-select {
+        display: none;
+    }
+
+    .trackable-select.visible {
+        display: block;
+    }
+
+    .btn-icon {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.02);
+        color: var(--text-main);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--accent);
+    }
+
+    .btn-icon.delete:hover {
+        background: rgba(239, 68, 68, 0.1);
+        border-color: #ef4444;
+        color: #ef4444;
+    }
+
+    .empty-conditions {
+        text-align: center;
+        padding: 32px;
+        color: var(--text-muted);
+        font-size: 14px;
+    }
+
+    .condition-hint {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 8px;
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="form-container">
-    <form method="post" class="form-card">
+    <form method="post" class="form-card" id="rankForm">
         <div class="rank-preview" id="rankPreview">
-            <div class="preview-badge" id="previewBadge" style="background: {{ rank.color if rank else '#666666' }}30; color: {{ rank.color if rank else '#666666' }}">
+            <div class="preview-badge" id="previewBadge"
+                style="background: {{ rank.color if rank else '#666666' }}30; color: {{ rank.color if rank else '#666666' }}">
                 <span id="previewCode">{{ rank.code if rank else 'L1' }}</span>
             </div>
             <div class="preview-info">
-                <div class="preview-name" id="previewName" style="color: {{ rank.color if rank else '#666666' }}">{{ rank.name if rank else 'Rank Name' }}</div>
-                <div class="preview-level">Level <span id="previewLevel">{{ rank.level if rank else 1 }}</span> • <span id="previewXP">{{ rank.min_xp if rank else 0 }}</span> XP</div>
+                <div class="preview-name" id="previewName" style="color: {{ rank.color if rank else '#666666' }}">{{
+                    rank.name if rank else 'Rank Name' }}</div>
+                <div class="preview-level">Level <span id="previewLevel">{{ rank.level if rank else 1 }}</span> • <span
+                        id="conditionCount">{{ rank.conditions|length if rank else 0 }}</span> condition(s)</div>
             </div>
         </div>
-        
+
         <div class="form-row">
             <div class="form-group">
                 <label><i class="ph ph-hash"></i> Level</label>
-                <input type="number" name="level" id="levelInput" value="{{ rank.level if rank else 1 }}" min="1" required>
+                <input type="number" name="level" id="levelInput" value="{{ rank.level if rank else 1 }}" min="1"
+                    required>
             </div>
-            
+
             <div class="form-group">
                 <label><i class="ph ph-code"></i> Code</label>
-                <input type="text" name="code" id="codeInput" value="{{ rank.code if rank else '' }}" 
-                       placeholder="e.g., NV, EX, MS" maxlength="4">
+                <input type="text" name="code" id="codeInput" value="{{ rank.code if rank else '' }}"
+                    placeholder="e.g., NV, EX, MS" maxlength="4">
             </div>
         </div>
-        
+
         <div class="form-group">
             <label><i class="ph ph-text-aa"></i> Rank Name</label>
-            <input type="text" name="name" id="nameInput" value="{{ rank.name if rank else '' }}" required 
-                   placeholder="e.g., Novice, Expert, Master">
+            <input type="text" name="name" id="nameInput" value="{{ rank.name if rank else '' }}" required
+                placeholder="e.g., Novice, Expert, Master">
         </div>
-        
-        <div class="form-group">
-            <label><i class="ph ph-lightning"></i> Minimum XP Required</label>
-            <input type="number" name="min_xp" id="xpInput" value="{{ rank.min_xp if rank else 0 }}" min="0" required>
-            <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">XP needed to reach this rank</div>
-        </div>
-        
+
         <div class="form-group">
             <label><i class="ph ph-text-align-left"></i> Description (Optional)</label>
-            <input type="text" name="description" value="{{ rank.description if rank else '' }}" 
-                   placeholder="Description of this rank">
+            <input type="text" name="description" value="{{ rank.description if rank else '' }}"
+                placeholder="Description of this rank">
         </div>
-        
+
         <div class="form-row">
             <div class="form-group">
                 <label><i class="ph ph-palette"></i> Color</label>
                 <div class="color-input-wrapper">
-                    <div class="color-preview" id="colorPreview" style="background: {{ rank.color if rank else '#666666' }}">
-                        <input type="color" name="color" id="colorInput" value="{{ rank.color if rank else '#666666' }}">
+                    <div class="color-preview" id="colorPreview"
+                        style="background: {{ rank.color if rank else '#666666' }}">
+                        <input type="color" name="color" id="colorInput"
+                            value="{{ rank.color if rank else '#666666' }}">
                     </div>
-                    <input type="text" id="colorText" value="{{ rank.color if rank else '#666666' }}" style="width: 100px;" readonly>
+                    <input type="text" id="colorText" value="{{ rank.color if rank else '#666666' }}"
+                        style="width: 100px;" readonly>
                 </div>
             </div>
-            
+
             <div class="form-group">
                 <label><i class="ph ph-shapes"></i> Icon (Optional)</label>
-                <input type="text" name="icon" value="{{ rank.icon if rank else '' }}" 
-                       placeholder="e.g., ph-crown, ph-star">
+                <input type="text" name="icon" value="{{ rank.icon if rank else '' }}"
+                    placeholder="e.g., ph-crown, ph-star">
             </div>
         </div>
-        
+
         <div class="form-group">
             <label class="checkbox-item" style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                <input type="checkbox" name="is_max_rank" {% if rank and rank.is_max_rank %}checked{% endif %} 
-                       style="width: 20px; height: 20px; accent-color: var(--accent);">
+                <input type="checkbox" name="is_max_rank" {% if rank and rank.is_max_rank %}checked{% endif %}
+                    style="width: 20px; height: 20px; accent-color: var(--accent);">
                 <span>This is the maximum rank</span>
             </label>
         </div>
-        
+
+        <!-- Conditions Section -->
+        <div class="conditions-section">
+            <div class="section-header">
+                <div>
+                    <div class="section-title"><i class="ph ph-list-checks"></i> Rank Conditions</div>
+                    <div class="condition-hint">All conditions must be met to unlock this rank</div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline" onclick="addCondition()">
+                    <i class="ph ph-plus"></i> Add Condition
+                </button>
+            </div>
+
+            <div id="conditionsList">
+                {% if rank and rank.conditions %}
+                {% for condition in rank.conditions %}
+                <div class="condition-item {% if condition.condition_type in ['trackable_xp', 'trackable_count'] %}trackable-condition{% endif %}"
+                    data-type="{{ condition.condition_type }}">
+                    <div class="form-group" style="margin: 0;">
+                        <label>Condition Name (Optional)</label>
+                        <input type="text" class="custom-name-input" value="{{ condition.custom_name or '' }}"
+                            placeholder="e.g. XYZ">
+                    </div>
+
+                    <div class="form-group" style="margin: 0;">
+                        <label>Condition Type</label>
+                        <select class="condition-type-select" onchange="updateConditionRow(this)">
+                            <option value="total_xp" {% if condition.condition_type=='total_xp' %}selected{% endif %}>
+                                Total {{ points_name }}</option>
+                            <option value="total_days_active" {% if condition.condition_type=='total_days_active'
+                                %}selected{% endif %}>
+                                Total Days Active</option>
+                            <option value="total_goals_met" {% if condition.condition_type=='total_goals_met'
+                                %}selected{% endif %}>
+                                Total Goals Met</option>
+                            <option value="trackable_xp" {% if condition.condition_type=='trackable_xp' %}selected{%
+                                endif %}>{{ points_name }} per Trackable</option>
+                            <option value="trackable_count" {% if condition.condition_type=='trackable_count'
+                                %}selected{% endif %}>Trackable Count</option>
+                            <option value="youtube_subscribers" {% if condition.condition_type=='youtube_subscribers'
+                                %}selected{% endif %}>YouTube Subscribers</option>
+                            <option value="youtube_total_views" {% if condition.condition_type=='youtube_total_views'
+                                %}selected{% endif %}>YouTube Total Views</option>
+                            <option value="youtube_total_count" {% if condition.condition_type=='youtube_total_count'
+                                %}selected{% endif %}>
+                                YouTube: Total Videos (Long + Shorts)</option>
+                            <option value="youtube_long_count" {% if condition.condition_type=='youtube_long_count'
+                                %}selected{% endif %}>YouTube Long Videos</option>
+                            <option value="youtube_short_count" {% if condition.condition_type=='youtube_short_count'
+                                %}selected{% endif %}>YouTube Shorts</option>
+                            <option value="youtube_long_views" {% if condition.condition_type=='youtube_long_views'
+                                %}selected{% endif %}>YouTube Long Views</option>
+                            <option value="youtube_short_views" {% if condition.condition_type=='youtube_short_views'
+                                %}selected{% endif %}>YouTube Short Views</option>
+                            <option value="streak_current" {% if condition.condition_type=='streak_current' %}selected{%
+                                endif %}>Current Streak</option>
+                            <option value="streak_longest" {% if condition.condition_type=='streak_longest' %}selected{%
+                                endif %}>Longest Streak</option>
+                            <option value="tasks_completed" {% if condition.condition_type=='tasks_completed'
+                                %}selected{% endif %}>Tasks Completed</option>
+                            <option value="perfect_weeks" {% if condition.condition_type=='perfect_weeks' %}selected{%
+                                endif %}>Perfect Weeks</option>
+                            <option value="achievements_unlocked" {% if
+                                condition.condition_type=='achievements_unlocked' %}selected{% endif %}>Achievements
+                                Unlocked</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group trackable-select {% if condition.condition_type in ['trackable_xp', 'trackable_count'] %}visible{% endif %}"
+                        style="margin: 0;">
+                        <label>Trackable</label>
+                        <select class="trackable-slug-select">
+                            <option value="">Select trackable...</option>
+                            {% for trackable in trackables %}
+                            <option value="{{ trackable.slug }}" {% if condition.trackable_slug==trackable.slug
+                                %}selected{% endif %}>{{ trackable.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin: 0;">
+                        <label>Threshold</label>
+                        <input type="number" class="threshold-input" value="{{ condition.threshold }}" min="0" required>
+                    </div>
+
+                    <button type="button" class="btn-icon delete" onclick="removeCondition(this)">
+                        <i class="ph ph-trash"></i>
+                    </button>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="empty-conditions" id="emptyState">
+                    <i class="ph ph-list-dashes" style="font-size: 32px; opacity: 0.3;"></i>
+                    <p>No conditions yet. Add conditions to define requirements for this rank.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Hidden input for conditions JSON -->
+        <input type="hidden" name="conditions_json" id="conditionsJson">
+
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">
                 <i class="ph ph-check"></i> {{ 'Save Changes' if rank else 'Create Rank' }}
@@ -186,34 +370,156 @@
     const previewName = document.getElementById('previewName');
     const previewCode = document.getElementById('previewCode');
     const previewLevel = document.getElementById('previewLevel');
-    const previewXP = document.getElementById('previewXP');
-    
-    colorInput.addEventListener('input', function() {
+    const conditionCount = document.getElementById('conditionCount');
+
+    colorInput.addEventListener('input', function () {
         colorPreview.style.background = this.value;
         colorText.value = this.value;
         previewBadge.style.background = this.value + '30';
         previewBadge.style.color = this.value;
         previewName.style.color = this.value;
     });
-    
-    document.getElementById('nameInput').addEventListener('input', function() {
+
+    document.getElementById('nameInput').addEventListener('input', function () {
         previewName.textContent = this.value || 'Rank Name';
     });
-    
-    document.getElementById('codeInput').addEventListener('input', function() {
+
+    document.getElementById('codeInput').addEventListener('input', function () {
         previewCode.textContent = this.value || 'L' + document.getElementById('levelInput').value;
     });
-    
-    document.getElementById('levelInput').addEventListener('input', function() {
+
+    document.getElementById('levelInput').addEventListener('input', function () {
         previewLevel.textContent = this.value;
         if (!document.getElementById('codeInput').value) {
             previewCode.textContent = 'L' + this.value;
         }
     });
-    
-    document.getElementById('xpInput').addEventListener('input', function() {
-        previewXP.textContent = parseInt(this.value).toLocaleString();
+
+    // Condition management
+    function addCondition() {
+        const conditionsList = document.getElementById('conditionsList');
+        const emptyState = document.getElementById('emptyState');
+
+        if (emptyState) {
+            emptyState.remove();
+        }
+
+        const conditionHTML = `
+            <div class="condition-item">
+                <div class="form-group" style="margin: 0;">
+                    <label>Condition Name (Optional)</label>
+                    <input type="text" class="custom-name-input" placeholder="e.g. XYZ">
+                </div>
+
+                <div class="form-group" style="margin: 0;">
+                    <label>Condition Type</label>
+                    <select class="condition-type-select" onchange="updateConditionRow(this)">
+                        <option value="total_xp">Total {{ points_name }}</option>
+                        <option value="total_days_active">Total Days Active</option>
+                        <option value="total_goals_met">Total Goals Met</option>
+                        <option value="trackable_xp">{{ points_name }} per Trackable</option>
+                        <option value="trackable_count">Trackable Count</option>
+                        <option value="youtube_subscribers">YouTube Subscribers</option>
+                        <option value="youtube_total_views">YouTube Total Views</option>
+                        <option value="youtube_total_count">YouTube: Total Videos (Long + Shorts)</option>
+                        <option value="youtube_long_count">YouTube: Long Videos</option>
+                        <option value="youtube_short_count">YouTube Shorts</option>
+                        <option value="youtube_long_views">YouTube Long Views</option>
+                        <option value="youtube_short_views">YouTube Short Views</option>
+                        <option value="streak_current">Current Streak</option>
+                        <option value="streak_longest">Longest Streak</option>
+                        <option value="tasks_completed">Tasks Completed</option>
+                        <option value="perfect_weeks">Perfect Weeks</option>
+                        <option value="achievements_unlocked">Achievements Unlocked</option>
+                    </select>
+                </div>
+                
+                <div class="form-group trackable-select" style="margin: 0;">
+                    <label>Trackable</label>
+                    <select class="trackable-slug-select">
+                        <option value="">Select trackable...</option>
+                        {% for trackable in trackables %}
+                        <option value="{{ trackable.slug }}">{{ trackable.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group" style="margin: 0;">
+                    <label>Threshold</label>
+                    <input type="number" class="threshold-input" value="100" min="0" required>
+                </div>
+                
+                <button type="button" class="btn-icon delete" onclick="removeCondition(this)">
+                    <i class="ph ph-trash"></i>
+                </button>
+            </div>
+        `;
+
+        conditionsList.insertAdjacentHTML('beforeend', conditionHTML);
+        updateConditionCount();
+    }
+
+    function removeCondition(button) {
+        const conditionItem = button.closest('.condition-item');
+        conditionItem.remove();
+
+        const conditionsList = document.getElementById('conditionsList');
+        if (conditionsList.children.length === 0) {
+            conditionsList.innerHTML = `
+                <div class="empty-conditions" id="emptyState">
+                    <i class="ph ph-list-dashes" style="font-size: 32px; opacity: 0.3;"></i>
+                    <p>No conditions yet. Add conditions to define requirements for this rank.</p>
+                </div>
+            `;
+        }
+
+        updateConditionCount();
+    }
+
+    function updateConditionRow(select) {
+        const conditionItem = select.closest('.condition-item');
+        const trackableSelect = conditionItem.querySelector('.trackable-select');
+        const conditionType = select.value;
+
+        if (conditionType === 'trackable_xp' || conditionType === 'trackable_count') {
+            trackableSelect.classList.add('visible');
+            conditionItem.classList.add('trackable-condition');
+        } else {
+            trackableSelect.classList.remove('visible');
+            conditionItem.classList.remove('trackable-condition');
+        }
+    }
+
+    function updateConditionCount() {
+        const count = document.querySelectorAll('.condition-item').length;
+        conditionCount.textContent = count;
+    }
+
+    // Serialize conditions to JSON before form submit
+    document.getElementById('rankForm').addEventListener('submit', function (e) {
+        const conditions = [];
+        const conditionItems = document.querySelectorAll('.condition-item');
+
+        conditionItems.forEach(item => {
+            const type = item.querySelector('.condition-type-select').value;
+            const threshold = item.querySelector('.threshold-input').value;
+            const trackableSlug = item.querySelector('.trackable-slug-select')?.value || null;
+            const customName = item.querySelector('.custom-name-input').value;
+
+            const condition = {
+                type: type,
+                threshold: parseInt(threshold),
+                custom_name: customName || null
+            };
+
+            if (trackableSlug) {
+                condition.trackable_slug = trackableSlug;
+            }
+
+            conditions.push(condition);
+        });
+
+        document.getElementById('conditionsJson').value = JSON.stringify(conditions);
     });
 </script>
 {% endblock %}
-

@@ -416,7 +416,7 @@
                     <i class="ph ph-lightning"></i>
                 </div>
                 <div class="stat-value">{{ stats.total_xp|format_number }}</div>
-                <div class="stat-label">Total XP</div>
+                <div class="stat-label">Total {{ points_name }}</div>
             </div>
 
             <div class="stat-card">
@@ -491,7 +491,7 @@
                                     day_data=calendar_data.get(day_str, {'level': 0, 'xp' : 0}) %} <div
                                     class="contribution-day level-{{ day_data.level }}"
                                     data-date="{{ day_date.strftime('%Y-%m-%d') }}" data-xp="{{ day_data.xp }}"
-                                    title="{{ day_date.strftime('%a, %b %d, %Y') }}: {{ day_data.xp }} XP">
+                                    title="{{ day_date.strftime('%a, %b %d, %Y') }}: {{ day_data.xp }} {{ points_name }}">
                             </div>
                             {% else %}
                             <!-- Empty future days filler if needed for grid shape -->
@@ -576,8 +576,8 @@
         <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
             <div
                 style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; color: var(--text-muted);">
-                <span>{{ stats.total_xp|format_number }} XP</span>
-                <span>{{ stats.next_rank.min_xp|format_number }} XP</span>
+                <span>{{ stats.total_xp|format_number }} {{ points_name }}</span>
+                <span>{{ stats.next_rank.min_xp|format_number }} {{ points_name }}</span>
             </div>
             <div style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
                 <div
@@ -585,7 +585,7 @@
                 </div>
             </div>
             <div style="text-align: center; margin-top: 8px; font-size: 12px; color: var(--text-muted);">
-                {{ stats.next_rank.min_xp - stats.total_xp }} XP to {{ stats.next_rank.name }}
+                {{ stats.next_rank.min_xp - stats.total_xp }} {{ points_name }} to {{ stats.next_rank.name }}
             </div>
         </div>
         {% endif %}
@@ -607,7 +607,7 @@
                     <div class="log-date-month">{{ log.date.strftime('%b') }}</div>
                 </div>
                 <div class="log-info">
-                    <div class="log-xp">{{ log.total_xp }} XP</div>
+                    <div class="log-xp">{{ log.total_xp }} {{ points_name }}</div>
                     <div class="log-status">
                         {{ log.get_completed_tasks()|length }} tasks completed
                     </div>
