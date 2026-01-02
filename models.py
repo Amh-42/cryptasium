@@ -297,6 +297,9 @@ class TrackableEntry(db.Model):
     # For tiered/categorized entries (e.g., "Bronze Package", "Gold Package")
     tier_name = db.Column(db.String(50))
     
+    # Manual allocation to rank conditions (buckets)
+    allocated_condition_id = db.Column(db.Integer, db.ForeignKey('rank_conditions.id'), nullable=True)
+    
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -418,6 +421,7 @@ class RankCondition(db.Model):
     condition_type = db.Column(db.String(50), nullable=False)  # See CONDITION_TYPES below
     threshold = db.Column(db.Integer, nullable=False)  # The value that must be reached
     custom_name = db.Column(db.String(100))  # User-defined name for this condition
+    is_bucket = db.Column(db.Boolean, default=False)  # If True, only allocated entries count
     
     # Optional: for trackable-specific conditions
     trackable_slug = db.Column(db.String(100))  # Used when condition_type is 'trackable_xp' or 'trackable_count'
@@ -456,7 +460,16 @@ class RankCondition(db.Model):
         
         # Total XP
         if self.condition_type == 'total_xp':
-            current_value = user.get_total_xp()
+            if self.is_bucket:
+                # Sum entries specifically allocated to this condition (bucket)
+                # Filter by user_id through the relationship
+                entries = TrackableEntry.query.filter_by(
+                    user_id=user_id,
+                    allocated_condition_id=self.id
+                ).all()
+                current_value = sum(entry.get_xp() for entry in entries)
+            else:
+                current_value = user.get_total_xp()
         
         # Trackable-specific XP
         elif self.condition_type == 'trackable_xp' and self.trackable_slug:

@@ -26,6 +26,7 @@
         align-items: center;
         gap: 16px;
         transition: all 0.2s;
+        flex-wrap: wrap;
     }
 
     .rank-row:hover {
@@ -36,30 +37,38 @@
     .rank-level {
         width: 40px;
         height: 40px;
-        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 16px;
-        font-weight: 700;
+        font-weight: 800;
+        font-size: 14px;
+        color: var(--text-muted);
         flex-shrink: 0;
     }
 
     .rank-icon-box {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 20px;
-        font-weight: 700;
+        font-size: 28px;
         flex-shrink: 0;
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    .rank-icon-box img {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
     }
 
     .rank-info {
         flex: 1;
-        min-width: 0;
+        min-width: 200px;
     }
 
     .rank-name {
@@ -97,6 +106,89 @@
         background: rgba(245, 158, 11, 0.15);
         color: #f59e0b;
         text-transform: uppercase;
+    }
+
+    .rank-conditions-list {
+        margin-top: 8px;
+        font-size: 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .condition-tag {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border);
+        padding: 2px 8px;
+        border-radius: 4px;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .condition-tag strong {
+        color: var(--text-main);
+        font-weight: 600;
+    }
+
+    .condition-tag.bucket {
+        background: rgba(59, 130, 246, 0.1);
+        border-color: rgba(59, 130, 246, 0.3);
+        color: #3b82f6;
+    }
+
+    @media (max-width: 768px) {
+        .rank-row {
+            padding: 16px;
+            gap: 12px;
+        }
+
+        .rank-level {
+            width: 32px;
+            height: 32px;
+            font-size: 12px;
+        }
+
+        .rank-icon-box {
+            width: 48px;
+            height: 48px;
+            font-size: 24px;
+        }
+
+        .rank-icon-box img {
+            width: 32px;
+            height: 32px;
+        }
+
+        .rank-info {
+            width: calc(100% - 110px);
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+
+        .rank-xp {
+            width: 100%;
+            text-align: left;
+            padding-left: 0;
+            margin-top: 4px;
+            margin-bottom: 4px;
+            font-size: 14px;
+            order: 4;
+        }
+
+        .rank-conditions-list {
+            width: 100%;
+            margin-top: 8px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            order: 5;
+        }
+
+        .rank-actions {
+            width: auto;
+            order: 3;
+        }
     }
 </style>
 {% endblock %}
@@ -152,18 +244,19 @@
             </div>
 
             {% if rank.conditions %}
-            <div class="rank-conditions-list"
-                style="margin-top: 8px; font-size: 12px; display: flex; flex-wrap: wrap; gap: 6px;">
+            <div class="rank-conditions-list">
                 {% for condition in rank.conditions %}
-                <div class="condition-tag"
-                    style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); padding: 2px 8px; border-radius: 4px; color: var(--text-muted);">
-                    <i class="ph ph-check-circle" style="vertical-align: middle;"></i>
-                    {{ condition.condition_type|replace('_', ' ')|title }}:
-                    <span style="color: var(--text-main); font-weight: 600;">{{ condition.threshold|format_number
-                        }}</span>
-                    {% if condition.trackable_slug %}
-                    <span style="font-size: 10px; opacity: 0.7;">({{ condition.trackable_slug }})</span>
-                    {% endif %}
+                <div class="condition-tag {% if condition.is_bucket %}bucket{% endif %}" {% if condition.is_bucket
+                    %}title="Manual Allocation Bucket" {% endif %}>
+                    <i class="ph ph-check-circle"></i>
+                    <span>
+                        {{ condition.custom_name if condition.custom_name else condition.condition_type|replace('_', '
+                        ')|title }}
+                        {% if condition.is_bucket %}
+                        <i class="ph ph-hand-pointing" style="font-size: 10px; margin-left: 2px;"></i>
+                        {% endif %}
+                    </span>
+                    <strong>{{ condition.threshold }}</strong>
                 </div>
                 {% endfor %}
             </div>

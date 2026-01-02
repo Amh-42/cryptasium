@@ -692,11 +692,13 @@ def create_app(config_name=None):
     @admin_required
     def admin_log_entry():
         """Quick log entry page"""
-        trackables = TrackableType.query.filter_by(
-            user_id=current_user.id,
-            is_active=True
-        ).order_by(TrackableType.display_order).all()
-        
+        # Find potential bucket conditions for next rank
+        stats = get_user_stats()
+        next_rank = stats['next_rank']
+        buckets = []
+        if next_rank:
+            buckets = [c for c in next_rank.conditions if c.is_bucket]
+
         if request.method == 'POST':
             trackable_id = int(request.form.get('trackable_id'))
             entry = TrackableEntry(
@@ -707,7 +709,8 @@ def create_app(config_name=None):
                 value=float(request.form.get('value', 0)) if request.form.get('value') else 0,
                 title=request.form.get('title'),
                 notes=request.form.get('notes'),
-                url=request.form.get('url')
+                url=request.form.get('url'),
+                allocated_condition_id=request.form.get('allocated_condition_id') or None
             )
             db.session.add(entry)
             
@@ -734,7 +737,11 @@ def create_app(config_name=None):
             flash(f'+{entry.get_xp()} XP for {trackable.name}!', 'success')
         return redirect(url_for('admin_dashboard'))
 
-        return render_template('admin/log_entry.html', trackables=trackables, today=date.today())
+        return render_template('admin/log_entry.html', 
+                               trackables=stats['trackables'], 
+                               buckets=buckets,
+                               selected_trackable_id=request.args.get('trackable', type=int),
+                               today=date.today())
     
     @app.route('/admin/quick-log/<int:trackable_id>', methods=['POST'])
     @admin_required
@@ -743,6 +750,12 @@ def create_app(config_name=None):
         trackable = TrackableType.query.get_or_404(trackable_id)
         if trackable.user_id != current_user.id:
             abort(403)
+            
+        # If user has manual buckets for next rank, redirect to full log to ask for allocation
+        stats = get_user_stats()
+        next_rank = stats['next_rank']
+        if next_rank and any(c.is_bucket for c in next_rank.conditions):
+            return redirect(url_for('admin_log_entry', trackable=trackable.id))
         
         entry = TrackableEntry(
             user_id=current_user.id,
@@ -1068,7 +1081,8 @@ def create_app(config_name=None):
                         condition_type=cond['type'],
                         threshold=int(cond['threshold']),
                         trackable_slug=cond.get('trackable_slug'),
-                        custom_name=cond.get('custom_name')
+                        custom_name=cond.get('custom_name'),
+                        is_bucket=cond.get('is_bucket', False)
                     )
                     db.session.add(condition)
             except (json.JSONDecodeError, KeyError, ValueError) as e:
@@ -1118,7 +1132,8 @@ def create_app(config_name=None):
                         condition_type=cond['type'],
                         threshold=int(cond['threshold']),
                         trackable_slug=cond.get('trackable_slug'),
-                        custom_name=cond.get('custom_name')
+                        custom_name=cond.get('custom_name'),
+                        is_bucket=cond.get('is_bucket', False)
                     )
                     db.session.add(condition)
             except (json.JSONDecodeError, KeyError, ValueError) as e:

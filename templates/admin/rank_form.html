@@ -122,13 +122,13 @@
         padding: 16px;
         margin-bottom: 12px;
         display: grid;
-        grid-template-columns: 1.5fr 1.5fr 1fr auto;
+        grid-template-columns: 1.2fr 1.2fr 1.2fr 80px 80px auto;
         gap: 12px;
         align-items: end;
     }
 
     .condition-item.trackable-condition {
-        grid-template-columns: 1.2fr 1.2fr 1.2fr 1fr auto;
+        grid-template-columns: 1.2fr 1.2fr 1.2fr 1.2fr 80px 80px auto;
     }
 
     .trackable-select {
@@ -334,6 +334,12 @@
                         <input type="number" class="threshold-input" value="{{ condition.threshold }}" min="0" required>
                     </div>
 
+                    <div class="form-group" style="margin: 0; text-align: center;">
+                        <label style="font-size: 10px; margin-bottom: 4px; display: block;">Bucket?</label>
+                        <input type="checkbox" class="is-bucket-input" {% if condition.is_bucket %}checked{% endif %}
+                            style="width: 20px; height: 20px; margin: 0 auto; display: block; accent-color: var(--accent);">
+                    </div>
+
                     <button type="button" class="btn-icon delete" onclick="removeCondition(this)">
                         <i class="ph ph-trash"></i>
                     </button>
@@ -448,6 +454,12 @@
                     <label>Threshold</label>
                     <input type="number" class="threshold-input" value="100" min="0" required>
                 </div>
+
+                <div class="form-group" style="margin: 0; text-align: center;">
+                    <label style="font-size: 10px; margin-bottom: 4px; display: block;">Bucket?</label>
+                    <input type="checkbox" class="is-bucket-input"
+                        style="width: 20px; height: 20px; margin: 0 auto; display: block; accent-color: var(--accent);">
+                </div>
                 
                 <button type="button" class="btn-icon delete" onclick="removeCondition(this)">
                     <i class="ph ph-trash"></i>
@@ -505,11 +517,13 @@
             const threshold = item.querySelector('.threshold-input').value;
             const trackableSlug = item.querySelector('.trackable-slug-select')?.value || null;
             const customName = item.querySelector('.custom-name-input').value;
+            const isBucket = item.querySelector('.is-bucket-input').checked;
 
             const condition = {
                 type: type,
                 threshold: parseInt(threshold),
-                custom_name: customName || null
+                custom_name: customName || null,
+                is_bucket: isBucket
             };
 
             if (trackableSlug) {
