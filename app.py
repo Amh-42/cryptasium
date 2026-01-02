@@ -22,7 +22,14 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from werkzeug.utils import secure_filename
 
 
-socketio = SocketIO(cors_allowed_origins="*", async_mode='eventlet')
+socketio = SocketIO(
+    cors_allowed_origins="*", 
+    async_mode='eventlet',
+    logger=True, 
+    engineio_logger=True,
+    ping_timeout=60,
+    ping_interval=25
+)
 
 
 def create_app(config_name=None):
@@ -770,13 +777,13 @@ def create_app(config_name=None):
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
             filename = f"{timestamp}_{filename}"
             
-            # Save file
-            upload_folder = os.path.join(app.static_folder, 'uploads', 'dashboard')
+            # Save file using absolute path from config
+            upload_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'dashboard')
             os.makedirs(upload_folder, exist_ok=True)
             
             file.save(os.path.join(upload_folder, filename))
             
-            # Create DB record
+            # Create DB record - relative URL for frontend
             image_url = url_for('static', filename=f'uploads/dashboard/{filename}')
             dashboard_image = DashboardImage(
                 user_id=current_user.id,
@@ -804,7 +811,7 @@ def create_app(config_name=None):
         try:
             # Extract filename from URL (simplified assuming standard structure)
             filename = image.image_url.split('/')[-1]
-            filepath = os.path.join(app.static_folder, 'uploads', 'dashboard', filename)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'dashboard', filename)
             if os.path.exists(filepath):
                 os.remove(filepath)
         except Exception as e:

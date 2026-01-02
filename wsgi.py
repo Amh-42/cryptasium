@@ -7,10 +7,11 @@ import os
 # Add the project directory to the path
 sys.path.insert(0, os.path.dirname(__file__))
 
-from app import create_app
+from app import create_app, socketio
 
 # Create the Flask application
-application = create_app('production')
+app = create_app('production')
+application = socketio.WSGIApp(socketio, app)
 
 if __name__ == "__main__":
     application.run()

@@ -43,6 +43,9 @@ class Config:
     POSTS_PER_PAGE = int(os.environ.get('POSTS_PER_PAGE', 12))
     VIDEOS_PER_PAGE = int(os.environ.get('VIDEOS_PER_PAGE', 12))
     SHORTS_PER_PAGE = int(os.environ.get('SHORTS_PER_PAGE', 20))
+    
+    # Media
+    UPLOAD_FOLDER = BASE_DIR / 'static' / 'uploads'
 
 class DevelopmentConfig(Config):
     """Development configuration"""
