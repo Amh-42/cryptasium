@@ -196,6 +196,9 @@ class TrackableType(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    # Specialized logic
+    expense_threshold = db.Column(db.Float, default=0) # For expense trackables: Diff between threshold and value earns XP
+    
     # Relationships
     entries = db.relationship('TrackableEntry', backref='trackable_type', lazy=True, cascade='all, delete-orphan')
     
@@ -233,7 +236,21 @@ class TrackableType(db.Model):
         )
     
     def calculate_xp_for_entry(self, count=1, value=0):
-        """Calculate XP for an entry based on the XP mode"""
+        """Calculate XP for an entry based on the XP mode and money logic"""
+        # Income logic: 1$ = X points (multiplier)
+        # Expense logic: Threshold - Spent = Diff, Diff * X points
+        
+        # New prioritized logic for income/expense if categories match
+        # or if track_value is on and multiplier is set
+        if self.track_value:
+            if self.category in ('sales', 'finance', 'income'):
+                # Income: $100 * 5 multiplier = 500 XP
+                return int(abs(value) * (self.xp_multiplier or 1.0))
+            elif (self.category == 'expense' or self.expense_threshold > 0):
+                # Expense: Threshold 300 - Spent 100 = 200 * multiplier = 200 XP
+                diff = max(0, self.expense_threshold - abs(value))
+                return int(diff * (self.xp_multiplier or 1.0))
+        
         if self.xp_mode == 'fixed':
             return count * self.xp_per_unit
         elif self.xp_mode == 'value_based' and value:

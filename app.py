@@ -649,7 +649,8 @@ def create_app(config_name=None):
                 daily_goal=int(request.form.get('daily_goal', 0)),
                 weekly_goal=int(request.form.get('weekly_goal', 0)),
                 monthly_goal=int(request.form.get('monthly_goal', 0)),
-                is_pinned=request.form.get('is_pinned') == 'on'
+                is_pinned=request.form.get('is_pinned') == 'on',
+                expense_threshold=float(request.form.get('expense_threshold', 0)) if request.form.get('expense_threshold') else 0
             )
             db.session.add(trackable)
             db.session.commit()
@@ -681,6 +682,7 @@ def create_app(config_name=None):
             trackable.weekly_goal = int(request.form.get('weekly_goal', 0))
             trackable.monthly_goal = int(request.form.get('monthly_goal', 0))
             trackable.is_pinned = request.form.get('is_pinned') == 'on'
+            trackable.expense_threshold = float(request.form.get('expense_threshold', 0)) if request.form.get('expense_threshold') else 0
             trackable.is_active = request.form.get('is_active') == 'on'
             db.session.commit()
             flash('Trackable updated!', 'success')
@@ -748,11 +750,12 @@ def create_app(config_name=None):
             
             trackable = TrackableType.query.get(trackable_id)
             flash(f'+{entry.get_xp()} XP for {trackable.name}!', 'success')
-        return redirect(url_for('admin_dashboard'))
+            return redirect(url_for('admin_dashboard'))
 
         return render_template('admin/log_entry.html', 
                                trackables=stats['trackables'], 
                                buckets=buckets,
+                               next_rank=next_rank,
                                selected_trackable_id=request.args.get('trackable', type=int),
                                today=date.today())
     
@@ -770,11 +773,13 @@ def create_app(config_name=None):
         if next_rank and any(c.is_bucket for c in next_rank.conditions):
             return redirect(url_for('admin_log_entry', trackable=trackable.id))
         
+        value = float(request.form.get('value', 0))
         entry = TrackableEntry(
             user_id=current_user.id,
             trackable_type_id=trackable_id,
             date=date.today(),
-            count=1
+            count=1,
+            value=value
         )
         db.session.add(entry)
         
@@ -920,45 +925,45 @@ def create_app(config_name=None):
             slug=slug
         ).first_or_404()
         
+        action = request.form.get('action', 'increment')
         today = date.today()
-        xp_earned = 0
         is_completed = False
         
         if task.task_type == 'count':
-            # For count tasks, add one completion
             current_count = task.get_today_completion_count(today)
             
-            if current_count < task.target_count:
-                # Add a completion
-                completion = TaskCompletion(
-                    user_id=current_user.id,
-                    task_id=task.id,
-                    date=today,
-                    count=1
-                )
-                
-                # Calculate XP
-                if task.xp_per_count > 0:
-                    xp_earned = task.xp_per_count
-                elif current_count + 1 >= task.target_count:
-                    # Full completion bonus
-                    xp_earned = task.xp_value
-                
-                completion.xp_earned = xp_earned
-                db.session.add(completion)
-                
-                is_completed = current_count + 1 >= task.target_count
+            if action == 'decrement':
+                if current_count > 0:
+                    # Remove the last completion for today
+                    last_completion = TaskCompletion.query.filter_by(
+                        user_id=current_user.id,
+                        task_id=task.id,
+                        date=today
+                    ).order_by(TaskCompletion.id.desc()).first()
+                    if last_completion:
+                        db.session.delete(last_completion)
             else:
-                # Already fully completed, remove last completion (toggle off)
-                last_completion = TaskCompletion.query.filter_by(
-                    user_id=current_user.id,
-                    task_id=task.id,
-                    date=today
-                ).order_by(TaskCompletion.id.desc()).first()
-                if last_completion:
-                    xp_earned = -last_completion.xp_earned
-                    db.session.delete(last_completion)
-                is_completed = False
+                # Increment
+                if current_count < task.target_count:
+                    # Add a completion
+                    completion = TaskCompletion(
+                        user_id=current_user.id,
+                        task_id=task.id,
+                        date=today,
+                        count=1
+                    )
+                    
+                    # Calculate XP
+                    xp_e = 0
+                    if task.xp_per_count > 0:
+                        xp_e = task.xp_per_count
+                    elif current_count + 1 >= task.target_count:
+                        xp_e = task.xp_value
+                    
+                    completion.xp_earned = xp_e
+                    db.session.add(completion)
+                
+            is_completed = task.is_completed_today(today)
         else:
             # Normal task - toggle completion
             existing = TaskCompletion.query.filter_by(

@@ -272,6 +272,14 @@
                             style="width: 80px;">
                     </div>
                 </div>
+
+                <div class="form-group" id="expenseThresholdGroup" style="display: none;">
+                    <label><i class="ph ph-shield-check"></i> Expense Threshold</label>
+                    <input type="number" name="expense_threshold"
+                        value="{{ trackable.expense_threshold if trackable else 0 }}" min="0" step="0.01">
+                    <div class="help-text">Earn points based on the difference between this threshold and actual
+                        spending.</div>
+                </div>
             </div>
         </div>
 
@@ -394,16 +402,26 @@
     // Value tracking toggle
     function toggleValueOptions() {
         const checked = document.getElementById('trackValueCheck').checked;
-        document.getElementById('valueOptions').style.display = checked ? 'block' : 'none';
+        const category = document.querySelector('select[name="category"]').value;
+        const valueOptions = document.getElementById('valueOptions');
+        const expenseGroup = document.getElementById('expenseThresholdGroup');
 
-        // Auto-switch to value_based XP mode when enabling value tracking
+        valueOptions.style.display = checked ? 'block' : 'none';
+
         if (checked) {
+            expenseGroup.style.display = (category === 'finance' || category === 'sales') ? 'block' : 'none';
+
+            // Auto-switch to value_based XP mode when enabling value tracking
             document.getElementById('xpModeSelect').value = 'value_based';
             toggleXpOptions();
         }
     }
 
+    // Category change listener
+    document.querySelector('select[name="category"]').addEventListener('change', toggleValueOptions);
+
     // Initialize on page load
     toggleXpOptions();
+    toggleValueOptions();
 </script>
 {% endblock %}

@@ -199,7 +199,7 @@
                 <label class="bucket-option" onclick="selectBucket(this)">
                     <input type="radio" name="allocated_condition_id" value="{{ b.id }}">
                     <div class="bucket-name">{{ b.custom_name or 'Bucket' }}</div>
-                    <div class="bucket-desc">Requirement for {{ next_rank_name if next_rank_name else 'Next Rank' }}
+                    <div class="bucket-desc">Requirement for {{ next_rank.name if next_rank else 'Next Rank' }}
                         (Target: {{ b.threshold }})</div>
                 </label>
                 {% endfor %}
