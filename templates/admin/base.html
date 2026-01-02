@@ -1703,24 +1703,6 @@
             });
         }
     </script>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script>
-        // Initialize Socket.IO with polling as fallback for cPanel
-        const socket = io({
-            transports: ['polling', 'websocket'],
-            upgrade: true,
-            rememberUpgrade: true
-        });
-
-        socket.on('connect', () => {
-            console.log('Connected to WebSocket server');
-            socket.emit('join', { user_id: "{{ current_user.id if current_user.is_authenticated else '' }}" });
-        });
-
-        socket.on('connect_error', (error) => {
-            console.warn('Socket connection error:', error);
-        });
-    </script>
     {% block extra_js %}{% endblock %}
 </body>
 

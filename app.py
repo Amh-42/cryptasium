@@ -3,7 +3,6 @@ Main Flask application for Cryptasium
 Fully Dynamic Gamification System
 """
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, abort
-from flask_socketio import SocketIO, emit
 from functools import wraps
 from datetime import datetime, date, timedelta
 import os
@@ -22,14 +21,6 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from werkzeug.utils import secure_filename
 
 
-socketio = SocketIO(
-    cors_allowed_origins="*", 
-    async_mode='eventlet',
-    logger=True, 
-    engineio_logger=True,
-    ping_timeout=60,
-    ping_interval=25
-)
 
 
 def create_app(config_name=None):
@@ -48,8 +39,6 @@ def create_app(config_name=None):
     login_manager.init_app(app)
     login_manager.login_view = 'admin_login'
 
-    # Initialize SocketIO
-    socketio.init_app(app)
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -119,58 +108,20 @@ def create_app(config_name=None):
 
     # ========== SOCKETIO HELPERS & EVENTS ==========
 
-    @socketio.on('join')
-    def on_join(data):
-        if current_user.is_authenticated:
-            from flask_socketio import join_room
-            room = f"user_{current_user.id}"
-            join_room(room)
-            print(f"User {current_user.id} joined room {room}")
 
-    def broadcast_user_stats():
-        """Helper to broadcast latest stats to the user's room"""
-        if not current_user.is_authenticated:
-            return
-            
-        stats = get_user_stats()
-        room = f"user_{current_user.id}"
-        
-        # Use .get() or defaults to prevent crash
-        socketio.emit('stats_update', {
-            'total_xp': stats.get('total_xp', 0),
-            'today_xp': stats.get('today_xp', 0),
-            'daily_goal': stats.get('daily_goal', 50),
-            'goal_met': stats.get('goal_met', False),
-            'current_rank': {
-                'name': stats['current_rank'].name,
-                'level': stats['current_rank'].level,
-                'color': stats['current_rank'].color,
-                'icon': stats['current_rank'].icon
-            } if stats.get('current_rank') else None,
-            'next_rank': {
-                'name': stats['next_rank'].name,
-                'level': stats['next_rank'].level
-            } if stats.get('next_rank') else None,
-            'progress_percent': stats.get('progress_percent', 0),
-            'streak': stats['streak'].current_count if stats.get('streak') else 0,
-            'points_name': stats.get('points_name', 'XP')
-        }, room=room)
-
-    @socketio.on('trackable_action')
-    def handle_trackable_action(data):
-        if not current_user.is_authenticated:
-            return
-            
+    @app.route('/admin/trackable/action', methods=['POST'])
+    @admin_required
+    def admin_trackable_action():
+        data = request.form
         trackable_id = data.get('id')
-        action = data.get('action', 'increment') # 'increment' or 'decrement'
+        action = data.get('action', 'increment')
         value = float(data.get('value', 0))
         
         trackable = TrackableType.query.get_or_404(trackable_id)
         if trackable.user_id != current_user.id:
-            return
+            abort(403)
             
         if action == 'decrement':
-            # Remove the last entry for today
             last_entry = TrackableEntry.query.filter_by(
                 user_id=current_user.id,
                 trackable_type_id=trackable_id,
@@ -179,7 +130,6 @@ def create_app(config_name=None):
             if last_entry:
                 db.session.delete(last_entry)
         else:
-            # Increment
             entry = TrackableEntry(
                 user_id=current_user.id,
                 trackable_type_id=trackable_id,
@@ -189,7 +139,6 @@ def create_app(config_name=None):
             )
             db.session.add(entry)
             
-            # Update streak
             streak = Streak.query.filter_by(
                 user_id=current_user.id,
                 streak_type='daily_xp'
@@ -200,32 +149,21 @@ def create_app(config_name=None):
             streak.update_streak(date.today())
             
         db.session.commit()
-        
-        # Broadcast update for this specific trackable
-        socketio.emit('trackable_update', {
-            'id': trackable_id,
-            'total_count': trackable.get_total_count(),
-            'total_xp': trackable.get_total_xp(),
-            'total_value': trackable.get_total_value()
-        }, room=f"user_{current_user.id}")
-        
-        # Broadcast overall stats
-        broadcast_user_stats()
+        return redirect(url_for('admin_dashboard'))
 
-    @socketio.on('task_action')
-    def handle_task_action(data):
-        if not current_user.is_authenticated:
-            return
-            
+    @app.route('/admin/task/action', methods=['POST'])
+    @admin_required
+    def admin_task_action():
+        data = request.form
         slug = data.get('slug')
-        action = data.get('action', 'toggle') # 'toggle', 'increment', 'decrement'
+        action = data.get('action', 'toggle')
         
         task = UserDailyTask.query.filter_by(
             user_id=current_user.id,
             slug=slug
         ).first()
         if not task:
-            return
+            abort(404)
             
         today = date.today()
         
@@ -241,7 +179,6 @@ def create_app(config_name=None):
                     if last_completion:
                         db.session.delete(last_completion)
             else:
-                # Increment
                 if current_count < task.target_count:
                     completion = TaskCompletion(
                         user_id=current_user.id,
@@ -253,7 +190,6 @@ def create_app(config_name=None):
                     completion.xp_earned = xp_e
                     db.session.add(completion)
         else:
-            # Normal task toggle
             existing = TaskCompletion.query.filter_by(
                 user_id=current_user.id,
                 task_id=task.id,
@@ -274,13 +210,12 @@ def create_app(config_name=None):
                 if task.repeat_type in ('once', 'none'):
                     task.completed_date = today
 
-        # Update daily log for backward compatibility
         today_log = DailyLog.query.filter_by(user_id=current_user.id, date=today).first()
         if not today_log:
             today_log = DailyLog(user_id=current_user.id, date=today)
             db.session.add(today_log)
         
-        db.session.flush() # Ensure deletions/additions are accounted for
+        db.session.flush()
         
         total_task_xp = db.session.query(db.func.sum(TaskCompletion.xp_earned)).filter(
             TaskCompletion.user_id == current_user.id,
@@ -288,14 +223,12 @@ def create_app(config_name=None):
         ).scalar() or 0
         today_log.total_xp = total_task_xp
         
-        # Check if goal met
         settings = UserSettings.query.filter_by(user_id=current_user.id).first()
         if settings and today_log.total_xp >= settings.daily_xp_goal:
             today_log.goal_met = True
         else:
             today_log.goal_met = False
             
-        # Update streak
         streak = Streak.query.filter_by(user_id=current_user.id, streak_type='daily_xp').first()
         if not streak:
             streak = Streak(user_id=current_user.id, streak_type='daily_xp', current_count=0, longest_count=0)
@@ -303,17 +236,7 @@ def create_app(config_name=None):
         streak.update_streak(today)
         
         db.session.commit()
-        
-        # Broadcast task update
-        socketio.emit('task_update', {
-            'slug': slug,
-            'is_completed': task.is_completed_today(today),
-            'current_count': task.get_today_completion_count(today),
-            'target_count': task.target_count if task.task_type == 'count' else 1
-        }, room=f"user_{current_user.id}")
-        
-        # Broadcast overall stats
-        broadcast_user_stats()
+        return redirect(url_for('admin_dashboard'))
     
     # ========== HELPER FUNCTIONS ==========
     
@@ -2139,4 +2062,4 @@ def create_app(config_name=None):
 
 if __name__ == '__main__':
     app = create_app()
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)

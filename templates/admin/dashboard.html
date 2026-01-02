@@ -1641,18 +1641,23 @@
 
 {% block extra_js %}
 <script>
-    // Socket.IO Events
-    socket.on('stats_update', function (data) {
-        updateDashboardStats(data);
-    });
+    // Utility function to submit a form for actions
+    function submitAction(url, data) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = url;
 
-    socket.on('trackable_update', function (data) {
-        updateTrackableUI(data);
-    });
+        for (const key in data) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = data[key];
+            form.appendChild(input);
+        }
 
-    socket.on('task_update', function (data) {
-        updateTaskUI(data.slug, data);
-    });
+        document.body.appendChild(form);
+        form.submit();
+    }
 
     // Handle Daily Tasks
     function handleTaskAction(slug, action, event) {
@@ -1677,14 +1682,11 @@
 
         taskEl.classList.add('updating');
 
-        // Emit to server
-        socket.emit('task_action', {
+        // Submit to server via POST
+        submitAction("{{ url_for('admin_task_action') }}", {
             slug: slug,
             action: action
         });
-
-        // Timeout to remove updating class if socket fails
-        setTimeout(() => taskEl.classList.remove('updating'), 2000);
     }
 
     function handleNormalTaskToggle(element, event) {
@@ -1733,8 +1735,8 @@
                 return;
             }
 
-            // Emit to server
-            socket.emit('trackable_action', {
+            // Submit to server
+            submitAction("{{ url_for('admin_trackable_action') }}", {
                 id: id,
                 action: action,
                 value: numValue
