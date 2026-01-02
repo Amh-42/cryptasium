@@ -139,6 +139,53 @@
         display: block;
     }
 
+    @media (max-width: 768px) {
+
+        .condition-item,
+        .condition-item.trackable-condition {
+            grid-template-columns: 1fr;
+            gap: 12px;
+            align-items: stretch;
+        }
+
+        .condition-item>div,
+        .condition-item>button {
+            grid-column: span 1 !important;
+        }
+
+        .condition-item .btn-icon.delete {
+            width: 100%;
+            margin-top: 4px;
+            justify-content: center;
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border-color: #ef4444;
+        }
+
+        .condition-item .is-bucket-input {
+            margin: 0 !important;
+            display: inline-block !important;
+            vertical-align: middle;
+        }
+
+        .condition-item .form-group[style*="text-align: center"] {
+            text-align: left !important;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px 12px;
+            border-radius: 8px;
+        }
+
+        .condition-item .form-group[style*="text-align: center"] label {
+            margin-bottom: 0 !important;
+            display: inline-block !important;
+            font-size: 13px !important;
+            color: var(--text-main);
+        }
+    }
+
     .btn-icon {
         width: 40px;
         height: 40px;
