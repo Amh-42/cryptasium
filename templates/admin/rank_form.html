@@ -316,8 +316,8 @@
                     data-type="{{ condition.condition_type }}">
                     <div class="form-group" style="margin: 0;">
                         <label>Condition Name (Optional)</label>
-                        <input type="text" class="custom-name-input" value="{{ condition.custom_name or '' }}"
-                            placeholder="e.g. XYZ">
+                        <input type="text" class="custom-name-input" list="conditionNames"
+                            value="{{ condition.custom_name or '' }}" placeholder="e.g. Total XP">
                     </div>
 
                     <div class="form-group" style="margin: 0;">
@@ -325,6 +325,11 @@
                         <select class="condition-type-select" onchange="updateConditionRow(this)">
                             <option value="total_xp" {% if condition.condition_type=='total_xp' %}selected{% endif %}>
                                 Total {{ points_name }}</option>
+                            <option value="custom_xp" {% if condition.condition_type=='custom_xp' %}selected{% endif %}>
+                                Custom {{ points_name }} Bucket</option>
+                            <option value="custom_count" {% if condition.condition_type=='custom_count' %}selected{%
+                                endif %}>
+                                Custom Count Bucket</option>
                             <option value="total_days_active" {% if condition.condition_type=='total_days_active'
                                 %}selected{% endif %}>
                                 Total Days Active</option>
@@ -411,6 +416,13 @@
             <a href="{{ url_for('admin_ranks') }}" class="btn btn-outline">Cancel</a>
         </div>
     </form>
+
+    <!-- Condition Name Datalist -->
+    <datalist id="conditionNames">
+        {% for name in existing_condition_names %}
+        <option value="{{ name }}"></option>
+        {% endfor %}
+    </datalist>
 </div>
 {% endblock %}
 
@@ -461,13 +473,15 @@
             <div class="condition-item">
                 <div class="form-group" style="margin: 0;">
                     <label>Condition Name (Optional)</label>
-                    <input type="text" class="custom-name-input" placeholder="e.g. XYZ">
+                    <input type="text" class="custom-name-input" list="conditionNames" placeholder="e.g. Total XP">
                 </div>
 
                 <div class="form-group" style="margin: 0;">
                     <label>Condition Type</label>
                     <select class="condition-type-select" onchange="updateConditionRow(this)">
                         <option value="total_xp">Total {{ points_name }}</option>
+                        <option value="custom_xp">Custom {{ points_name }} Bucket</option>
+                        <option value="custom_count">Custom Count Bucket</option>
                         <option value="total_days_active">Total Days Active</option>
                         <option value="total_goals_met">Total Goals Met</option>
                         <option value="trackable_xp">{{ points_name }} per Trackable</option>

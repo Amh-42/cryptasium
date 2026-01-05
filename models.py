@@ -538,26 +538,85 @@ class RankCondition(db.Model):
         # Total XP
         if self.condition_type == 'total_xp':
             if self.is_bucket:
-                # Sum entries specifically allocated to this condition (bucket)
-                # Filter by user_id through the relationship
-                entries = TrackableEntry.query.filter_by(
-                    user_id=user_id,
-                    allocated_condition_id=self.id
-                ).all()
-                trackable_xp = sum(entry.get_xp() for entry in entries)
+                # Optimized Pooling Logic:
+                # Look for all conditions across all ranks (past, present, future)
+                # matching this custom_name to sum up their allocated progression.
+                if self.custom_name:
+                    matching_conditions = RankCondition.query.join(CustomRank).filter(
+                        CustomRank.user_id == user_id,
+                        RankCondition.custom_name == self.custom_name,
+                        RankCondition.condition_type == 'total_xp'
+                    ).all()
+                    target_ids = [c.id for c in matching_conditions]
+                else:
+                    target_ids = [self.id]
+
+                # Sum allocated XP from trackables and tasks
+                trackable_xp = sum(e.get_xp() for e in TrackableEntry.query.filter(
+                    TrackableEntry.user_id == user_id,
+                    TrackableEntry.allocated_condition_id.in_(target_ids)
+                ).all())
                 
-                # Also sum allocated task completions
-                # Note: TaskCompletion is defined later in file, so we access it via db model registry or assume module scope at runtime
-                # Since this runs at runtime, TaskCompletion should be available in module scope
-                completions = TaskCompletion.query.filter_by(
-                    user_id=user_id,
-                    allocated_condition_id=self.id
-                ).all()
-                task_xp = sum(c.xp_earned for c in completions)
+                try:
+                    task_xp = sum(c.xp_earned for c in TaskCompletion.query.filter(
+                        TaskCompletion.user_id == user_id,
+                        TaskCompletion.allocated_condition_id.in_(target_ids)
+                    ).all())
+                except Exception: task_xp = 0
                 
                 current_value = trackable_xp + task_xp
             else:
                 current_value = user.get_total_xp()
+
+        # Custom XP Bucket (Pooling by custom_name)
+        elif self.condition_type == 'custom_xp':
+            target_ids = [self.id]
+            if self.custom_name:
+                matching = RankCondition.query.join(CustomRank).filter(
+                    CustomRank.user_id == user_id,
+                    RankCondition.custom_name == self.custom_name,
+                    RankCondition.condition_type == 'custom_xp'
+                ).all()
+                target_ids = [c.id for c in matching]
+            
+            trackable_xp = sum(e.get_xp() for e in TrackableEntry.query.filter(
+                TrackableEntry.user_id == user_id,
+                TrackableEntry.allocated_condition_id.in_(target_ids)
+            ).all())
+            
+            try:
+                task_xp = sum(c.xp_earned for c in TaskCompletion.query.filter(
+                    TaskCompletion.user_id == user_id,
+                    TaskCompletion.allocated_condition_id.in_(target_ids)
+                ).all())
+            except Exception: task_xp = 0
+            
+            current_value = trackable_xp + task_xp
+
+        # Custom Count Bucket (Pooling by custom_name)
+        elif self.condition_type == 'custom_count':
+            target_ids = [self.id]
+            if self.custom_name:
+                matching = RankCondition.query.join(CustomRank).filter(
+                    CustomRank.user_id == user_id,
+                    RankCondition.custom_name == self.custom_name,
+                    RankCondition.condition_type == 'custom_count'
+                ).all()
+                target_ids = [c.id for c in matching]
+
+            trackable_count = TrackableEntry.query.filter(
+                TrackableEntry.user_id == user_id,
+                TrackableEntry.allocated_condition_id.in_(target_ids)
+            ).count()
+            
+            try:
+                task_count = TaskCompletion.query.filter(
+                    TaskCompletion.user_id == user_id,
+                    TaskCompletion.allocated_condition_id.in_(target_ids)
+                ).count()
+            except Exception: task_count = 0
+            
+            current_value = trackable_count + task_count
         
         # Trackable-specific XP
         elif self.condition_type == 'trackable_xp' and self.trackable_slug:
@@ -1159,6 +1218,7 @@ class UserSettings(db.Model):
     compact_view = db.Column(db.Boolean, default=False)
     show_dashboard_header = db.Column(db.Boolean, default=True)
     enable_youtube_sync = db.Column(db.Boolean, default=False)
+    always_show_confetti = db.Column(db.Boolean, default=False)
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -1177,7 +1237,8 @@ class UserSettings(db.Model):
             'dark_mode': self.dark_mode,
             'compact_view': self.compact_view,
             'show_dashboard_header': self.show_dashboard_header,
-            'enable_youtube_sync': self.enable_youtube_sync
+            'enable_youtube_sync': self.enable_youtube_sync,
+            'always_show_confetti': self.always_show_confetti
         }
     
 

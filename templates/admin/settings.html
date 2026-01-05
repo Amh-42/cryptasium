@@ -306,10 +306,22 @@
                     <span class="toggle-slider"></span>
                 </label>
             </div>
+
+            <div class="settings-toggle">
+                <div class="toggle-info">
+                    <div class="toggle-label">Always Show Confetti</div>
+                    <div class="toggle-description">Keep the confetti animation active at all times</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" name="always_show_confetti" {% if settings.always_show_confetti %}checked{%
+                        endif %}>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
         </div>
 
-        <div class="form-actions">
-            <button type="submit" class="btn btn-primary">
+        <div class="form-actions" style="margin-bottom: 32px;">
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px;">
                 <i class="ph ph-check"></i> Save Visual Settings
             </button>
         </div>
@@ -325,11 +337,11 @@
             You can import this file later to restore your target configuration.
         </p>
 
-        <div class="form-row" style="align-items: end;">
+        <div class="form-row" style="grid-template-columns: 1fr 1.2fr; gap: 20px;">
             <div class="form-group">
                 <label>Export Current Settings</label>
                 <a href="{{ url_for('admin_export_settings') }}" class="btn btn-outline"
-                    style="width: 100%; display: flex; justify-content: center; gap: 8px;">
+                    style="width: 100%; display: flex; justify-content: center; gap: 8px; padding: 12px;">
                     <i class="ph ph-download-simple"></i> Download .cryptasium
                 </a>
             </div>
@@ -337,10 +349,14 @@
             <form action="{{ url_for('admin_import_settings') }}" method="post" enctype="multipart/form-data"
                 class="form-group">
                 <label>Import Settings</label>
-                <div style="display: flex; gap: 8px;">
-                    <input type="file" name="backup_file" accept=".cryptasium,.json" required
-                        style="flex: 1; padding: 7px;">
-                    <button type="submit" class="btn btn-primary">
+                <div style="display: flex; gap: 8px; align-items: stretch;">
+                    <label class="custom-file-upload" style="flex: 1;">
+                        <i class="ph ph-file-plus"></i>
+                        <span class="file-name-display">Choose file...</span>
+                        <input type="file" name="backup_file" accept=".cryptasium,.json" required
+                            onchange="updateFileName(this)">
+                    </label>
+                    <button type="submit" class="btn btn-primary" style="padding: 0 20px; flex-shrink: 0;">
                         <i class="ph ph-upload-simple"></i> Import
                     </button>
                 </div>
@@ -406,6 +422,17 @@
 
     function updateAccentPreview(color) {
         document.documentElement.style.setProperty('--accent', color);
+    }
+
+    function updateFileName(input) {
+        const display = input.parentElement.querySelector('.file-name-display');
+        if (input.files && input.files[0]) {
+            display.textContent = input.files[0].name;
+            display.style.color = 'var(--text-main)';
+        } else {
+            display.textContent = 'Choose file...';
+            display.style.color = 'var(--text-muted)';
+        }
     }
 </script>
 {% endblock %}

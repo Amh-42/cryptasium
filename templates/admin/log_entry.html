@@ -40,8 +40,8 @@
     }
 
     .trackable-option.selected {
-        border-color: var(--accent);
-        background: rgba(var(--accent-rgb), 0.1);
+        border-color: var(--accent) !important;
+        background: rgba(var(--accent-rgb), 0.1) !important;
     }
 
     .trackable-option input {
@@ -105,8 +105,8 @@
     }
 
     .bucket-option.active {
-        border-color: var(--accent);
-        background: rgba(var(--accent-rgb), 0.1);
+        border-color: var(--accent) !important;
+        background: rgba(var(--accent-rgb), 0.1) !important;
     }
 
     .bucket-option input {
@@ -199,8 +199,14 @@
                 <label class="bucket-option" onclick="selectBucket(this)">
                     <input type="radio" name="allocated_condition_id" value="{{ b.id }}">
                     <div class="bucket-name">{{ b.custom_name or 'Bucket' }}</div>
-                    <div class="bucket-desc">Requirement for {{ next_rank.name if next_rank else 'Next Rank' }}
-                        (Target: {{ b.threshold }})</div>
+                    <div class="bucket-desc">
+                        {% if b.condition_type == 'custom_count' %}
+                        Target: {{ b.threshold }} completions
+                        {% else %}
+                        Target: {{ b.threshold }} {{ points_name }}
+                        {% endif %}
+                        (Next Rank: {{ next_rank.name if next_rank else '...' }})
+                    </div>
                 </label>
                 {% endfor %}
             </div>
@@ -229,22 +235,20 @@
 
 {% block extra_js %}
 <script>
-    // Trackable data for dynamic form updates
     const trackables = {
         {% for t in trackables %}
-    { { t.id } }: {
+    "{{ t.id }}": {
         name: "{{ t.name }}",
-            track_value: { { 'true' if t.track_value else 'false' } },
-        value_label: "{{ t.value_label or 'Value' }}",
-            value_prefix: "{{ t.value_prefix or '$' }}",
-                xp_per_unit: { { t.xp_per_unit } },
-        xp_mode: "{{ t.xp_mode or 'fixed' }}",
-            xp_multiplier: { { t.xp_multiplier or 1.0 } }
+            track_value: "{{ 'true' if t.track_value else 'false' }}" === "true",
+                value_label: "{{ t.value_label or 'Value' }}",
+                    value_prefix: "{{ t.value_prefix or '$' }}",
+                        xp_per_unit: Number("{{ t.xp_per_unit }}"),
+                            xp_mode: "{{ t.xp_mode or 'fixed' }}",
+                                xp_multiplier: Number("{{ t.xp_multiplier or 1.0 }}")
     },
     {% endfor %}
     };
 
-    // Highlight selected trackable and update form
     function selectTrackable(id, event) {
         document.querySelectorAll('.trackable-option').forEach(el => {
             el.classList.remove('selected');
@@ -254,7 +258,6 @@
         if (event && event.currentTarget) {
             target = event.currentTarget;
         } else {
-            // Find by radio value if called programmatically
             const radio = document.querySelector(`.trackable-option input[value="${id}"]`);
             if (radio) target = radio.closest('.trackable-option');
         }
@@ -265,7 +268,6 @@
             if (radio) radio.checked = true;
         }
 
-        // Update value field visibility
         const t = trackables[id];
         if (t) {
             const valueGroup = document.getElementById('valueGroup');
@@ -280,7 +282,6 @@
         }
     }
 
-    // Update XP preview based on value
     function updateXpPreview() {
         const selectedRadio = document.querySelector('.trackable-option input:checked');
         if (!selectedRadio) return;
@@ -305,25 +306,21 @@
         preview.innerHTML = `Estimated XP: <span style="color: var(--accent); font-weight: 700;">+${xp} XP</span>`;
     }
 
-    // Pre-select if URL param
     document.querySelectorAll('.trackable-option input:checked').forEach(input => {
         input.closest('.trackable-option').classList.add('selected');
         selectTrackable(parseInt(input.value));
     });
 
-    // Set today's date
     if (!document.querySelector('input[name="date"]').value) {
         document.querySelector('input[name="date"]').valueAsDate = new Date();
     }
 
-    // Select bucket
     function selectBucket(el) {
         document.querySelectorAll('.bucket-option').forEach(opt => opt.classList.remove('active'));
         el.classList.add('active');
         el.querySelector('input').checked = true;
     }
 
-    // Listen for value changes
     document.getElementById('valueInput').addEventListener('input', updateXpPreview);
     document.querySelector('input[name="count"]').addEventListener('input', updateXpPreview);
 </script>

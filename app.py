@@ -757,8 +757,9 @@ def create_app(config_name=None):
         ).order_by(DashboardImage.created_at.desc()).all()
 
         # Check usage for confetti
+        settings = UserSettings.query.filter_by(user_id=current_user.id).first()
         show_confetti = False
-        if current_user.rank_changed_at == date.today():
+        if (current_user.rank_changed_at == date.today()) or (settings and settings.always_show_confetti):
              show_confetti = True
         
         return render_template('admin/dashboard.html', 
@@ -846,6 +847,18 @@ def create_app(config_name=None):
             flash(f'Header section {status}', 'success')
         
         return redirect(url_for('admin_dashboard'))
+
+    @app.route('/admin/dashboard/toggle_confetti', methods=['POST'])
+    @admin_required
+    def toggle_confetti():
+        settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+        if settings:
+            settings.always_show_confetti = not settings.always_show_confetti
+            db.session.commit()
+            status = "enabled" if settings.always_show_confetti else "disabled"
+            flash(f'Always show confetti {status}', 'success')
+        
+        return redirect(url_for('admin_dashboard', _anchor='settings' if request.form.get('source') == 'settings' else None))
 
 
     # ========== TRACKABLE TYPES MANAGEMENT ==========
@@ -943,7 +956,8 @@ def create_app(config_name=None):
         next_rank = stats['next_rank']
         buckets = []
         if next_rank:
-            buckets = [c for c in next_rank.conditions if c.is_bucket]
+            # Custom XP/Count types and any condition explicitly marked as a bucket
+            buckets = [c for c in next_rank.conditions if c.is_bucket or c.condition_type in ['custom_xp', 'custom_count']]
 
         if request.method == 'POST':
             trackable_id = int(request.form.get('trackable_id'))
@@ -1367,7 +1381,8 @@ def create_app(config_name=None):
                         threshold=int(cond['threshold']),
                         trackable_slug=cond.get('trackable_slug'),
                         custom_name=cond.get('custom_name'),
-                        is_bucket=cond.get('is_bucket', False)
+                        # Auto-set is_bucket for custom types
+                        is_bucket=cond.get('is_bucket', False) or cond['type'] in ['custom_xp', 'custom_count']
                     )
                     db.session.add(condition)
             except (json.JSONDecodeError, KeyError, ValueError) as e:
@@ -1384,8 +1399,18 @@ def create_app(config_name=None):
             user_id=current_user.id,
             is_active=True
         ).order_by(TrackableType.name).all()
+
+        # Get existing condition names for pooling/carry-over
+        existing_conditions = db.session.query(RankCondition.custom_name)\
+            .join(CustomRank)\
+            .filter(CustomRank.user_id == current_user.id)\
+            .filter(RankCondition.custom_name != None)\
+            .distinct().all()
+        existing_condition_names = [c[0] for c in existing_conditions if c[0]]
         
-        return render_template('admin/rank_form.html', trackables=trackables)
+        return render_template('admin/rank_form.html', 
+                             trackables=trackables, 
+                             existing_condition_names=existing_condition_names)
     
     @app.route('/admin/ranks/<int:id>/edit', methods=['GET', 'POST'])
     @admin_required
@@ -1418,7 +1443,8 @@ def create_app(config_name=None):
                         threshold=int(cond['threshold']),
                         trackable_slug=cond.get('trackable_slug'),
                         custom_name=cond.get('custom_name'),
-                        is_bucket=cond.get('is_bucket', False)
+                        # Auto-set is_bucket for custom types
+                        is_bucket=cond.get('is_bucket', False) or cond['type'] in ['custom_xp', 'custom_count']
                     )
                     db.session.add(condition)
             except (json.JSONDecodeError, KeyError, ValueError) as e:
@@ -1435,8 +1461,19 @@ def create_app(config_name=None):
             user_id=current_user.id,
             is_active=True
         ).order_by(TrackableType.name).all()
+
+        # Get existing condition names for pooling/carry-over
+        existing_conditions = db.session.query(RankCondition.custom_name)\
+            .join(CustomRank)\
+            .filter(CustomRank.user_id == current_user.id)\
+            .filter(RankCondition.custom_name != None)\
+            .distinct().all()
+        existing_condition_names = [c[0] for c in existing_conditions if c[0]]
         
-        return render_template('admin/rank_form.html', rank=rank, trackables=trackables)
+        return render_template('admin/rank_form.html', 
+                             rank=rank, 
+                             trackables=trackables, 
+                             existing_condition_names=existing_condition_names)
     
     @app.route('/admin/ranks/<int:id>/delete', methods=['POST'])
     @admin_required
@@ -1556,6 +1593,7 @@ def create_app(config_name=None):
             settings.show_xp_animations = request.form.get('show_xp_animations') == 'on'
             settings.show_dashboard_header = request.form.get('show_dashboard_header') == 'on'
             settings.enable_youtube_sync = request.form.get('enable_youtube_sync') == 'on'
+            settings.always_show_confetti = request.form.get('always_show_confetti') == 'on'
             db.session.commit()
             flash('Settings saved!', 'success')
             return redirect(url_for('admin_settings'))

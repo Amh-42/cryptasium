@@ -2122,45 +2122,33 @@
                     size: { width: 0, height: 0 }
                 }
             });
+
+            let isPlaying = true;
+            toggleBtn.onclick = async () => {
+                // Toggle animation
+                if (isPlaying) {
+                    container.pause();
+                    toggleBtn.style.opacity = '0.5';
+                    toggleBtn.style.filter = 'grayscale(100%)';
+                } else {
+                    container.play();
+                    toggleBtn.style.opacity = '1';
+                    toggleBtn.style.filter = 'none';
+                }
+                isPlaying = !isPlaying;
+
+                // Persist choice (optional/async)
+                try {
+                    await fetch("{{ url_for('toggle_confetti') }}", {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                } catch (e) { console.error('Failed to sync confetti setting'); }
+            };
+
             showXpPopup("LEVEL UP!");
         };
         document.head.appendChild(script);
-
-
-
-        function spawnConfetti(amount = 20) {
-            for (let i = 0; i < amount; i++) {
-                const confetto = document.createElement('div');
-                const color = colors[Math.floor(Math.random() * colors.length)];
-                const size = Math.random() * 8 + 4;
-                const left = Math.random() * 100;
-                const duration = Math.random() * 3 + 3; // 3-6s duration
-                const delay = Math.random() * 2; // Spread start
-
-                confetto.style.cssText = `
-                    position: absolute;
-                    width: ${size}px;
-                    height: ${size}px;
-                    background: ${color};
-                    top: -20px;
-                    left: ${left}%;
-                    opacity: 0;
-                    transform: rotate(${Math.random() * 360}deg);
-                    animation: fall ${duration}s linear ${delay}s forwards;
-                `;
-
-                container.appendChild(confetto);
-
-                // Cleanup
-                setTimeout(() => {
-                    confetto.remove();
-                }, (duration + delay) * 1000);
-            }
-        }
-
-        // Start cycling
-        // Initial burst
-
     })();
     {% endif %}
 </script>

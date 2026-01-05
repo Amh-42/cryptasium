@@ -664,6 +664,46 @@
             border-color: var(--accent);
         }
 
+        /* Dark mode visibility fixes for dropdowns */
+        select option {
+            background-color: var(--bg-card);
+            color: var(--text-main);
+        }
+
+        /* Custom File Input Styling */
+        .custom-file-upload {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            color: var(--text-main);
+            width: 100%;
+        }
+
+        .custom-file-upload:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent);
+        }
+
+        .custom-file-upload input[type="file"] {
+            display: none;
+        }
+
+        .file-name-display {
+            font-size: 13px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px;
+        }
+
         label {
             display: block;
             margin-bottom: 8px;
