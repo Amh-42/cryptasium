@@ -34,10 +34,15 @@ class User(UserMixin, db.Model):
     youtube_channel_views = db.Column(db.Integer, default=0)
     last_youtube_sync = db.Column(db.DateTime)
     
+    # Rank Tracking
+    current_rank_id = db.Column(db.Integer, db.ForeignKey('custom_ranks.id'), nullable=True)
+    rank_changed_at = db.Column(db.Date, nullable=True)
+    
     # Relationships - Dynamic Gamification
     trackable_types = db.relationship('TrackableType', backref='user', lazy=True, cascade='all, delete-orphan')
     trackable_entries = db.relationship('TrackableEntry', backref='user', lazy=True, cascade='all, delete-orphan')
-    custom_ranks = db.relationship('CustomRank', backref='user', lazy=True, cascade='all, delete-orphan')
+    custom_ranks = db.relationship('CustomRank', foreign_keys='CustomRank.user_id', backref=db.backref('user', foreign_keys='CustomRank.user_id'), lazy=True, cascade='all, delete-orphan')
+    current_rank_obj = db.relationship('CustomRank', foreign_keys=[current_rank_id], backref='current_at_users', lazy=True)
     daily_tasks = db.relationship('UserDailyTask', backref='user', lazy=True, cascade='all, delete-orphan')
     task_completions = db.relationship('TaskCompletion', backref='user', lazy=True, cascade='all, delete-orphan')
     achievements = db.relationship('Achievement', backref='user', lazy=True, cascade='all, delete-orphan')
@@ -125,14 +130,33 @@ class User(UserMixin, db.Model):
         return int(xp)
     
     def get_current_rank(self):
-        """Get user's current rank based on XP"""
-        total_xp = self.get_total_xp()
-        ranks = CustomRank.query.filter_by(user_id=self.id).order_by(CustomRank.min_xp.desc()).all()
+        """Get user's current rank based on ALL conditions"""
+        # Get all ranks ordered by level (descending)
+        ranks = CustomRank.query.filter_by(user_id=self.id).order_by(CustomRank.level.desc()).all()
+        
         for rank in ranks:
-            if total_xp >= rank.min_xp:
+            is_met, _ = rank.check_conditions_met(self.id)
+            if is_met:
                 return rank
-        # Return a default if no ranks defined
-        return None
+                
+        # Return a default/lowest rank if defined
+        lowest = CustomRank.query.filter_by(user_id=self.id).order_by(CustomRank.level.asc()).first()
+        return lowest
+
+    def check_rank_update(self):
+        """Check if rank has changed and update tracking fields"""
+        current = self.get_current_rank()
+        if not current:
+            return False, None
+            
+        did_update = False
+        if self.current_rank_id != current.id:
+            # Rank changed!
+            self.current_rank_id = current.id
+            self.rank_changed_at = date.today()
+            did_update = True
+        
+        return did_update, current
     
     def __repr__(self):
         return f'<User {self.username}>'
@@ -410,6 +434,7 @@ class CustomRank(db.Model):
         if not self.conditions:
             if self.min_xp is not None:
                 user = User.query.get(user_id)
+                # Legacy fallback: Global XP
                 total_xp = user.get_total_xp() if user else 0
                 return total_xp >= self.min_xp, {
                     'legacy_xp': {
@@ -519,7 +544,18 @@ class RankCondition(db.Model):
                     user_id=user_id,
                     allocated_condition_id=self.id
                 ).all()
-                current_value = sum(entry.get_xp() for entry in entries)
+                trackable_xp = sum(entry.get_xp() for entry in entries)
+                
+                # Also sum allocated task completions
+                # Note: TaskCompletion is defined later in file, so we access it via db model registry or assume module scope at runtime
+                # Since this runs at runtime, TaskCompletion should be available in module scope
+                completions = TaskCompletion.query.filter_by(
+                    user_id=user_id,
+                    allocated_condition_id=self.id
+                ).all()
+                task_xp = sum(c.xp_earned for c in completions)
+                
+                current_value = trackable_xp + task_xp
             else:
                 current_value = user.get_total_xp()
         
@@ -853,6 +889,9 @@ class TaskCompletion(db.Model):
     # XP earned for this completion
     xp_earned = db.Column(db.Integer, default=0)
     
+    # Manual allocation
+    allocated_condition_id = db.Column(db.Integer, db.ForeignKey('rank_conditions.id'), nullable=True)
+    
     # Timestamp
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -863,6 +902,7 @@ class TaskCompletion(db.Model):
             'count': self.count,
             'notes': self.notes,
             'xp_earned': self.xp_earned,
+            'allocated_condition_id': self.allocated_condition_id,
             'created_at': self.created_at.isoformat()
         }
 

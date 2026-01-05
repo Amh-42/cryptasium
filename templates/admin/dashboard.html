@@ -1660,7 +1660,7 @@
     }
 
     // Handle Daily Tasks
-    function handleTaskAction(slug, action, event) {
+    async function handleTaskAction(slug, action, event, allocatedConditionId = null) {
         if (event) event.stopPropagation();
 
         const taskEl = document.getElementById('task-' + slug);
@@ -1682,12 +1682,96 @@
 
         taskEl.classList.add('updating');
 
-        // Submit to server via POST
-        submitAction("{{ url_for('admin_task_action') }}", {
-            slug: slug,
-            action: action
-        });
+        try {
+            const formData = new FormData();
+            formData.append('slug', slug);
+            formData.append('action', action);
+            if (allocatedConditionId) {
+                formData.append('allocated_condition_id', allocatedConditionId);
+            }
+
+            const response = await fetch("{{ url_for('admin_task_action') }}", {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'ambiguous') {
+                taskEl.classList.remove('updating');
+                showConditionSelector(data.conditions, (condId) => {
+                    handleTaskAction(slug, action, null, condId);
+                });
+                return;
+            }
+
+            if (data.success) {
+                window.location.reload();
+            } else {
+                console.error('Task action failed:', data.error);
+                taskEl.classList.remove('updating');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            taskEl.classList.remove('updating');
+        }
     }
+
+    function showConditionSelector(conditions, onSelect) {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;
+        `;
+
+        // Store callback globally or attach to modal element relative? 
+        // We'll attach to window for simplicity with unique ID, or just close over it if we build DOM with JS listeners (cleaner).
+
+        const content = document.createElement('div');
+        content.className = 'modal-content';
+        content.style.cssText = 'background: #1a1a1a; padding: 24px; border-radius: 16px; width: 320px; max-width: 90%; border: 1px solid rgba(255,255,255,0.1);';
+
+        content.innerHTML = `
+            <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 18px;">Allocation Check</h3>
+            <p style="margin-bottom: 20px; color: #aaa; font-size: 14px; line-height: 1.4;">
+                Your next rank has multiple goals using XP. Choose which one to add this XP to:
+            </p>
+        `;
+
+        conditions.forEach(c => {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-outline';
+            btn.style.cssText = 'width: 100%; margin-bottom: 8px; text-align: left; padding: 12px; justify-content: flex-start;';
+            btn.innerHTML = `<i class="ph ph-target" style="margin-right: 8px;"></i> ${c.name}`;
+            btn.onclick = () => {
+                modal.remove();
+                onSelect(c.id);
+            };
+            content.appendChild(btn);
+        });
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'btn btn-ghost';
+        cancelBtn.style.cssText = 'width: 100%; margin-top: 8px;';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.onclick = () => {
+            modal.remove();
+            document.querySelectorAll('.daily-task.updating').forEach(el => el.classList.remove('updating'));
+            document.querySelectorAll('.trackable-card').forEach(el => el.style.opacity = '1');
+        };
+        content.appendChild(cancelBtn);
+
+        modal.appendChild(content);
+        document.body.appendChild(modal);
+    }
+
+    window.closeModal = function (btn) {
+        if (btn) btn.closest('.modal-overlay').remove();
+    };
 
     function handleNormalTaskToggle(element, event) {
         if (event) event.stopPropagation();
@@ -1716,14 +1800,14 @@
     }
 
     // Handle Trackables
-    function handleTrackableLog(id, asksValue, event, action = 'increment') {
+    function handleTrackableLog(id, asksValue, event, action = 'increment', allocatedConditionId = null) {
         if (event) event.stopPropagation();
 
         const trackableEl = document.querySelector(`.trackable-card[data-id="${id}"]`);
         const name = trackableEl ? trackableEl.getAttribute('data-name') : 'Amount';
         const prefix = trackableEl ? trackableEl.getAttribute('data-prefix') : '$';
 
-        const performAction = (val = 0) => {
+        const performAction = async (val = 0) => {
             let numValue = parseFloat(val);
             if (asksValue && isNaN(numValue)) {
                 showModal({
@@ -1735,21 +1819,62 @@
                 return;
             }
 
-            // Submit to server
-            submitAction("{{ url_for('admin_trackable_action') }}", {
-                id: id,
-                action: action,
-                value: numValue
-            });
-
             // Visual feedback
-            if (trackableEl) {
-                trackableEl.style.opacity = '0.7';
-                setTimeout(() => trackableEl.style.opacity = '1', 500);
+            if (trackableEl) trackableEl.style.opacity = '0.5';
+
+            try {
+                const formData = new FormData();
+                formData.append('id', id);
+                formData.append('action', action);
+                formData.append('value', numValue);
+                if (allocatedConditionId) {
+                    formData.append('allocated_condition_id', allocatedConditionId);
+                }
+
+                const response = await fetch("{{ url_for('admin_trackable_action') }}", {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'ambiguous') {
+                    if (trackableEl) trackableEl.style.opacity = '1';
+                    // Prompt user
+                    showConditionSelector(data.conditions, (condId) => {
+                        // Re-run with selected condition
+                        handleTrackableLog(id, false, null, action, condId); // asksValue false here since we have value? Wait. 
+                        // If we recurse, `asksValue` logic might trigger modal again if we aren't careful.
+                        // Actually `performAction` handles the value. 
+                        // But `handleTrackableLog` main function checks `asksValue`.
+                        // We should just call `performAction` again, but `performAction` is inside.
+                        // Better to call `handleTrackableLog` but we need to pass the *captured* value if it was asked.
+                    });
+
+                    // Wait! The structure is tricky. 
+                    // If I call `handleTrackableLog` again, and asksValue is true, it will ask for value again.
+                    // I need to bypass the value request if we are re-submitting with alloc ID.
+                    // I'll update the logic: if allocatedConditionId is present, likely we don't need to ask value again if we could pass it?
+                    // Or, simpler: Just modify `performAction` to be robust and externalize it?
+                } else if (data.success) {
+                    window.location.reload();
+                } else {
+                    console.error('Trackable log failed', data);
+                    if (trackableEl) trackableEl.style.opacity = '1';
+                }
+            } catch (err) {
+                console.error(err);
+                if (trackableEl) trackableEl.style.opacity = '1';
             }
         };
 
-        if (action === 'increment' && asksValue) {
+        // If we already have an alloc ID, we probably have a value too? 
+        // Actually, if coming from recursion, `asksValue` param might still be true.
+        // I will change the recursive call to pass `false` for `asksValue` and I need to pass the *value* somehow.
+        // HACK: Use `action` param or a new `valueOverride` param?
+        // Let's rely on standard flow: 
+        if (action === 'increment' && asksValue && !allocatedConditionId) {
             showModal({
                 title: `Log ${name}`,
                 message: `Enter the ${name.toLowerCase()} amount to record.`,
@@ -1763,7 +1888,75 @@
                 onConfirm: (val) => performAction(val)
             });
         } else {
+            // If we have allocatedConditionId, we might have lost the value if we didn't pass it back. 
+            // The prompt was only for `asksValue`.
+            // If I recurse: `handleTrackableLog(id, false, null, action, condId)` -> calls `performAction(0)`?
+            // This is wrong for value-based trackables (spent $50 -> ambiguous -> select -> saves as $0?).
+            // I need to Handle this.
+            // I will implement a separate `submitTrackableLog(id, action, value, condId)` helper to avoid this mess.
             performAction(0);
+        }
+    }
+
+    // Helper to submit the validated data
+    async function submitTrackableLog(id, action, value, allocatedConditionId = null) {
+        const trackableEl = document.querySelector(`.trackable-card[data-id="${id}"]`);
+        if (trackableEl) trackableEl.style.opacity = '0.5';
+
+        try {
+            const formData = new FormData();
+            formData.append('id', id);
+            formData.append('action', action);
+            formData.append('value', value);
+            if (allocatedConditionId) formData.append('allocated_condition_id', allocatedConditionId);
+
+            const response = await fetch("{{ url_for('admin_trackable_action') }}", {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const data = await response.json();
+
+            if (data.status === 'ambiguous') {
+                if (trackableEl) trackableEl.style.opacity = '1';
+                showConditionSelector(data.conditions, (condId) => {
+                    submitTrackableLog(id, action, value, condId);
+                });
+            } else if (data.success) {
+                window.location.reload();
+            } else {
+                console.error(data);
+                if (trackableEl) trackableEl.style.opacity = '1';
+            }
+        } catch (e) {
+            console.error(e);
+            if (trackableEl) trackableEl.style.opacity = '1';
+        }
+    }
+
+    // Main Entry Point (Simplified)
+    function handleTrackableLog(id, asksValue, event, action = 'increment') {
+        if (event) event.stopPropagation();
+
+        const trackableEl = document.querySelector(`.trackable-card[data-id="${id}"]`);
+        const name = trackableEl ? trackableEl.getAttribute('data-name') : 'Amount';
+        const prefix = trackableEl ? trackableEl.getAttribute('data-prefix') : '$';
+
+        if (action === 'increment' && asksValue) {
+            showModal({
+                title: `Log ${name}`,
+                message: `Enter the ${name.toLowerCase()} amount to record.`,
+                showInput: true,
+                inputLabel: `${name} (${prefix})`,
+                inputPlaceholder: '0.00',
+                inputType: 'number',
+                confirmText: 'Record',
+                type: 'primary',
+                icon: 'plus-circle',
+                onConfirm: (val) => submitTrackableLog(id, action, parseFloat(val))
+            });
+        } else {
+            submitTrackableLog(id, action, 0);
         }
     }
 
@@ -1873,5 +2066,102 @@
 }
 `;
     document.head.appendChild(style);
+
+    // Confetti Logic
+    {% if show_confetti %}
+    (function () {
+        const colors = ['#22c55e', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'];
+
+        // Create container
+        const div = document.createElement('div');
+        div.id = 'tsparticles';
+        div.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;z-index:9000;pointer-events:none;";
+        document.body.appendChild(div);
+
+        // Load particles library
+        const script = document.createElement('script');
+        script.src = "https://cdn.jsdelivr.net/npm/tsparticles-preset-confetti@2/tsparticles.preset.confetti.bundle.min.js";
+        script.onload = () => {
+            tsParticles.load("tsparticles", {
+                particles: {
+                    number: { value: 0 },
+                    color: { value: ['#22c55e', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'] },
+                    shape: { type: ["circle", "square"] },
+                    opacity: {
+                        value: { min: 0, max: 1 },
+                        animation: { enable: true, speed: 2, startValue: "max", destroy: "min" }
+                    },
+                    size: { value: { min: 3, max: 7 } },
+                    life: { duration: { sync: true, value: 5 }, count: 1 },
+                    move: {
+                        enable: true,
+                        gravity: { enable: true, acceleration: 10 },
+                        speed: { min: 10, max: 20 },
+                        decay: 0.1,
+                        direction: "none",
+                        outModes: { default: "destroy", top: "none" }
+                    },
+                    rotate: {
+                        value: { min: 0, max: 360 },
+                        direction: "random",
+                        move: true,
+                        animation: { enable: true, speed: 60 }
+                    },
+                    tilt: {
+                        direction: "random",
+                        enable: true,
+                        move: true,
+                        value: { min: 0, max: 360 },
+                        animation: { enable: true, speed: 60 }
+                    },
+                    wobble: { distance: 30, enable: true, move: true, speed: { min: -15, max: 15 } }
+                },
+                emitters: {
+                    life: { count: 0, duration: 0.1, delay: 0.4 },
+                    rate: { delay: 0.1, quantity: 50 },
+                    size: { width: 0, height: 0 }
+                }
+            });
+            showXpPopup("LEVEL UP!");
+        };
+        document.head.appendChild(script);
+
+
+
+        function spawnConfetti(amount = 20) {
+            for (let i = 0; i < amount; i++) {
+                const confetto = document.createElement('div');
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const size = Math.random() * 8 + 4;
+                const left = Math.random() * 100;
+                const duration = Math.random() * 3 + 3; // 3-6s duration
+                const delay = Math.random() * 2; // Spread start
+
+                confetto.style.cssText = `
+                    position: absolute;
+                    width: ${size}px;
+                    height: ${size}px;
+                    background: ${color};
+                    top: -20px;
+                    left: ${left}%;
+                    opacity: 0;
+                    transform: rotate(${Math.random() * 360}deg);
+                    animation: fall ${duration}s linear ${delay}s forwards;
+                `;
+
+                container.appendChild(confetto);
+
+                // Cleanup
+                setTimeout(() => {
+                    confetto.remove();
+                }, (duration + delay) * 1000);
+            }
+        }
+
+        // Start cycling
+        // Initial burst
+
+    })();
+    {% endif %}
 </script>
 {% endblock %}

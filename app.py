@@ -121,6 +121,27 @@ def create_app(config_name=None):
         if trackable.user_id != current_user.id:
             abort(403)
             
+        allocated_condition_id = data.get('allocated_condition_id')
+        if allocated_condition_id:
+            allocated_condition_id = int(allocated_condition_id)
+
+        # Check for ambiguity (Allocation)
+        if action == 'increment' and not allocated_condition_id:
+             stats = get_user_stats()
+             next_rank = stats['next_rank']
+             if next_rank:
+                 candidates = [c for c in next_rank.conditions if c.condition_type == 'total_xp']
+                 if len(candidates) >= 2:
+                     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                         return jsonify({
+                             'success': False,
+                             'status': 'ambiguous',
+                             'message': 'Select where to add XP',
+                             'conditions': [{'id': c.id, 'name': c.custom_name or 'Total XP'} for c in candidates]
+                         })
+                 elif len(candidates) == 1:
+                     allocated_condition_id = candidates[0].id
+
         if action == 'decrement':
             last_entry = TrackableEntry.query.filter_by(
                 user_id=current_user.id,
@@ -135,7 +156,8 @@ def create_app(config_name=None):
                 trackable_type_id=trackable_id,
                 date=date.today(),
                 count=1,
-                value=value
+                value=value,
+                allocated_condition_id=allocated_condition_id
             )
             db.session.add(entry)
             
@@ -148,7 +170,20 @@ def create_app(config_name=None):
                 db.session.add(streak)
             streak.update_streak(date.today())
             
+        # Check rank update
+        did_level_up, new_rank = current_user.check_rank_update()
+            
         db.session.commit()
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+             today_log = DailyLog.query.filter_by(user_id=current_user.id, date=date.today()).first()
+             return jsonify({
+                 'success': True,
+                 'total_count': trackable.get_total_count(), # Approximation or fetch fresh
+                 'total_xp': trackable.get_total_xp(),
+                 'total_value': trackable.get_total_value(),
+                 'today_xp': today_log.total_xp if today_log else 0
+             })
         return redirect(url_for('admin_dashboard'))
 
     @app.route('/admin/task/action', methods=['POST'])
@@ -157,15 +192,51 @@ def create_app(config_name=None):
         data = request.form
         slug = data.get('slug')
         action = data.get('action', 'toggle')
+        allocated_condition_id = data.get('allocated_condition_id')
+        if allocated_condition_id:
+            allocated_condition_id = int(allocated_condition_id)
         
         task = UserDailyTask.query.filter_by(
             user_id=current_user.id,
             slug=slug
         ).first()
         if not task:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'error': 'Task not found'}), 404
             abort(404)
-            
+
+        # Check for ambiguity
         today = date.today()
+        should_check = False
+        if action == 'increment':
+            should_check = True
+        elif task.task_type == 'normal' and action == 'toggle':
+             existing = TaskCompletion.query.filter_by(
+                user_id=current_user.id,
+                task_id=task.id,
+                date=today
+            ).first()
+             if not existing:
+                 should_check = True
+
+        # Auto-allocate or Ask
+        if should_check and not allocated_condition_id:
+             stats = get_user_stats()
+             next_rank = stats['next_rank']
+             if next_rank:
+                 candidates = [c for c in next_rank.conditions if c.condition_type == 'total_xp']
+                 if len(candidates) >= 2:
+                     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                         return jsonify({
+                             'success': False,
+                             'status': 'ambiguous',
+                             'message': 'Select where to add XP',
+                             'conditions': [{'id': c.id, 'name': c.custom_name or 'Total XP'} for c in candidates]
+                         })
+                 elif len(candidates) == 1:
+                     # Exact match logic: If there is exactly one bucket for XP, use it automatically
+                     # The user said: "if don't specify ... added to the first total xp condition"
+                     allocated_condition_id = candidates[0].id
         
         if task.task_type == 'count':
             current_count = task.get_today_completion_count(today)
@@ -184,7 +255,8 @@ def create_app(config_name=None):
                         user_id=current_user.id,
                         task_id=task.id,
                         date=today,
-                        count=1
+                        count=1,
+                        allocated_condition_id=allocated_condition_id
                     )
                     xp_e = task.xp_per_count if task.xp_per_count > 0 else (task.xp_value if current_count + 1 >= task.target_count else 0)
                     completion.xp_earned = xp_e
@@ -202,7 +274,8 @@ def create_app(config_name=None):
                     user_id=current_user.id,
                     task_id=task.id,
                     date=today,
-                    xp_earned=task.xp_value
+                    xp_earned=task.xp_value,
+                    allocated_condition_id=allocated_condition_id
                 )
                 db.session.add(completion)
                 if task.repeat_type == 'ebbinghaus':
@@ -235,7 +308,20 @@ def create_app(config_name=None):
             db.session.add(streak)
         streak.update_streak(today)
         
+        # Check for rank update
+        did_level_up, new_rank = current_user.check_rank_update()
+        
         db.session.commit()
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+             return jsonify({
+                 'success': True,
+                 'total_xp': today_log.total_xp,
+                 'goal_met': today_log.goal_met,
+                 'current_count': task.get_today_completion_count(today) if task.task_type == 'count' else 0,
+                 'is_completed': task.is_completed_today(today)
+             })
+             
         return redirect(url_for('admin_dashboard'))
     
     # ========== HELPER FUNCTIONS ==========
@@ -670,6 +756,11 @@ def create_app(config_name=None):
             user_id=current_user.id
         ).order_by(DashboardImage.created_at.desc()).all()
 
+        # Check usage for confetti
+        show_confetti = False
+        if current_user.rank_changed_at == date.today():
+             show_confetti = True
+        
         return render_template('admin/dashboard.html', 
             stats=stats,
             weekly=weekly,
@@ -677,7 +768,8 @@ def create_app(config_name=None):
             pinned_trackables=pinned_trackables,
             recent_entries=recent_entries,
             unlocked_achievements=unlocked_achievements,
-            dashboard_images=dashboard_images
+            dashboard_images=dashboard_images,
+            show_confetti=show_confetti
         )
 
     # ========== DASHBOARD CUSTOMIZATION ==========
@@ -1067,6 +1159,40 @@ def create_app(config_name=None):
         action = request.form.get('action', 'increment')
         today = date.today()
         is_completed = False
+
+        # Handle allocated condition (buckets)
+        allocated_condition_id = request.form.get('allocated_condition_id')
+        if allocated_condition_id:
+            allocated_condition_id = int(allocated_condition_id)
+
+        # Check for ambiguous allocation if adding XP
+        should_check_allocation = False
+        if action == 'increment':
+            should_check_allocation = True
+        elif task.task_type == 'normal' and action == 'toggle':
+            existing = TaskCompletion.query.filter_by(
+                user_id=current_user.id,
+                task_id=task.id,
+                date=today
+            ).first()
+            if not existing:
+                should_check_allocation = True
+        
+        if should_check_allocation and not allocated_condition_id:
+            stats = get_user_stats()
+            next_rank = stats['next_rank']
+            if next_rank:
+                 # Check for multiple Total XP conditions
+                 candidates = [c for c in next_rank.conditions if c.condition_type == 'total_xp']
+                 
+                 if len(candidates) >= 2:
+                     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                         return jsonify({
+                             'success': False,
+                             'status': 'ambiguous',
+                             'message': 'Select where to add XP',
+                             'conditions': [{'id': c.id, 'name': c.custom_name or 'Total XP'} for c in candidates]
+                         })
         
         if task.task_type == 'count':
             current_count = task.get_today_completion_count(today)
@@ -1089,7 +1215,8 @@ def create_app(config_name=None):
                         user_id=current_user.id,
                         task_id=task.id,
                         date=today,
-                        count=1
+                        count=1,
+                        allocated_condition_id=allocated_condition_id
                     )
                     
                     # Calculate XP
@@ -1120,7 +1247,8 @@ def create_app(config_name=None):
                     user_id=current_user.id,
                     task_id=task.id,
                     date=today,
-                    xp_earned=task.xp_value
+                    xp_earned=task.xp_value,
+                    allocated_condition_id=allocated_condition_id
                 )
                 xp_earned = task.xp_value
                 db.session.add(completion)
